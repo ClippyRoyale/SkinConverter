@@ -1,8 +1,11 @@
 '''
-MRoyale Skin Converter v3.0.1
+MRoyale Skin Converter v3.0.2
 
 Copyright (C) MMXXII clippy#4722 (AKA WaCopyrightInfringio)
-(See https://tinyurl.com/infernopatch for an explanation of the name.)
+(See https://tinyurl.com/infernopatch for an explanation of my old username.)
+
+Having trouble running the program? Try running it online:
+https://replit.com/@WaluigiRoyale/MR-Converter-3?embed=true
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -83,6 +86,12 @@ Version 3.0 (Nov. 18, 2022):
 
 Version 3.0.1 (Nov. 19, 2022 / ONLINE ONLY):
   + Better instructions for online use
+
+Version 3.0.2 (Nov. 20, 2022):
+  + ReadMe file
+  * Fixed bug in R2D and L2D skin conversion scripts that replaced a frame of
+    the Fire climb animation with Fire power-down
+  * Fixed allowing commas in filenames
 '''
 
 import os, sys
@@ -97,7 +106,7 @@ import tkinter.filedialog as filedialog
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [3,0,1]
+app_version = [3,0,2]
 
 def get_app_version():
     return str(app_version[0])+'.'+str(app_version[1])+'.'+\
@@ -1152,8 +1161,10 @@ The file you selected may not be designed for this converter.',
                 # Otherwise, remove whitespace from sides of commands.
                 # Ditto for file paths.
                 if data[i][0] != 'description' \
-                        and data[i][0] != 'open_path' \
-                        and data[i][0] != 'save_path':
+                        and data[i][0] != 'open' \
+                        and data[i][0] != 'save' \
+                        and data[i][0] != 'alt' \
+                        and data[i][0] != 'template':
                     data[i][j] = data[i][j].strip()
                 data[i][j] = int(data[i][j])
             except ValueError:
