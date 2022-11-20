@@ -1,0 +1,93 @@
+mrconverter
+version,2,2,1
+name,Deluxifier for Skins
+description,Converts a Legacy skin to Deluxe format.
+author,clippy
+open,.INPUT
+save,.INPUT
+##open,assets/legacy/smb_skin0.png
+##save,assets/my_conversions/smb_skin0_dx.png
+template,assets/deluxe/smb_mario.png
+
+# This script by itself will only convert Legacy obj sheets.
+
+# If your skin uses the full 32x32 tile for Fire sprites, 
+# some parts may be cropped out. Sorry, I can't do anything about that.
+
+base,blank
+
+# SMALL
+# walk/skid/jump/climb
+copy,96,0,128,0,128,16
+# swim
+copy,240,80,112,0
+copy,192,80,96,0
+copy,176,80,80,0
+# taunt
+copy,80,0,208,16
+copy,80,0,224,16
+# carry
+copy,160,0,16,0,64,16
+copy,128,0,0,0
+# kick
+copy,160,0,240,16
+# dead
+copy,0,0,192,16
+
+# SUPER
+# powerdown/stand
+copy,208,16,224,32,32,32
+# walk
+copy,144,16,176,32,48,32
+# crouch
+copy,192,16,160,32,16,32
+# skid/jump/climb
+copy,80,16,96,32,64,32
+# swim
+copy,224,96,192,64,16,32
+copy,192,96,160,64,16,32
+copy,160,96,128,64,16,32
+# taunt
+copy,0,16,0,32,16,32
+copy,0,16,224,64,16,32
+copy,0,16,240,64,16,32
+# carry
+copy,208,16,80,32,16,32
+copy,144,16,32,32,48,32
+copy,112,16,16,32,16,32
+# kick
+copy,144,16,112,64,16,32
+
+# FIRE
+# throw
+copy,240,48,80,128,16,32
+# powerdown/stand
+copy,192,48,224,96,32,32
+# walk
+copy,144,48,208,96,16,32
+copy,112,48,192,96,16,32
+copy,80,48,176,96,16,32
+# crouch
+copy,160,48,160,96,16,32
+# skid
+copy,48,48,144,96,16,32
+# jump
+copy,16,48,128,96,16,32
+# climb
+copy,48,16,96,96,32,32
+# swim
+copy,208,128,192,128,16,32
+copy,144,128,160,128,16,32
+copy,80,128,128,128,16,32
+# taunt
+copy,32,16,0,96,16,32
+copy,32,16,224,128,16,32
+copy,32,16,240,128,16,32
+# carry
+copy,192,48,80,96,32,32
+copy,144,48,64,96,16,32
+copy,112,48,48,96,16,32
+copy,80,48,32,96,16,32
+copy,16,48,16,96,16,32
+# kick
+copy,80,48,112,128,16,32

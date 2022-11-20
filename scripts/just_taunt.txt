@@ -1,0 +1,19 @@
+mrconverter
+version,2,2,1
+name,Just Taunt
+description,Updates a Legacy skin (that already has swim sprites) by adding placeholder taunt sprites.
+author,clippy
+open,.INPUT
+save,.INPUT
+##open,assets/remake/smb_skin0.png
+##save,assets/my_conversions/smb_skin0_legacy.png
+
+# resize to standard canvas size
+resize,256,256
+
+# small taunt
+copy,208,0,  80, 0,  16, 16
+# super taunt
+copy,208,16, 0,  16, 16, 32
+# fire taunt
+copy,176,48, 16, 16, 32, 32

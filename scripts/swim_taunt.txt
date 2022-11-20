@@ -1,0 +1,44 @@
+mrconverter
+version,2,2,1
+name,Swim & Taunt
+description,Converts a Remake skin to Legacy format by adding placeholder swim and taunt sprites.
+author,clippy
+open,.INPUT
+save,.INPUT
+##open,assets/remake/smb_skin0.png
+##save,assets/my_conversions/smb_skin0_legacy.png
+
+# resize to standard canvas size
+resize,256,256
+
+# delete areas that are now taken by swim and taunt sprites
+delete,0,16,48,32
+delete,160,80,96,48
+delete,64,128,192,32
+
+# small taunt
+copy,208,0,  80, 0,  16, 16
+# super taunt
+copy,208,16, 0,  16, 16, 32
+# fire taunt
+copy,176,48, 16, 16, 32, 32
+# small swim
+copy,128,0,  240,80, 16, 16
+copy,128,0,  224,80, 16, 16
+copy,128,0,  208,80, 16, 16
+copy,128,0,  192,80, 16, 16
+copy,128,0,  176,80, 16, 16
+# super swim
+copy,112,16, 240,96, 16, 32
+copy,112,16, 224,96, 16, 32
+copy,112,16, 208,96, 16, 32
+copy,112,16, 192,96, 16, 32
+copy,112,16, 176,96, 16, 32
+copy,112,16, 160,96, 16, 32
+# fire swim
+copy,0,  48, 64, 128,32, 32
+copy,0,  48, 96, 128,32, 32
+copy,0,  48, 128,128,32, 32
+copy,0,  48, 160,128,32, 32
+copy,0,  48, 192,128,32, 32
+copy,0,  48, 224,128,32, 32

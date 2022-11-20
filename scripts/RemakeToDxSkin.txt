@@ -1,0 +1,92 @@
+mrconverter
+version,3,0,0
+name,Full Remake to Deluxe skin converter
+description,Converts a Remake skin to Deluxe format. Effectively a combination of DxSkin and swim_taunt.
+author,clippy
+open,.INPUT
+save,.INPUT
+template,assets/deluxe/smb_mario.png
+
+start,0
+stop,1000
+
+# If your skin uses the full 32x32 tile for Fire sprites, 
+# some parts may be cropped out. Sorry, I can't do anything about that.
+
+base,blank
+
+# SMALL
+# walk/skid/jump/climb
+copy,96,0,128,0,128,16
+# swim
+copy,128,0,112,0
+copy,128,0,96,0
+copy,128,0,80,0
+# taunt
+copy,208,0,208,16
+copy,208,0,224,16
+# carry
+copy,160,0,16,0,64,16
+copy,128,0,0,0
+# kick
+copy,160,0,240,16
+# dead
+copy,0,0,192,16
+
+# SUPER
+# powerdown/stand
+copy,208,16,224,32,32,32
+# walk
+copy,144,16,176,32,48,32
+# crouch
+copy,192,16,160,32,16,32
+# skid/jump/climb
+copy,80,16,96,32,64,32
+# swim
+copy,112,16,192,64,16,32
+copy,112,16,160,64,16,32
+copy,112,16,128,64,16,32
+# taunt
+copy,208,16,0,32,16,32
+copy,208,16,224,64,16,32
+copy,208,16,240,64,16,32
+# carry
+copy,208,16,80,32,16,32
+copy,144,16,32,32,48,32
+copy,112,16,16,32,16,32
+# kick
+copy,144,16,112,64,16,32
+
+# FIRE
+# throw
+copy,240,48,80,128,16,32
+# powerdown/stand
+copy,192,48,224,96,32,32
+# walk
+copy,144,48,208,96,16,32
+copy,112,48,192,96,16,32
+copy,80,48,176,96,16,32
+# crouch
+copy,160,48,160,96,16,32
+# skid
+copy,48,48,144,96,16,32
+# jump
+copy,16,48,128,96,16,32
+# climb
+copy,48,16,96,96,32,32
+# swim
+copy,16,48,192,128,16,32
+copy,16,48,160,128,16,32
+copy,16,48,128,128,16,32
+# taunt
+copy,192,48,0,96,16,32
+copy,192,48,224,128,16,32
+copy,192,48,240,128,16,32
+# carry
+copy,192,48,80,96,32,32
+copy,144,48,64,96,16,32
+copy,112,48,48,96,16,32
+copy,80,48,32,96,16,32
+copy,16,48,16,96,16,32
+# kick
+copy,80,48,112,128,16,32

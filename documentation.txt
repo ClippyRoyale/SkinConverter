@@ -1,0 +1,121 @@
+mrconverter 
+# The above should be the first line of any conversion script. Don't even type any spaces or comments before it, or the converter will complain.
+version,3,0,0 # The version of the Converter app that this script is made for.
+
+# Metadata: doesn't affect how the script runs but will be displayed before running the script.
+name,documentation
+author,clippy
+description,The documentation for the skin converter.
+
+open,smb_skin*.png # Main image to open and copy from. Use ".INPUT" as the path if you want the user to enter their own path. If you want to convert multiple images at once, enter a * in the place where you want the converter to insert a number; see "start"/"stop" below for more on this.
+
+save,smb_edit*.png # Filename to save to. (WARNING: Any existing file with this name will be overwritten!) Use ".INPUT" as the path if you want the user to enter their own path. If you want to convert multiple images at once, enter a * in the place where you want the converter to insert a number; see "start"/"stop" below for more on this.
+
+template,smb_skin2580.png # Template image to copy/paste from in place. No user input offered here because this image is supposed to stay the same.
+
+alt,smb_skin1.png # Alternate image to copy from.
+
+base,blank # Add this code to use a blank template-sized image as the base; otherwise, the "open" image will be the base.
+
+# If you want to convert a collection of sequentially-numbered images, use these commands. For example, the commands below mean that image #0 will be the first image converted, and image #2600 will be the last image.
+start,0
+stop,42
+
+# Everything above this line is a header command.
+# Each one can only appear once.
+
+# The main conversion code is below.
+# <> = required arguments
+# [] = optional arguments (with default value used when omitted)
+
+
+
+# BASIC COMMANDS
+
+copy,0<oldX>,0<oldY>,0<newX>,48<newY>,16[width],16[height] # Copy from old image to specified position in new image.
+
+copyalt,0<oldX>,0<oldY>,0<newX>,48<newY>,16[width],16[height] # Copy from alt image to specified position in new image.
+
+default,0<x>,0<y>,16[width],16[height] # Copy from template image to same position in new image.
+
+clear,0<x>,0<y>,16[width],16[height] # Clear area from new image. Used to be called "delete" -- this still works for compatiblity reasons.
+
+
+
+# TRANSFORMATION COMMANDS
+
+resize,256<newWidth>,256<newHeight> # Resize the new image's canvas. Does not perform any scaling. Anchor top left.
+
+rotate,90<degreesClockwise: multiple of 90>,0<x>,0<y>,16[size] # Rotate the area in place on the new image. Unlike copy commands, only one size argument is used, as the rotated area must be square.
+
+flip,x<direction: x or y>,0<x>,0<y>,16[width],16[height]
+# Flip the area in place on the new image. Unlike rotation, width and height can be different here.
+
+
+
+# FILTER COMMANDS
+# All filters are applied in place to the specified area on the new image.
+# For all filters:
+# If command doesn't have x or y, apply filter to whole image: x=0, y=0, width and height are the same as the image's width and height.
+# If command has x and y but doesn't have width or height: width=16, height=16
+# If command has x, y, and width, but not height: height=width 
+
+grayscale,0<x>,0<y>,16[width],16[height] # Converts the area to grayscale (AKA black-and-white). For the command that literally makes the area only black and white (1-bit), use "threshold".
+
+invert,0<x>,0<y>,16[width],16[height] # Inverts the area. For example, black becomes white, and red becomes cyan.
+
+colorfilter,0<redAdjust: -255 to +255>,0<greenAdjust>,0<blueAdjust>,0<x>,0<y>,16[width],16[height] # Adjusts the R/G/B levels. You can use all three adjust arguments at the same time to adjust brightness.
+
+opacity,0<adjust: -255 to +255>,0<x>,0<y>,16[width],16[height] # Adjusts the opacity (alpha) levels. Negative = more transparent, positive = more opaque.
+
+hue,0<adjust: -180 to +180>,16[width],16[height] # Adjusts the hue.
+
+saturation,0<adjust: -100 to +100>,16[width],16[height] # Adjusts the saturation (in HSLA color space). Positive adjust means more colorful. Negative adjust means less colorful. -100 means grayscale.
+
+lightness,0<adjust: -100 to +100>,16[width],16[height] # Adjusts the lightness (in HSLA color space). Positive adjust means lighter. Negative adjust means darker. -100 means all black, +100 means all white.
+
+fill,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255<alpha: 0 to 255>,0<x>,0<y>,16[width],16[height] # Fills the area with the selected color.
+
+contrast,0<adjust: -128 to 127>,0<x>,0<y>,16[width],16[height] # Adjusts the contrast. -128 will make all non-transparent pixels medium gray; +127 will make all RGB values either 0 or 255 (8 colors).
+
+
+# Comment: The hash (#) and everything after it will be ignored by the interpreter.
+# You may also want to "comment out" lines that aren't working in your scripts.
+
+
+# COMING SOON:
+
+warning,Your warning here (will be displayed after conversion)
+
+scale,256<newWidth>,256<newHeight> # Scale the image to the new width and height, using nearest-neighbor scaling (add other algorithms? add percentages?)
+
+colorize,180<hue: 0 to 360>,50<saturation: 0 to 100>,50<lightness: 0 to 100>,0<x>,0<y>,16[width],16[height] # Colorizes the specified area in place.
+
+threshold,128<lightestBlack: 1 to 255>,0<x>,0<y>,16[width],16[height]
+# Converts the image to 1-bit black & white based on a numeric lightness threshold. Any number LESS THAN or EQUAL to lightestBlack is black, any number GREATER is white. TODO: How to determine threshold value? Use lightness? Luma?
+
+# If statements (ifempty?) and subroutines
+
+select(selcolor,green,0,0,16,16){
+hue,-120,0,0 # ...etc.
+}
+
+# Image variables:
+WIDTH, HEIGHT
+
+# Pixel variables:
+# RED, GREEN, BLUE, HUE, SATURATION, LIGHTNESS, OPACITY, LUMA?
+
+# Math subcommands?
+
+# Conditional subcommands for select:
+(>,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
+(<,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
+(=,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height]) # or ==
+(!=,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
+(>=,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
+(<=,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
+(selcolor,red<color>,0<x>,0<y>,16[width],16[height]) # Selective color: selects all colors within a given sixth of the HSL color wheel
+
+# Conditional subcommands for if:
+(empty,0<x>,0<y>,16[width],16[height]) # True if the area is completely empty (every pixel is transparent), False otherwise
