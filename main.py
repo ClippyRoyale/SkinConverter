@@ -1,5 +1,5 @@
 '''
-MRoyale Skin Converter v3.0.2
+MRoyale Skin Converter v3.0.3
 
 Copyright (C) MMXXII clippy#4722 (AKA WaCopyrightInfringio)
 (See https://tinyurl.com/infernopatch for an explanation of my old username.)
@@ -80,6 +80,7 @@ Version 3.0 (Nov. 18, 2022):
   + Turned converter into a GUI
   + contrast filter
   + Converter is now usable on Replit, no Python installation needed
+  + Added Remake-to-Deluxe skin conversion script
   * Many, many bug fixes, including lots of rare crash bugs
   + Added the W
   - Removed Herobrine
@@ -92,6 +93,12 @@ Version 3.0.2 (Nov. 20, 2022):
   * Fixed bug in R2D and L2D skin conversion scripts that replaced a frame of
     the Fire climb animation with Fire power-down
   * Fixed allowing commas in filenames
+
+Version 3.0.3 (Dec. 10, 2022):
+  + More instructions for Replit users on how to import files
+  + Only display message about entering fullscreen if Replit output window
+    is too small
+  * If script is missing version, default to current version instead of 0.0.0
 '''
 
 import os, sys
@@ -106,14 +113,14 @@ import tkinter.filedialog as filedialog
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [3,0,2]
+app_version = [3,0,3]
 
-def get_app_version():
+def app_version_str():
     return str(app_version[0])+'.'+str(app_version[1])+'.'+\
         str(app_version[2])
 
 window = Tk()
-window.wm_title('Clippy’s MRoyale Skin Converter v' + get_app_version())
+window.wm_title('Clippy’s MRoyale Skin Converter v' + app_version_str())
 window.geometry('640x320')
 # UNCOMMENT THIS LINE ON REPL.IT BUILDS OR TO RUN THE APP IN FULLSCREEN
 window.attributes('-fullscreen', True)
@@ -166,7 +173,7 @@ steps = [
         justify='left'),
 ]
 
-title = Label(side_frame, text='Skin Converter v'+get_app_version(), 
+title = Label(side_frame, text='Skin Converter v'+app_version_str(), 
         font=f_bold)
 footer = Label(side_frame, text='a Clippy production', fg=colors['gray'])
 
@@ -1170,15 +1177,15 @@ The file you selected may not be designed for this converter.',
             except ValueError:
                 pass
 
-    version = [0,0,0]
-    version_str = '0.0.0'
+    version = app_version.copy()
+    version_str = app_version_str()
     for i in data:
         if i[0] == 'version':
             # Make sure user entered enough numbers
             if len(i) < 3:
                 dialog('Warning', 
 ['Invalid version in script. Version must take the form “x.y.z”.', 
-'The converter will default to version 0.0.0.'],
+'The converter will default to the current version.'],
                     '', 'warning', 'Okay', main)
             else:
                 version = i[1:4]
@@ -1533,6 +1540,25 @@ def run_script():
         log_warning('The template file path '+template_path+\
             ' is a folder or application.')
 
+    alt_image = None
+    try:
+        if alt_path != '':
+            alt_image = PIL.Image.open(alt_path).convert('RGBA')
+        else:
+            # create a dummy image to use as “alt”
+            alt_image = PIL.Image.new('RGBA', (1, 1))
+    except FileNotFoundError:
+        log_warning('Couldn’t find an alternate file with the path '+\
+            alt_path+' — skipping')
+    except (AttributeError, PIL.UnidentifiedImageError): 
+        # We opened something, but it's not an image
+        log_warning('Couldn’t open the alternate file at ' + \
+            alt_path + '.')
+        log_warning('    - Are you sure it’s an image? Skipping.')
+    except IsADirectoryError: # If user opens a folder or Mac app bundle
+        log_warning('The alternate path '+alt_path+\
+            ' is a folder or application.')
+
     # Main file-reading loop -- a different function does the actual processing
     for i in range(start_num, stop_num):
         current_num = i
@@ -1568,27 +1594,6 @@ def run_script():
         except IsADirectoryError: # If user opens a folder or Mac app bundle
             log_warning('\
                 The path '+open_path+' is a folder or application.')
-
-        alt_image = None
-        try:
-            if alt_path != '':
-                alt_image = PIL.Image.open(alt_path).convert('RGBA')
-            else:
-                # create a dummy image to use as “alt”
-                alt_image = PIL.Image.new('RGBA', (1, 1))
-        except FileNotFoundError:
-            log_warning('Couldn’t find an alternate file with the path '+\
-                alt_path+' — skipping')
-            continue
-        except (AttributeError, PIL.UnidentifiedImageError): 
-            # We opened something, but it's not an image
-            log_warning('Couldn’t open the alternate file at ' + \
-                alt_path + '.')
-            log_warning('    - Are you sure it’s an image? Skipping.')
-            continue
-        except IsADirectoryError: # If user opens a folder or Mac app bundle
-            log_warning('The alternate path '+alt_path+\
-                ' is a folder or application.')
 
         if base_blank:
             # Create a blank base if the script starts with that
@@ -1760,7 +1765,9 @@ def crash(exctype=None, excvalue=None, tb=None):
     bomb = PhotoImage(file='assets/ui/bomb.png')
     window.iconphoto(False, bomb)
     messagebox.showerror(window, 
-        message='An error has occurred:\n'+str(excvalue))
+        message='''An error has occurred:
+%s:
+%s''' % (exctype, excvalue))
     exit_app()
 
 def exit_app():
@@ -1777,11 +1784,28 @@ try:
     # Test if we're running on replit
     if os.path.isdir("/home/runner") == True:
         import tkinter.messagebox as messagebox
-        messagebox.showinfo(window, 
-        message='''Looks like you’re running the online (Replit) version of the skin converter! 
-Please enter fullscreen so you can click all the buttons.
+
+        # Get screen width and height
+        screen_width = window.winfo_screenwidth()
+        screen_height = window.winfo_screenheight()
+
+        # Check screen size and if it's too small, ask user to enter fullscreen
+        if screen_width < 640 or screen_height < 320:
+            messagebox.showinfo(window, 
+            message='''\
+Looks like you’re running the online (Replit) version of the skin converter! 
+You may want to enter fullscreen so you can click all the buttons.
 Click the ⋮ on the “Output” menu bar then click “Maximize”. 
-If you’re on a phone, rotate it sideways, zoom out, and hide your browser’s toolbar.''')
+If you’re on a phone, rotate it sideways, zoom out, \
+and hide your browser’s toolbar.''')
+
+        # show online instructions
+        messagebox.showinfo(window, 
+        message='''Before converting your first file, follow these steps:
+1. Create a Replit account. You can use an existing Google or Github account.
+2. Click “Fork Repl” and follow the instructions.
+3. In your newly-forked project, drag the images you want to convert \
+into the list of files in the left sidebar.''')
         main()
     else:
         main()

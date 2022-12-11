@@ -1,6 +1,6 @@
 mrconverter 
 # The above should be the first line of any conversion script. Don't even type any spaces or comments before it, or the converter will complain.
-version,3,0,0 # The version of the Converter app that this script is made for.
+version,3,0,3 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
@@ -17,12 +17,13 @@ alt,smb_skin1.png # Alternate image to copy from.
 
 base,blank # Add this code to use a blank template-sized image as the base; otherwise, the "open" image will be the base.
 
-# If you want to convert a collection of sequentially-numbered images, use these commands. For example, the commands below mean that image #0 will be the first image converted, and image #2600 will be the last image.
+# If you want to convert a collection of sequentially-numbered images, use these commands. For example, the commands below mean that image #0 will be the first image converted, and image #42 will be the last image.
 start,0
 stop,42
 
 # Everything above this line is a header command.
-# Each one can only appear once.
+# Each one can only appear once. If you use the same header command more than once,
+# only the first instance will be used.
 
 # The main conversion code is below.
 # <> = required arguments
@@ -79,13 +80,17 @@ fill,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255<alpha: 0 to 255>,
 contrast,0<adjust: -128 to 127>,0<x>,0<y>,16[width],16[height] # Adjusts the contrast. -128 will make all non-transparent pixels medium gray; +127 will make all RGB values either 0 or 255 (8 colors).
 
 
+
+# MISCELLANEOUS COMMANDS
+
+warning,Your warning here (will be displayed onscreen after conversion)
+
 # Comment: The hash (#) and everything after it will be ignored by the interpreter.
 # You may also want to "comment out" lines that aren't working in your scripts.
 
 
-# COMING SOON:
 
-warning,Your warning here (will be displayed after conversion)
+# COMING SOON:
 
 scale,256<newWidth>,256<newHeight> # Scale the image to the new width and height, using nearest-neighbor scaling (add other algorithms? add percentages?)
 
@@ -107,6 +112,10 @@ WIDTH, HEIGHT
 # RED, GREEN, BLUE, HUE, SATURATION, LIGHTNESS, OPACITY, LUMA?
 
 # Math subcommands?
+(+,x1,x2,...)
+(-,x1,x2,...)
+(*,x1,x2,...)
+(/,x1,x2,...)
 
 # Conditional subcommands for select:
 (>,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
