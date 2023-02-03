@@ -1,7 +1,7 @@
 mrconverter
 version,2,2,1
 name,Just Taunt
-description,Updates a Legacy skin (that already has swim sprites) by adding placeholder taunt sprites.
+description,(DEPRECATED) Updates a Legacy skin (that already has swim sprites) by adding placeholder taunt sprites.
 author,clippy
 open,.INPUT
 save,.INPUT

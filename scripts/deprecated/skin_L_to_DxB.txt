@@ -1,7 +1,7 @@
 mrconverter
-version,2,2,1
+version,3,0,2
 name,Deluxifier for Skins
-description,Converts a Legacy skin to Deluxe format.
+description,(DEPRECATED) Converts a Legacy skin to Deluxe BETA format.
 author,clippy
 open,.INPUT
 save,.INPUT

@@ -1,0 +1,128 @@
+version,3,1,0
+name,Remake32 to Deluxe32
+author,Clippy
+description,Special version of the Remake to Deluxe converter that properly handles Fire sprites that use the 32×32 space. Bonus: The hitboxes will actually work in the expected way!
+alt,assets/deluxe/smb_mario.png
+base,blank
+
+# TEST
+#open,assets/remake/smb_skin0.png
+#save,test.png
+
+resize,256,320
+
+# SMALL
+# walk/skid/jump/climb
+copy,	96,0,	128,0,	128,16
+# swim
+copy,	128,0,	112,0
+copy,	128,0,	96,0
+copy,	128,0,	80,0
+# taunt
+copy,	208,0,	48,0
+copy,	208,0,	64,0
+# dead
+copy,	0,0,	32,0
+
+# SUPER
+# stand
+copy,	208,16,	230,32,	16,32
+# walk
+copy,	176,16,	200,32,	16,32
+copy,	160,16,	168,32,	16,32
+copy,	144,16,	136,32,	16,32
+# crouch
+copy,	192,16,	104,32,	16,32
+# skid
+copy,	128,16,	72,32,	16,32
+# jump
+copy,	112,16,	40,32,	16,32
+# climb
+copy,	96,16,	8,32,	16,32
+copy,	80,16,	232,64,	16,32
+# swim
+copy,	112,16,	104,64,	16,32
+copy,	112,16,	72,64,	16,32
+copy,	112,16,	40,64,	16,32
+# taunt
+copy,	208,16,	200,64,	16,32
+copy,	208,16,	168,64,	16,32
+copy,	208,16,	136,64,	16,32
+# powerdown
+copy,	224,16,	8,64,	16,32
+
+# FIRE
+# This is the only part that's different from the regular R_to_Dx32.
+# throw
+copy,	224,48,	0,160,	32,32
+# stand
+copy,	176,48,	224,128,	32,32
+# walk
+copy,	128,48,	192,128,	32,32
+copy,	96,48,	160,128,	32,32
+copy,	64,48,	128,128,	32,32
+# crouch
+copy,	160,48,	104,128,	16,32
+# skid
+copy,	32,48,	64,128,	32,32
+# jump
+copy,	0,48,	32,128,	32,32
+# climb
+copy,	64,16,	8,128,	16,32
+copy,	48,16,	232,160,	16,32
+# swim
+copy,	0,48,	96,160,	32,32
+copy,	0,48,	64,160,	32,32
+copy,	0,48,	32,160,	32,32
+# taunt
+copy,	176,48,	192,160,	32,32
+copy,	176,48,	160,160,	32,32
+copy,	176,48,	128,160,	32,32
+# powerdown
+copy,	208,48,	232,192,	16,32
+
+# RACCOON
+# This will look terrible no matter how you do it.
+# It’s a good thing you didn’t see what it looked like before the actual release.
+# First tile the raccoon sprites from the template so we'll have the tail:
+tile, 	214,224,	16,32,	24,224,	15,3,	alt
+# Flip one tail for the spin
+flip,x,	88,288,	16,32
+# Delete extra tails
+clear,	152,288,	16,32
+clear,	120,288,	16,32
+clear,	0,288,	64,32
+# Now put the Super sprites on top:
+# stand
+copy,	208,16,	230,224,	16,32
+# walk
+copy,	176,16,	200,224,	16,32
+copy,	160,16,	168,224,	16,32
+copy,	144,16,	136,224,	16,32
+# crouch
+copy,	192,16,	104,224,	16,32
+# skid
+copy,	128,16,	72,224,	16,32
+# jump
+copy,	112,16,	40,224,	16,32
+# climb
+copy,	96,16,	8,224,	16,32
+copy,	80,16,	232,256,	16,32
+# swim
+copy,	112,16,	104,256,	16,32
+copy,	112,16,	72,256,	16,32
+copy,	112,16,	40,256,	16,32
+# taunt
+copy,	208,16,	200,256,	16,32
+copy,	208,16,	168,256,	16,32
+copy,	208,16,	136,256,	16,32
+# fly (use jump sprites)
+copy,	112,16,	8,256,	16,32
+copy,	112,16,	232,288,	16,32
+copy,	112,16,	200,288,	16,32
+# attack (this part will look the worst)
+copy,	112,16,	168,288,	16,32
+copy,	208,16,	136,288,	16,32
+copy,	112,16,	104,288,	16,32
+flip,x,	104,288,	16,32
+copy,	208,16,	72,288,	16,32

@@ -1,8 +1,8 @@
 '''
-MRoyale Skin Converter v3.0.3
+MR Skin Converter 
+Version 4.0
 
-Copyright (C) MMXXII clippy#4722 (AKA WaCopyrightInfringio)
-(See https://tinyurl.com/infernopatch for an explanation of my old username.)
+Copyright © 2022–2023 clippy#4722
 
 Having trouble running the program? Try running it online:
 https://replit.com/@WaluigiRoyale/MR-Converter-3?embed=true
@@ -99,9 +99,38 @@ Version 3.0.3 (Dec. 10, 2022):
   + Only display message about entering fullscreen if Replit output window
     is too small
   * If script is missing version, default to current version instead of 0.0.0
+
+Version 4.0 (Feb. 2, 2023):
+  + Scripts for converting to Deluxe skins now convert to the 32×32 template
+      * I will never write a script involving the “Remake 32×32” format that
+        was never actually added to the game. Making any skins for that format
+        without it being officially confirmed was a mistake to begin with.
+        Speaking of Remake-related mistakes... chat.
+      * I’m not going to write a DeluxeBeta -> Deluxe32 conversion script either
+        because it was always a possibility that the template could change 
+        without warning (it was a beta, after all)
+  + colorize and sepia filters
+  + tile command for creating repeating backgrounds
+  + Back to Menu button
+  * Renamed most conversion scripts for consistency
+  * Fixed the RGBA->HSLA converter which has been broken for who knows how long
+  * “mrconverter”, “open”, and “save” lines are now optional
+      * If a script is missing either line, the converter defaults to “.INPUT”
+        as the path (i.e. asking the user what image they want to use)
+  * Writing “copy”, “copyalt”, or “default” on their own now copies the entire
+    source image onto the canvas. “clear” on its own clears the whole canvas. 
+    “flip” on its own can be applied to the whole canvas, but not “rotate”
+    because it expects a square area.
+  * Improved dialog box code 
+      * Text is less likely to overlap with icons or other text
+      * Bottom text can now have paragraph spacing
+  - Deprecated Legacy Taunt script and Deluxe Beta scripts because they’re no
+    longer useful
+      * They’re still available in the standard installation, but I took away
+        the buttons on the main menu so you’ll have to run them manually
 '''
 
-import os, sys
+import os, sys, colorsys
 import PIL.Image, PIL.ImageOps, PIL.ImageTk
 from time import time
 
@@ -113,14 +142,14 @@ import tkinter.filedialog as filedialog
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [3,0,3]
+app_version = [4,0,0]
 
 def app_version_str():
     return str(app_version[0])+'.'+str(app_version[1])+'.'+\
         str(app_version[2])
 
 window = Tk()
-window.wm_title('Clippy’s MRoyale Skin Converter v' + app_version_str())
+window.wm_title('Clippy’s Skin Converter v' + app_version_str())
 window.geometry('640x320')
 # UNCOMMENT THIS LINE ON REPL.IT BUILDS OR TO RUN THE APP IN FULLSCREEN
 window.attributes('-fullscreen', True)
@@ -199,15 +228,15 @@ menu_btns_p1 = [
 menu_btns_p2 = [
     Button(main_frame, text='Convert a Remake skin to Legacy'),
     Button(main_frame, 
-            text='Add taunt sprites to an incomplete Legacy skin'),
-    Button(main_frame, 
-            text='Convert a Legacy smb_map mod to Legacy smb_map_new'),
+            text='Convert a Legacy map mod to Legacy map_new'),
     Label(main_frame), # filler
     Button(main_frame, text='Run a custom script'),
     Button(main_frame, text='Submit your custom script'),
     Label(main_frame), # filler
     Button(main_frame, text='Back'),
 ]
+
+back_btn = Button(side_frame, text='Back to Menu')
 
 icons = {
     'info': \
@@ -229,25 +258,28 @@ icons = {
 warnings = []
 
 ###########################################################################
-#### BASIC COMMANDS #######################################################
+#### BASIC COPYING COMMANDS ###############################################
 ###########################################################################
 
-# DOCUMENTATION: copy,0<oldX>,0<oldY>,0<newX>,48<newY>,16[width],16[height] 
+# DOCUMENTATION: copy,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height]
 # Copy from old image to specified position in new image.
 def copy(i, open_image, base_image):
-    min_args = 5
-    if len(i) < min_args:
+    min_args = 4
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
 
+    # If no x or y specified, apply to whole image
+    if len(i) <= 4:
+        i = [i[0], 0, 0, 0, 0, base_image.size[0], base_image.size[1]]
     oldX = i[1]
     oldY = i[2]
     newX = i[3]
     newY = i[4]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 5:
         i += [16, 16]
@@ -259,23 +291,27 @@ def copy(i, open_image, base_image):
     region = open_image.crop((oldX, oldY, oldX+width, oldY+height))
     base_image.paste(region, (newX, newY, newX+width, newY+height))
 
-# DOCUMENTATION: copyalt,0<oldX>,0<oldY>,0<newX>,48<newY>,16[width],
-#   16[height] 
+# DOCUMENTATION: copyalt,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height]
 # Copy from alt image to specified position in new image.
+# TODO: Fold this into “copy” and give that command a “source” argument,
+# and allow users to set an arbitrary number of variables with custom paths.
 def copyalt(i, alt_image, base_image):
-    min_args = 5
-    if len(i) < min_args:
+    min_args = 4
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
 
+    # If no x or y specified, apply to whole image
+    if len(i) <= 4:
+        i = [i[0], 0, 0, 0, 0, base_image.size[0], base_image.size[1]]
     oldX = i[1]
     oldY = i[2]
     newX = i[3]
     newY = i[4]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 5:
         i += [16, 16]
@@ -287,20 +323,24 @@ def copyalt(i, alt_image, base_image):
     region = alt_image.crop((oldX, oldY, oldX+width, oldY+height))
     base_image.paste(region, (newX, newY, newX+width, newY+height))
 
-# DOCUMENTATION: default,0<x>,0<y>,16[width],16[height] 
+# DOCUMENTATION: default,0[x],0[y],16[width],16[height] 
 # Copy from template image to same position in new image.
 def default(i, template_image, base_image):
-    min_args = 3
-    if len(i) < min_args:
+    min_args = 2
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
 
+
+    # If no x or y specified, apply to whole image
+    if len(i) <= 2:
+        i = [i[0], 0, 0, base_image.size[0], base_image.size[1]]
     x = i[1]
     y = i[2]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 3:
         i += [16, 16]
@@ -312,21 +352,24 @@ def default(i, template_image, base_image):
     region = template_image.crop((x, y, x+width, y+height))
     base_image.paste(region, (x, y, x+width, y+height))
 
-# DOCUMENTATION: clear,0<x>,0<y>,16[width],16[height] 
+# DOCUMENTATION: clear,0[x],0[y],16[width],16[height] 
 # Clear area from new image. 
 # Used to be called “delete” -- this still works for compatiblity reasons.
 def clear(i, base_image):
-    min_args = 3
-    if len(i) < min_args:
+    min_args = 2
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
 
+    # If no x or y specified, apply to whole image
+    if len(i) <= 2:
+        i = [i[0], 0, 0, base_image.size[0], base_image.size[1]]
     x = i[1]
     y = i[2]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 3:
         i += [16, 16]
@@ -339,35 +382,80 @@ def clear(i, base_image):
     base_image.paste(empty_image, (x, y, x+width, y+height))
 
 ###########################################################################
+#### ADVANCED COPYING COMMANDS ############################################
+###########################################################################
+
+# DOCUMENTATION: tile,0<copyX>,0<copyY>,16<copyWidth>,16<copyHeight>,
+#   0<pasteStartX>,0<pasteStartY>,16<pasteCountHoriz>,16<pasteCountVert>,
+#   open[copySource: open, template, or alt]
+# Create a tile pattern on the new image using a part of the old image. 
+# This command can be very useful but it’s not for the faint of heart.
+def tile(i, open_image, alt_image, base_image):
+    min_args = 8
+    if len(i) <= min_args:
+        log_warning('The command '+i[0]+' requires at least '+\
+                min_args+' arguments.')
+        return
+
+    copyX = i[1]; copyY = i[2]; copyWidth = i[3]; copyHeight = i[4];
+    pasteStartX = i[5]; pasteStartY = i[6];
+    pasteCountHoriz = i[7]; pasteCountVert = i[8];
+
+    # Default to 'open' as copySource if none specified
+    if len(i) == 9:
+        i.append('open')
+    copySource = i[9].lower()
+
+    for x in range(pasteCountHoriz):
+        for y in range(pasteCountVert):
+            if copySource == 'open':
+                copy(['copy', copyX, copyY, pasteStartX+(copyWidth*x),
+                        pasteStartY+(copyHeight*y), copyWidth, copyHeight],
+                        open_image, base_image)
+            elif copySource == 'alt' and alt_image:
+                copyalt(['copyalt', copyX, copyY, pasteStartX+(copyWidth*x),
+                        pasteStartY+(copyHeight*y), copyWidth, copyHeight],
+                        alt_image, base_image)
+            else:
+                log_warning('tile: Invalid copy source — defaulting to "open"')
+                copy(['copy', copyX, copyY, pasteStartX+(copyWidth*x),
+                        pasteStartY+(copyHeight*y), copyWidth, copyHeight],
+                        open_image, base_image)
+
+###########################################################################
 #### TRANSFORMATION COMMANDS ##############################################
 ###########################################################################
 
-# DOCUMENTATION: resize,256<newWidth>,256<newHeight> 
+# DOCUMENTATION: resize,256<newWidth>,256[newHeight]
 # Resize the new image's canvas. Does not perform any scaling. 
-# Anchor top left.
+# Anchor top left. If no height given, create a square canvas.
 def resize(i, base_image):
-    min_args = 3
-    if len(i) < min_args:
+    min_args = 1
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
 
     newWidth = i[1]
+    if len(i) == 2:
+        i += [newWidth]
     newHeight = i[2]
 
     oldWidth, oldHeight = base_image.size
     new_image = PIL.Image.new('RGBA', (newWidth,newHeight))
     new_image.paste(base_image,
                     (0,0,oldWidth,oldHeight))
-    base_image = new_image
+    # Return the new image because trying to set base_image here will just
+    # create a new image. Python is weird.
+    return new_image
 
 # DOCUMENTATION: rotate,90<degreesClockwise: multiple of 90>,0<x>,0<y>,
 #   16[size] 
 # Rotate the area in place on the new image. Unlike copy commands, 
 # only one size argument is used, as the rotated area must be square.
 def rotate(i, base_image):
-    min_args = 4
-    if len(i) < min_args:
+    min_args = 3
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
@@ -393,22 +481,25 @@ Rotating by a number not divisible by 90 may have unintended effects.')
         PIL.Image.Resampling.NEAREST, expand=0)
     base_image.paste(region, (x, y, x+size, y+size))
 
-# DOCUMENTATION: flip,x<direction: x or y>,0<x>,0<y>,16[width],16[height]
+# DOCUMENTATION: flip,x<direction: x or y>,0[x],0[y],16[width],16[height]
 # Flip the area in place on the new image. Unlike rotation, width and height
 # can be different here.
 def flip(i, base_image):
-    min_args = 4
-    if len(i) < min_args:
+    min_args = 3
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
 
-    degreesClockwise = i[1]
+    # If no x or y specified, apply to whole image
+    if len(i) <= 3:
+        i = [i[0], i[1], 0, 0, base_image.size[0], base_image.size[1]]
+    direction = i[1]
     x = i[2]
     y = i[3]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 4:
         i += [16, 16]
@@ -419,9 +510,9 @@ def flip(i, base_image):
 
     region = base_image.crop((x, y, x+width, y+height))
     # PIL has different commands for horizontal vs. vertical flip
-    if i[1] == 'x':
+    if direction == 'x':
         region = PIL.ImageOps.mirror(region)
-    elif i[1] == 'y':
+    elif direction == 'y':
         region = PIL.ImageOps.flip(region)
     # Otherwise, if direction is invalid, do nothing (the goal is to make 
     # it so the user CAN'T crash the program by mistake)
@@ -435,11 +526,7 @@ def flip(i, base_image):
 # Converts the area to grayscale (AKA black-and-white). For the command that
 # literally makes the area only black and white (1-bit), use "threshold".
 def grayscale(i, base_image):
-    min_args = 1
-    if len(i) < min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
-        return
+    # No minimum number of arguments
 
     # For filters, if no x or y specified, apply filter to whole image
     if len(i) <= 2:
@@ -448,7 +535,7 @@ def grayscale(i, base_image):
     y = i[2]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 3:
         i += [16, 16]
@@ -463,11 +550,7 @@ def grayscale(i, base_image):
 # DOCUMENTATION: invert,0[x],0[y],16[width],16[height] 
 # Inverts the area. For example, black becomes white, and red becomes cyan.
 def invert(i, base_image):
-    min_args = 1
-    if len(i) < min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
-        return
+    # No minimum number of arguments
 
     # For filters, if no x or y specified, apply filter to whole image
     if len(i) <= 2:
@@ -476,7 +559,7 @@ def invert(i, base_image):
     y = i[2]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 3:
         i += [16, 16]
@@ -498,8 +581,8 @@ def invert(i, base_image):
 # Adjusts the R/G/B levels. You can use all three adjust arguments at the 
 # same time to adjust brightness.
 def colorfilter(i, base_image):
-    min_args = 4
-    if len(i) < min_args:
+    min_args = 3
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
@@ -515,7 +598,7 @@ def colorfilter(i, base_image):
     y = i[5]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 6:
         i += [16, 16]
@@ -538,8 +621,8 @@ def colorfilter(i, base_image):
 # Adjusts the opacity (alpha) levels. 
 # Negative = more transparent, positive = more opaque.
 def opacity(i, base_image):
-    min_args = 2
-    if len(i) < min_args:
+    min_args = 1
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
@@ -553,7 +636,7 @@ def opacity(i, base_image):
     y = i[3]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 4:
         i += [16, 16]
@@ -572,68 +655,13 @@ def opacity(i, base_image):
     
 # Convert RGBA to HSLA for use in filters
 def rgba_to_hsla(color):
-    r = color[0]
-    g = color[1]
-    b = color[2]
-    a = color[3]
-
-    # I'm copying this from Wikipedia and they use extra variables here
-    max_color = max(r,g,b)
-    min_color = min(r,g,b)
-    c = max_color - min_color
-
-    l = (0.5 * (max_color + min_color))/2.55
-
-    s = 0
-    if (l != 0 and l != 1):
-        s = ((max_color - l) / (min(l, 1-l)))
-        # I really don't know why my calculations are ending up wrong
-        # but here's a duct-tape solution:
-        s = -(s + 1.5815065763252287) * (100/2.6021668930625266)
-
-    h = 0
-    if c == 0:
-        pass # hue stays at 0
-    elif max_color == r:
-        h = 60 * (0 + (g-b)/c)
-    elif max_color == g:
-        h = 60 * (2 + (b-r)/c)
-    elif max_color == b:
-        h = 60 * (4 + (r-g)/c)
-
-    return [round(h, 1), round(s, 1), round(l, 1), a]
+    raw = colorsys.rgb_to_hls(color[0]/255, color[1]/255, color[2]/255)
+    return [raw[0]*360, raw[2]*100, raw[1]*100, color[3]]
 
 # Convert HSLA to RGBA for use in filters
 def hsla_to_rgba(color):
-    h = color[0]
-    s = color[1]/100
-    l = color[2]/100
-    a = color[3]
-
-    # Also from Wikipedia
-    c = (1 - abs(2*l - 1)) * s
-    h_ = h/60
-    x = c * (1 - abs(h_ % 2 - 1))
-
-    # Convert from [0.0, 1.0] scale to [0, 255] 
-    c = int(c * 255)
-    x = int(x * 255)
-
-    if s == 0: # special case for grayscale
-        gray = int(l*255)
-        return [gray,gray,gray,a]
-    if 0 <= h_ < 1:
-        return [int(c),int(x),0,a]
-    if 1 <= h_ < 2:
-        return [int(x),int(c),0,a]
-    if 2 <= h_ < 3:
-        return [0,int(c),int(x),a]
-    if 3 <= h_ < 4:
-        return [0,int(x),int(c),a]
-    if 4 <= h_ < 5:
-        return [int(x),0,int(c),a]
-    if 5 <= h_ < 6:
-        return [int(c),0,int(x),a]
+    raw = colorsys.hls_to_rgb(color[0]/360, color[2]/100, color[1]/100)
+    return [int(raw[0]*255), int(raw[1]*255), int(raw[2]*255), color[3]]
 
 # Normalize HSLA values in place.
 def format_hsla(color):
@@ -646,14 +674,15 @@ def format_hsla(color):
     # Lightness must be from 0 to 100
     color[2] = clip(color[2], 0, 100)
 
-    # And as always, we don't touch alpha
+    # And as always, we don’t touch alpha. In fact, the user doesn’t even need
+    # to pass in an alpha — the function will still run.
     return color
 
 # DOCUMENTATION: hue,0<adjust: -180 to +180>,0[x],0[y],16[width],16[height] 
 # Adjusts the hue.
 def hue(i, base_image):
-    min_args = 2
-    if len(i) < min_args:
+    min_args = 1
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
@@ -667,7 +696,7 @@ def hue(i, base_image):
     y = i[3]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 4:
         i += [16, 16]
@@ -692,8 +721,8 @@ def hue(i, base_image):
 # Adjusts the saturation (in HSLA color space). Positive adjust means 
 # more colorful. Negative adjust means less colorful. -100 means grayscale.
 def saturation(i, base_image):
-    min_args = 2
-    if len(i) < min_args:
+    min_args = 1
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
@@ -707,7 +736,7 @@ def saturation(i, base_image):
     y = i[3]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 4:
         i += [16, 16]
@@ -733,8 +762,8 @@ def saturation(i, base_image):
 # lighter. Negative adjust means darker. -100 means all black, 
 # +100 means all white.
 def lightness(i, base_image):
-    min_args = 2
-    if len(i) < min_args:
+    min_args = 1
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
@@ -748,7 +777,7 @@ def lightness(i, base_image):
     y = i[3]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 4:
         i += [16, 16]
@@ -772,8 +801,8 @@ def lightness(i, base_image):
 #   255<alpha: 0 to 255>,0[x],0[y],16[width],16[height] 
 # Fills the area with the selected color.
 def fill(i, base_image):
-    min_args = 5
-    if len(i) < min_args:
+    min_args = 4
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
@@ -791,7 +820,7 @@ def fill(i, base_image):
     y = i[6]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 4:
         i += [16, 16]
@@ -810,10 +839,12 @@ def clip(n, minimum, maximum):
         n = maximum
     return n
     
-
+# DOCUMENTATION: contrast,0<adjust: -128 to 128>,0[x],0[y],16[width],16[height]
+# Adjusts the contrast. -128 will make all non-transparent pixels medium gray; 
+# +127 will make all RGB values either 0 or 255 (8 colors).
 def contrast(i, base_image):
-    min_args = 2
-    if len(i) < min_args:
+    min_args = 1
+    if len(i) <= min_args:
         log_warning('The command '+i[0]+' requires at least '+\
                 min_args+' arguments.')
         return
@@ -827,7 +858,7 @@ def contrast(i, base_image):
     y = i[3]
 
     # If width/height specified, use those values.
-    # If neither is specified, use 16x16.
+    # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 4:
         i += [16, 16]
@@ -864,10 +895,103 @@ def contrast(i, base_image):
             region.putpixel((loop_x, loop_y), 
                     (new_r, new_g, new_b, rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
+    
+# DOCUMENTATION: 180<hue: 0 to 360>,50<saturation: 0 to 100>,
+#   50<lightness: 0 to 100>,0[x],0[y],16[width],16[height]
+# Colorizes specified area in place. Converts area to B&W, treats L=127.5 as 
+# the specified HSL color, and interpolates the rest from there. Ex.: if the 
+# base color was coral [hsl(0,100,75)], it'll turn black->gray50->white to 
+# red->coral->white.
+def colorize(i, base_image):
+    min_args = 3
+    if len(i) <= min_args:
+        log_warning('The command '+i[0]+' requires at least '+\
+                min_args+' arguments.')
+        return
 
+    formatted_hsl = format_hsla([i[1], i[2], i[3]])
+    h = formatted_hsl[0]
+    s = formatted_hsl[1]
+    l = formatted_hsl[2]
+
+    # For filters, if no x or y specified, apply filter to whole image
+    if len(i) <= 5:
+        i = [i[0], i[1], i[2], i[3], 0, 0, 
+                base_image.size[0], base_image.size[1]]
+    x = i[4]
+    y = i[5]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 16×16.
+    # If only width is specified, use that value for height too.
+    if len(i) == 6:
+        i += [16, 16]
+    width = i[6]
+    if len(i) == 7:
+        i += [width]
+    height = i[7]
+        
+    # First, convert the region to grayscale. 
+    # We already have a function for this, so let’s use it.
+    grayscale(['grayscale', x, y, width, height], base_image)
+
+    # Default min/max lightness values
+    min_l = 0
+    max_l = 100
+    if l > 50:
+        min_l = 100 - (2 * (100 - l))
+        max_l = 100
+    elif l < 50:
+        min_l = 0
+        max_l = 2*l
+
+    region = base_image.crop((x, y, x+width, y+height))
+    for loop_x in range(width):
+        for loop_y in range(height):
+            hsla = rgba_to_hsla(region.getpixel((loop_x, loop_y)))
+            # Set hue and saturation to the values given in the user’s command
+            # (leave alpha alone)
+            hsla[0] = h
+            hsla[1] = s
+
+            # Adjust lightness based on user-provided lightness
+            hsla[2] = ((100-hsla[2])/100)*min_l + ((hsla[2])/100)*max_l
+
+            format_hsla(hsla)
+            rgba = hsla_to_rgba(hsla)
+            region.putpixel((loop_x, loop_y), 
+                    (rgba[0], rgba[1], rgba[2], rgba[3]))
+    base_image.paste(region, (x, y, x+width, y+height))
+
+# DOCUMENTATION: sepia,0[x],0[y],16[width],16[height] 
+# Simplified colorize syntax for creating sepia-toned images. 
+# Based on hex code #a08060 or HSL(30,25,50)
+def sepia(i, base_image):
+    # No minimum number of arguments
+
+    # For filters, if no x or y specified, apply filter to whole image
+    if len(i) <= 2:
+        i = [i[0], 0, 0, base_image.size[0], base_image.size[1]]
+    x = i[1]
+    y = i[2]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 16×16.
+    # If only width is specified, use that value for height too.
+    if len(i) == 3:
+        i += [16, 16]
+    width = i[3]
+    if len(i) == 4:
+        i += [width]
+    height = i[4]
+
+    colorize(['colorize', 30, 25, 50, x, y, width, height], base_image)
+
+# Displays a warning shown after conversion finishes. Only other i-argument is
+# the text of the warning.
 def warning(i):
     min_args = 1
-    if len(i) < min_args:
+    if len(i) <= min_args:
         log_warning('Unknown warning from script')
         return
 
@@ -878,9 +1002,6 @@ def warning(i):
 ###########################################################################
 
 def threshold(i, base_image):
-    log_warning(i[0]+' is coming soon...')
-    
-def colorize(i, base_image):
     log_warning(i[0]+' is coming soon...')
 
 def scale(i, base_image):
@@ -938,8 +1059,8 @@ def status_fail():
 
     curr_step = 0
     for i in range(1, len(step_status)):
-        if step_status[i] == 'gray':
-            curr_step = i - 1
+        if step_status[i] == 'blue':
+            curr_step = i
             break
 
     step_status[curr_step] = 'red'
@@ -953,6 +1074,7 @@ def dialog(heading_text, msg_text, bottom_text, icon_name,
         btn1_text, btn1_event, btn2_text=None, btn2_event=None):
     cls()
 
+    icon = None
     if icon_name in icons:
         icon = Label(main_frame, image=icons[icon_name])
         icon.place(x=470, y=10, anchor=NE)
@@ -963,25 +1085,48 @@ def dialog(heading_text, msg_text, bottom_text, icon_name,
         heading.place(x=0, y=0)
 
     msg = []
+    next_y = 0
+    if heading_text:
+        # If there’s a heading, leave space so msg_text doesn't cover it up
+        next_y = 36
+
     if isinstance(msg_text, str): 
         # Convert to list if message is only one line / a string
         msg_text = [msg_text]
+
     for index, item in enumerate(msg_text):
-        if item.startswith('<b>'):
-            msg.append(Label(main_frame, text=item[3:], justify='left', 
-                wraplength=470, font=f_bold))
-        else:
-            msg.append(Label(main_frame, text=item, justify='left', 
+        msg.append(Label(main_frame, text=item, justify='left', 
                 wraplength=470))
 
-        if heading_text:
-            msg[index].place(x=0, y=36+index*24)
-        else: # Empty heading = place text at top
-            msg[index].place(x=0, y=index*24)
+        # Apply bold styling as needed
+        if item.startswith('<b>'):
+            msg[-1].config(font=f_bold, text=item[3:]) # strip <b> tag
+
+        # Shorten wrapping if dialog box has icon, so text doesn’t cover it
+        if icon and next_y < 100:
+            msg[-1].config(wraplength=380)
+
+        msg[index].place(x=0, y=next_y)
+        next_y += msg[-1].winfo_reqheight()
 
     if bottom_text:
-        bottom = Label(main_frame, text=bottom_text, justify='left')
-        bottom.place(x=0, y=280, anchor=SW)
+        bottom = []
+        bottom_next_y = 280
+
+        if isinstance(bottom_text, str): 
+            # Convert to list if bottom text is only one line / a string
+            bottom_text = [bottom_text]
+
+        for index, item in enumerate(reversed(bottom_text)):
+            bottom.append(Label(main_frame, text=item, justify='left', 
+                    wraplength=470))
+
+            # Apply bold styling as needed
+            if item.startswith('<b>'):
+                bottom[-1].config(font=f_bold, text=item[3:]) # strip <b> tag
+
+            bottom[index].place(x=0, y=bottom_next_y, anchor=SW)
+            bottom_next_y -= bottom[-1].winfo_reqheight()
 
     btn1 = Button(main_frame, text=btn1_text)
     if btn2_text:
@@ -1036,10 +1181,10 @@ def update_subhead(subhead):
     rounded_pct = round(current_num/(stop_num-start_num)*100, 1)
 
     subhead = Label(main_frame, 
-        text='Now converting: image '+str(current_num)+\
+        text='Now converting: file '+str(current_num)+\
             ' ('+str(rounded_pct)+'%)', 
         justify='left')
-    subhead.place(x=0, y=24)
+    subhead.place(x=0, y=36)
 
     return subhead
 
@@ -1058,6 +1203,8 @@ def main():
     footer.place(x=80, y=315, anchor=S)
     for index, item in enumerate(steps):
         item.place(x=0, y=24+24*index)
+    back_btn.place(x=80, y=295, anchor=S)
+    back_btn.bind('<Button-1>', lambda _: main())
     # Note that the position of anything with main_frame as parent is 
     # RELATIVE (i.e. 160 will be added to x)
 
@@ -1066,11 +1213,13 @@ def main():
     status_set(['blue', 'gray', 'gray', 'gray', 'gray', 'gray'])
 
     menu_btns_p1[0].bind('<Button-1>', 
-            lambda _: open_script('scripts/DxSkin.txt'))
+            lambda _: script_variant('scripts/skin_L_to_Dx32.txt',
+                                    'scripts/skin_L32_to_Dx32.txt'))
     menu_btns_p1[1].bind('<Button-1>', 
-            lambda _: open_script('scripts/RemakeToDxSkin.txt'))
+            lambda _: script_variant('scripts/skin_R_to_Dx32.txt',
+                                    'scripts/skin_R32_to_Dx32.txt'))
     menu_btns_p1[2].bind('<Button-1>', 
-            lambda _: open_script('scripts/DxObj.txt'))
+            lambda _: open_script('scripts/obj_L_to_Dx.txt'))
 
     menu_btns_p1[4].bind('<Button-1>', 
             lambda _: menu_p2())
@@ -1079,18 +1228,16 @@ def main():
             lambda _: exit_app())
 
     menu_btns_p2[0].bind('<Button-1>', 
-            lambda _: open_script('scripts/swim_taunt.txt'))
+            lambda _: open_script('scripts/skin_R_to_L.txt'))
     menu_btns_p2[1].bind('<Button-1>', 
-            lambda _: open_script('scripts/just_taunt.txt'))
-    menu_btns_p2[2].bind('<Button-1>', 
             lambda _: open_script('scripts/map_new.txt'))
 
-    menu_btns_p2[4].bind('<Button-1>', 
+    menu_btns_p2[3].bind('<Button-1>', 
             lambda _: open_script(''))
-    menu_btns_p2[5].bind('<Button-1>', 
+    menu_btns_p2[4].bind('<Button-1>', 
             lambda _: the_W())
 
-    menu_btns_p2[7].bind('<Button-1>', 
+    menu_btns_p2[6].bind('<Button-1>', 
             lambda _: menu_p1())
 
     menu_p1()
@@ -1098,6 +1245,23 @@ def main():
     window.update()
 
     window.mainloop()
+
+# Two scripts have variants based on whether the Fire sprites are 
+# 16×32 or 32×32. This allows the user to select which one they want
+# without cluttering the main menu with buttons and explanatory text.
+def script_variant(path16, path32):
+    dialog('What size are your skin’s Fire sprites?', 
+        '''If the 3rd row of sprites has noticeable empty spaces like this:
+\u2003█\u2003█\u2003█\u2003█\u2003██\u2003██\u2003█ 
+...it’s probably 16×32.
+
+If the 3rd row looks more like this:
+████████████████ 
+...it’s probably 32×32.
+
+If you’re not sure, try 16×32 first.''', None, 'question',
+        '16×32', lambda: open_script(path16),
+        '32×32', lambda: open_script(path32))
 
 def open_script(script_file):
     global data, version, version_str
@@ -1144,13 +1308,6 @@ Please try again.''',
             '', 'error', 'Back', main)
         return
 
-    if not raw_content.startswith('mrconverter'):
-        dialog('Warning', 
-            ['\
-The file you selected may not be designed for this converter.',
-'Proceed with caution.'], 
-            '', 'warning', 'Okay', main)
-
     lines = raw_content.split('\n')
     data = []
     for l in range(len(lines)):
@@ -1178,18 +1335,15 @@ The file you selected may not be designed for this converter.',
                 pass
 
     version = app_version.copy()
-    version_str = app_version_str()
+    version_str = '(UNKNOWN; defaulting to %s)' % app_version_str
     for i in data:
         if i[0] == 'version':
             # Make sure user entered enough numbers
-            if len(i) < 3:
-                dialog('Warning', 
-['Invalid version in script. Version must take the form “x.y.z”.', 
-'The converter will default to the current version.'],
-                    '', 'warning', 'Okay', main)
-            else:
+            if len(i) >= 3:
                 version = i[1:4]
                 version_str = '.'.join([str(x) for x in version])
+            # Otherwise, assume it’s for the current converter version
+            # (but display the version as unknown)
             break
 
     name = 'Unknown Script'
@@ -1210,12 +1364,15 @@ The file you selected may not be designed for this converter.',
             description = ','.join(i[1:])
             break
 
-    dialog('Loaded script: '+name, ['File path: '+script_file, 
-            'By: '+author, 'Description: '+description], 
-            '''Do you want to run this script?
-
-If you click “Yes”, this program will check for problems with the script.
-If no problems are found, the script will run right away.''', 'question',
+    dialog('Loaded script: %s'%name, 
+            [
+                'File path: %s'%script_file, 'By: %s'%author, 
+                'Made for converter version %s'%version_str,
+                'Description: %s'%description,
+            ], 
+            ['<b>Do you want to run this script?',
+'''If you click “Yes”, this program will check for problems with the script.
+If no problems are found, the script will run right away.'''], 'question',
             'Yes', compatibility_check, 'No', main)
 
 def compatibility_check():
@@ -1227,39 +1384,39 @@ def compatibility_check():
     status_complete()
 
     # Load header data
-    open_path = ''
+    open_path = '.INPUT' # New in v3.1: Default to user input if no path given
     for i in data:
-        if i[0] == 'open':
+        if i[0] == 'open' and len(i) > 0:
             open_path = i[1]
             break
 
     alt_path = ''
     for i in data:
-        if i[0] == 'alt':
+        if i[0] == 'alt' and len(i) > 0:
             alt_path = i[1]
             break
             
     template_path = ''
     for i in data:
-        if i[0] == 'template':
+        if i[0] == 'template' and len(i) > 0:
             template_path = i[1]
             break
             
-    save_path = ''
+    save_path = '.INPUT' # New in v3.1: Default to user input if no path given
     for i in data:
-        if i[0] == 'save':
+        if i[0] == 'save' and len(i) > 0:
             save_path = i[1]
             break
 
     base_blank = False
     for i in data:
-        if i[0] == 'base' and i[1] == 'blank':
+        if i[0] == 'base' and len(i) > 0 and i[1] == 'blank':
             base_blank = True
             break
 
     start_num = None
     for i in data:
-        if i[0] == 'start':
+        if i[0] == 'start' and len(i) > 0:
             # start number has to be an integer
             if type(i[1]) != int:
                 log_warning('Start number is not an integer.')
@@ -1269,7 +1426,7 @@ def compatibility_check():
 
     stop_num = None
     for i in data:
-        if i[0] == 'stop':
+        if i[0] == 'stop' and len(i) > 0:
             # stop number has to be an integer
             if type(i[1]) != int:
                 log_warning('Stop number is not an integer.')
@@ -1363,15 +1520,6 @@ def get_paths():
     #### STEP 4: OPEN & SAVE PATHS ####
     cls()
     status_complete()
-
-    # All scripts need readable open and save paths, 
-    # or they won’t run at all
-    if not open_path or not save_path:
-        status_fail()
-        dialog('Error', 
-['The file you opened doesn’t specify a location to open and/or save images.',
-'Are you sure it’s a conversion script?'], None, 'error', 'Back', main)
-        return
 
     # Determine whether script is converting 1 file (single-file mode)
     # or multiple files (multi-file mode)
@@ -1494,9 +1642,9 @@ def run_script():
     cls()
     status_complete()
 
-    headingText = Label(main_frame, text='Converting image...', 
+    heading_text = Label(main_frame, text='Converting image...', 
         font=f_heading)
-    headingText.place(x=0, y=0)
+    heading_text.place(x=0, y=0)
 
     # Update screen differently based on how many files we're converting
     heading = Label()
@@ -1526,8 +1674,7 @@ def run_script():
             # for there to be just 1 template
             template_image = PIL.Image.open(template_path).convert('RGBA')
         else:
-            # create a dummy image to use as “template”
-            template_image = PIL.Image.new('RGBA', (1, 1))
+            template_image = None
     except FileNotFoundError:
         log_warning('Couldn’t find a template file with the path '+\
             template_path+' — skipping')
@@ -1545,8 +1692,7 @@ def run_script():
         if alt_path != '':
             alt_image = PIL.Image.open(alt_path).convert('RGBA')
         else:
-            # create a dummy image to use as “alt”
-            alt_image = PIL.Image.new('RGBA', (1, 1))
+            alt_image = None
     except FileNotFoundError:
         log_warning('Couldn’t find an alternate file with the path '+\
             alt_path+' — skipping')
@@ -1563,6 +1709,7 @@ def run_script():
     for i in range(start_num, stop_num):
         current_num = i
 
+        # Update user on conversion progress.
         # Update only once per second so we don't slow things down too much
         # from updating the UI
         time_since_refresh += (time() - time_last_refresh)
@@ -1621,7 +1768,7 @@ def replit(conv_time):
     cls()
     status_complete()
 
-    # Test if we're running on replit
+    # Check if we're running on replit
     if os.path.isdir("/home/runner") == True:
         # User is using repl.it, so provide extra instructions on how to
         # download images
@@ -1633,7 +1780,7 @@ def replit(conv_time):
             '3. Click on the ⋮ (3 dots) next to the file you just converted',
             '4. Select “Download” from the menu that pops up',
             '<b>If converting multiple files...',
-            '...the fastest option is probably to download the whole project.',
+            '...the quickest option is probably to download the whole project.',
             'This will download a lot of unnecessary files but it’s faster',
             'than downloading each image one at a time.'
         ]
@@ -1668,14 +1815,14 @@ def summary(conv_time, warning_page=0):
         if num_warn_pages > 1:
             # Display dialog with extra button to go to next warning page
             dialog('Conversion complete!', main_text,
-                bottom_text, 'done', 'More warnings', 
+                bottom_text, 'warning', 'More warnings', 
                 lambda: summary(conv_time, warning_page+1), # next page
                 'Okay', main)
         else:
             # Display dialog with warnings but no extra button
             # if there's only 1 page worth of warnings
             dialog('Conversion complete!', main_text,
-                bottom_text, 'done', 'Okay', main)
+                bottom_text, 'warning', 'Okay', main)
     else:
         dialog('Conversion complete!', main_text,
             None, 'done', 'Okay', main)
@@ -1694,26 +1841,29 @@ def process(open_image, template_image=None, alt_image=None,
             elif i[0] == 'warning':
                 warning(i)
             
-            # Basic commands
+            # Basic copying commands
             elif i[0] == 'copy':
                 copy(i, open_image, base_image)
             elif i[0] == 'copyalt':
-                if alt_path == '':
+                if not alt_image:
                     log_warning('\
-    Skipped all “copyalt” commands because no “alt” image was specified.')
+    Skipped all “copyalt” commands since no “alt” image was specified.')
                 else:
                     copyalt(i, alt_image, base_image)
             elif i[0] == 'default':
-                if template_path == '':
+                if not template_image:
                     log_warning('\
-    Skipped all “default” commands because no “template” image was specified.')
+    Skipped all “default” commands since no “template” image was specified.')
                 else:
                     default(i, template_image, base_image)
             elif i[0] == 'clear' or i[0] == 'delete':
                 clear(i, base_image)
+            # Advanced copying commands
+            elif i[0] == 'tile':
+                tile(i, open_image, alt_image, base_image)
             # Transformation commands
             elif i[0] == 'resize':
-                resize(i, base_image)
+                base_image = resize(i, base_image)
             elif i[0] == 'rotate':
                 rotate(i, base_image)
             elif i[0] == 'flip':
@@ -1737,12 +1887,14 @@ def process(open_image, template_image=None, alt_image=None,
                 fill(i, base_image)
             elif i[0] == 'contrast':
                 contrast(i, base_image)
+            elif i[0] == 'colorize':
+                colorize(i, base_image)
+            elif i[0] == 'sepia':
+                sepia(i, base_image)
 
             # COMING SOON
             elif i[0] == 'threshold':
                 threshold(i, base_image)
-            elif i[0] == 'colorize':
-                colorize(i, base_image)
             elif i[0] == 'scale':
                 scale(i, base_image)
             elif i[0] == 'select':
@@ -1762,13 +1914,14 @@ def process(open_image, template_image=None, alt_image=None,
 
 def crash(exctype=None, excvalue=None, tb=None):
     import tkinter.messagebox as messagebox
-    bomb = PhotoImage(file='assets/ui/bomb.png')
-    window.iconphoto(False, bomb)
-    messagebox.showerror(window, 
-        message='''An error has occurred:
-%s:
-%s''' % (exctype, excvalue))
-    exit_app()
+    try:
+        bomb = PhotoImage(file='assets/ui/bomb.png')
+        window.iconphoto(False, bomb)
+    finally:
+        messagebox.showerror(window, 
+            message='''An error has occurred:
+%s''' % (excvalue))
+        exit_app()
 
 def exit_app():
     window.destroy()
@@ -1781,7 +1934,7 @@ def exit_app():
 try:
     window.report_callback_exception = crash
     
-    # Test if we're running on replit
+    # Check if we're running on replit
     if os.path.isdir("/home/runner") == True:
         import tkinter.messagebox as messagebox
 
@@ -1801,7 +1954,7 @@ and hide your browser’s toolbar.''')
 
         # show online instructions
         messagebox.showinfo(window, 
-        message='''Before converting your first file, follow these steps:
+        message='''Before converting your first file:
 1. Create a Replit account. You can use an existing Google or Github account.
 2. Click “Fork Repl” and follow the instructions.
 3. In your newly-forked project, drag the images you want to convert \
@@ -1810,5 +1963,8 @@ into the list of files in the left sidebar.''')
     else:
         main()
 
-except Exception as e: # TODO: Uncaught exceptions
-    crash()
+except Exception as e:
+    ei = sys.exc_info()
+    crash(None, ei[1])
+
+# TODO: Add batch skin conversion without needing to know the scripting language

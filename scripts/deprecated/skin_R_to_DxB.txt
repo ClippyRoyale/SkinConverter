@@ -1,14 +1,11 @@
 mrconverter
-version,3,0,0
+version,3,0,2
 name,Full Remake to Deluxe skin converter
-description,Converts a Remake skin to Deluxe format. Effectively a combination of DxSkin and swim_taunt.
+description,(DEPRECATED) Converts a Remake skin to Deluxe BETA format. Effectively a combination of DxSkin and swim_taunt.
 author,clippy
 open,.INPUT
 save,.INPUT
 template,assets/deluxe/smb_mario.png
-
-start,0
-stop,1000
 
 # If your skin uses the full 32x32 tile for Fire sprites, 
 # some parts may be cropped out. Sorry, I can't do anything about that.

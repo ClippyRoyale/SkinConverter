@@ -1,15 +1,13 @@
-mrconverter 
-# The above should be the first line of any conversion script. Don't even type any spaces or comments before it, or the converter will complain.
-version,3,0,3 # The version of the Converter app that this script is made for.
+version,4,0,0 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
 author,clippy
 description,The documentation for the skin converter.
 
-open,smb_skin*.png # Main image to open and copy from. Use ".INPUT" as the path if you want the user to enter their own path. If you want to convert multiple images at once, enter a * in the place where you want the converter to insert a number; see "start"/"stop" below for more on this.
+open,smb_skin*.png # Main image to open and copy from. Skip this line entirely if you want the user to enter their own path. If you want to convert multiple images at once, enter a * in the place where you want the converter to insert a number; see "start"/"stop" below for more on this.
 
-save,smb_edit*.png # Filename to save to. (WARNING: Any existing file with this name will be overwritten!) Use ".INPUT" as the path if you want the user to enter their own path. If you want to convert multiple images at once, enter a * in the place where you want the converter to insert a number; see "start"/"stop" below for more on this.
+save,smb_edit*.png # Filename to save to. (WARNING: Any existing file with this name will be overwritten!) Skip this line entirely if you want the user to enter their own path. If you want to convert multiple images at once, enter a * in the place where you want the converter to insert a number; see "start"/"stop" below for more on this.
 
 template,smb_skin2580.png # Template image to copy/paste from in place. No user input offered here because this image is supposed to stay the same.
 
@@ -31,53 +29,71 @@ stop,42
 
 
 
-# BASIC COMMANDS
+# BASIC COPYING COMMANDS
+# For all commands in this section:
+# If you don’t give x or y, apply command to whole image: x=0, y=0, width and height are the same as the image's width and height.
+# If you give x and y but not width or height: width=16, height=16
+# If you give x, y, and width, but not height: height=width 
 
-copy,0<oldX>,0<oldY>,0<newX>,48<newY>,16[width],16[height] # Copy from old image to specified position in new image.
+copy,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy from old image to specified position in new image.
 
-copyalt,0<oldX>,0<oldY>,0<newX>,48<newY>,16[width],16[height] # Copy from alt image to specified position in new image.
+copyalt,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy from alt image to specified position in new image. WARNING: This command may be folded into “copy” in the future in a manner similar to how I implemented “tile”.
 
-default,0<x>,0<y>,16[width],16[height] # Copy from template image to same position in new image.
+default,0[x],0[y],16[width],16[height] # Copy from template image to same position in new image.
 
-clear,0<x>,0<y>,16[width],16[height] # Clear area from new image. Used to be called "delete" -- this still works for compatiblity reasons.
+clear,0[x],0[y],16[width],16[height] # Clear area from new image. Used to be called "delete" -- this still works for compatiblity reasons.
+
+
+
+# ADVANCED COPYING COMMANDS
+# These commands build on the basic commands but allow you to do some tasks with fewer commands.
+
+tile,0<copyX>,0<copyY>,16<copyWidth>,16<copyHeight>,0<pasteStartX>,0<pasteStartY>,16<pasteCountHoriz>,16<pasteCountVert>,open[copySource: open, template, or alt] # Create a tile pattern on the new image using a part of the old image. This command can be very useful but it’s not for the faint of heart.
 
 
 
 # TRANSFORMATION COMMANDS
 
-resize,256<newWidth>,256<newHeight> # Resize the new image's canvas. Does not perform any scaling. Anchor top left.
+resize,256<newWidth>,256[newHeight] # Resize the new image's canvas. Does not perform any scaling. Anchor top left. If no height given, create a square canvas.
 
 rotate,90<degreesClockwise: multiple of 90>,0<x>,0<y>,16[size] # Rotate the area in place on the new image. Unlike copy commands, only one size argument is used, as the rotated area must be square.
 
-flip,x<direction: x or y>,0<x>,0<y>,16[width],16[height]
+flip,x<direction: x or y>,0[x],0[y],16[width],16[height]
 # Flip the area in place on the new image. Unlike rotation, width and height can be different here.
+# If you don’t give x or y, apply command to whole image: x=0, y=0, width and height are the same as the image's width and height.
+# If you give x and y but not width or height: width=16, height=16
+# If you give x, y, and width, but not height: height=width 
 
 
 
 # FILTER COMMANDS
 # All filters are applied in place to the specified area on the new image.
-# For all filters:
-# If command doesn't have x or y, apply filter to whole image: x=0, y=0, width and height are the same as the image's width and height.
-# If command has x and y but doesn't have width or height: width=16, height=16
-# If command has x, y, and width, but not height: height=width 
+# For all commands in this section:
+# If you don’t give x or y, apply command to whole image: x=0, y=0, width and height are the same as the image's width and height.
+# If you give x and y but not width or height: width=16, height=16
+# If you give x, y, and width, but not height: height=width 
 
-grayscale,0<x>,0<y>,16[width],16[height] # Converts the area to grayscale (AKA black-and-white). For the command that literally makes the area only black and white (1-bit), use "threshold".
+grayscale,0[x],0[y],16[width],16[height] # Converts the area to grayscale (AKA black-and-white). For the command that literally makes the area only black and white (1-bit), use "threshold".
 
-invert,0<x>,0<y>,16[width],16[height] # Inverts the area. For example, black becomes white, and red becomes cyan.
+invert,0[x],0[y],16[width],16[height] # Inverts the area. For example, black becomes white, and red becomes cyan.
 
-colorfilter,0<redAdjust: -255 to +255>,0<greenAdjust>,0<blueAdjust>,0<x>,0<y>,16[width],16[height] # Adjusts the R/G/B levels. You can use all three adjust arguments at the same time to adjust brightness.
+colorfilter,0<redAdjust: -255 to +255>,0<greenAdjust>,0<blueAdjust>,0[x],0[y],16[width],16[height] # Adjusts the R/G/B levels. You can use all three adjust arguments at the same time to adjust brightness.
 
-opacity,0<adjust: -255 to +255>,0<x>,0<y>,16[width],16[height] # Adjusts the opacity (alpha) levels. Negative = more transparent, positive = more opaque.
+opacity,0<adjust: -255 to +255>,0[x],0[y],16[width],16[height] # Adjusts the opacity (alpha) levels. Negative = more transparent, positive = more opaque.
 
-hue,0<adjust: -180 to +180>,16[width],16[height] # Adjusts the hue.
+hue,0<adjust: -180 to +180>,0[x],0[y],16[width],16[height] # Adjusts the hue.
 
-saturation,0<adjust: -100 to +100>,16[width],16[height] # Adjusts the saturation (in HSLA color space). Positive adjust means more colorful. Negative adjust means less colorful. -100 means grayscale.
+saturation,0<adjust: -100 to +100>,0[x],0[y],16[width],16[height] # Adjusts the saturation (in HSLA color space). Positive adjust means more colorful. Negative adjust means less colorful. -100 means grayscale.
 
-lightness,0<adjust: -100 to +100>,16[width],16[height] # Adjusts the lightness (in HSLA color space). Positive adjust means lighter. Negative adjust means darker. -100 means all black, +100 means all white.
+lightness,0<adjust: -100 to +100>,0[x],0[y],16[width],16[height] # Adjusts the lightness (in HSLA color space). Positive adjust means lighter. Negative adjust means darker. -100 means all black, +100 means all white.
 
-fill,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255<alpha: 0 to 255>,0<x>,0<y>,16[width],16[height] # Fills the area with the selected color.
+fill,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255<alpha: 0 to 255>,0[x],0[y],16[width],16[height] # Fills the area with the selected color.
 
-contrast,0<adjust: -128 to 127>,0<x>,0<y>,16[width],16[height] # Adjusts the contrast. -128 will make all non-transparent pixels medium gray; +127 will make all RGB values either 0 or 255 (8 colors).
+contrast,0<adjust: -128 to 128>,0[x],0[y],16[width],16[height] # Adjusts the contrast. -128 will make all non-transparent pixels medium gray; +127 will make all RGB values either 0 or 255 (8 colors).
+
+colorize,180<hue: 0 to 360>,50<saturation: 0 to 100>,50<lightness: 0 to 100>,0[x],0[y],16[width],16[height] # Colorizes specified area in place. Converts area to B&W, treats L=127.5 as the specified HSL color, and interpolates the rest from there. Ex.: if the base color was coral [hsl(0,100,75)], it'll turn black->gray50->white to red->coral->white.
+
+sepia,0[x],0[y],16[width],16[height] # Simplified colorize syntax for creating sepia-toned images. Based on hex code #a08060 or HSL(30,25,50)
 
 
 
@@ -92,11 +108,9 @@ warning,Your warning here (will be displayed onscreen after conversion)
 
 # COMING SOON:
 
-scale,256<newWidth>,256<newHeight> # Scale the image to the new width and height, using nearest-neighbor scaling (add other algorithms? add percentages?)
+scale,256<newWidth>,256<newHeight> # Scale the image to the new width and height, using nearest-neighbor scaling (add other algorithms? add percentages? scale specific areas as part of copying?)
 
-colorize,180<hue: 0 to 360>,50<saturation: 0 to 100>,50<lightness: 0 to 100>,0<x>,0<y>,16[width],16[height] # Colorizes the specified area in place.
-
-threshold,128<lightestBlack: 1 to 255>,0<x>,0<y>,16[width],16[height]
+threshold,128<lightestBlack: 1 to 255>,0[x],0[y],16[width],16[height]
 # Converts the image to 1-bit black & white based on a numeric lightness threshold. Any number LESS THAN or EQUAL to lightestBlack is black, any number GREATER is white. TODO: How to determine threshold value? Use lightness? Luma?
 
 # If statements (ifempty?) and subroutines
