@@ -1,12 +1,7 @@
-mrconverter
-version,2,2,1
+version,4,1,0
 name,SMB Map 4.1.9 to New
-description,Converts a classic Legacy map mod to a Legacy map_new mod.
 author,clippy
-open,.INPUT
-save,.INPUT
-##open,assets/legacy/smb_map.png
-##save,assets/my_conversions/smb_map_new.png
+description,Converts a classic Legacy map mod to a Legacy map_new mod.
 template,assets/legacy/smb_map_new.png
 base,blank
 

@@ -1,12 +1,7 @@
-mrconverter
-version,2,2,1
+version,4,1,0
 name,Swim & Taunt
-description,Converts a Remake skin to Legacy format by adding placeholder swim and taunt sprites.
 author,clippy
-open,.INPUT
-save,.INPUT
-##open,assets/remake/smb_skin0.png
-##save,assets/my_conversions/smb_skin0_legacy.png
+description,Converts a Remake skin to Legacy format by adding placeholder swim and taunt sprites.
 
 # resize to standard canvas size
 resize,256,256

@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 4.0
+Version 4.1
 
 Copyright © 2022–2023 clippy#4722
 
@@ -112,6 +112,9 @@ Version 4.0 (Feb. 2, 2023):
   + colorize and sepia filters
   + tile command for creating repeating backgrounds
   + Back to Menu button
+  + Improved dialog box code 
+      * Text is less likely to overlap with icons or other text
+      * Bottom text can now have paragraph spacing
   * Renamed most conversion scripts for consistency
   * Fixed the RGBA->HSLA converter which has been broken for who knows how long
   * “mrconverter”, “open”, and “save” lines are now optional
@@ -121,19 +124,30 @@ Version 4.0 (Feb. 2, 2023):
     source image onto the canvas. “clear” on its own clears the whole canvas. 
     “flip” on its own can be applied to the whole canvas, but not “rotate”
     because it expects a square area.
-  * Improved dialog box code 
-      * Text is less likely to overlap with icons or other text
-      * Bottom text can now have paragraph spacing
   - Deprecated Legacy Taunt script and Deluxe Beta scripts because they’re no
     longer useful
       * They’re still available in the standard installation, but I took away
         the buttons on the main menu so you’ll have to run them manually
+
+Version 4.1 (Feb. 19, 2023):
+  + "if" and "else" statements
+      * Any code after an if command will be inside a block, until the converter
+        encounters an "endif" command. Blocks can be nested. 
+      * No "else if" yet, sorry
+  + "empty" conditional command, to be used inside if to check if an area on
+    the old image is empty/transparent
+  + "duplicate" command, to duplicate an area on the converted image
+  * Updated Obj L->Dx script to also convert Remake obj mods
+      * The script uses if statements to automatically detect whether the 
+        original mod is for Remake or Legacy
+  * Updated all Skin->Dx32 conversion scripts to reflect latest templates
+  * Rewrote parser to account for conditional commands
+  - Removed Herobrine
 '''
 
 import os, sys, colorsys
 import PIL.Image, PIL.ImageOps, PIL.ImageTk
 from time import time
-
 from tkinter import *
 import tkinter.font as tkfont
 import tkinter.filedialog as filedialog
@@ -142,7 +156,7 @@ import tkinter.filedialog as filedialog
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [4,0,0]
+app_version = [4,1,0]
 
 def app_version_str():
     return str(app_version[0])+'.'+str(app_version[1])+'.'+\
@@ -217,7 +231,7 @@ menu_btns_p1 = [
             font=f_large),
     Button(main_frame, text='Convert a Remake skin to Deluxe',
             font=f_large),
-    Button(main_frame, text='Convert a Legacy obj mod to Deluxe',
+    Button(main_frame, text='Convert ANY obj mod to Deluxe',
             font=f_large),
     Label(main_frame), # filler
     Button(main_frame, text='Legacy/Custom...'),
@@ -256,6 +270,11 @@ icons = {
 # the conversion completely. Any warnings are displayed to the user after
 # the script finishes running.
 warnings = []
+
+# Lists of commands that start and/or end blocks
+block_starts = ['if', 'for', 'while']
+block_ends = ['endif', 'endfor', 'endwhile']
+block_starts_ends = ['elseif', 'else']
 
 ###########################################################################
 #### BASIC COPYING COMMANDS ###############################################
@@ -380,6 +399,36 @@ def clear(i, base_image):
 
     empty_image = PIL.Image.new('RGBA', (width, height))
     base_image.paste(empty_image, (x, y, x+width, y+height))
+
+# DOCUMENTATION: duplicate,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height]
+# Copy an area on the NEW image to another position on the same canvas.
+def duplicate(i, base_image):
+    min_args = 4
+    if len(i) <= min_args:
+        log_warning('The command '+i[0]+' requires at least '+\
+                min_args+' arguments.')
+        return
+
+    # If no x or y specified, apply to whole image
+    if len(i) <= 4:
+        i = [i[0], 0, 0, 0, 0, base_image.size[0], base_image.size[1]]
+    oldX = i[1]
+    oldY = i[2]
+    newX = i[3]
+    newY = i[4]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 16×16.
+    # If only width is specified, use that value for height too.
+    if len(i) == 5:
+        i += [16, 16]
+    width = i[5]
+    if len(i) == 6:
+        i += [width]
+    height = i[6]
+
+    region = base_image.crop((oldX, oldY, oldX+width, oldY+height))
+    base_image.paste(region, (newX, newY, newX+width, newY+height))
 
 ###########################################################################
 #### ADVANCED COPYING COMMANDS ############################################
@@ -998,6 +1047,59 @@ def warning(i):
     log_warning('Warning from script: '+i[1])
 
 ###########################################################################
+#### SUBCOMMANDS ##########################################################
+###########################################################################
+
+# Evaluate a boolean operator command, for example, (empty,0,0,16,16).
+# Return True or False based on how the command evaluates.
+# Invalid commands return False.
+def oper_bool(cmd, base_image, open_image):
+    # TODO: add support for nested conditionals
+    i = parse_line(cmd.lstrip('(').rstrip(')'))
+    if i[0].strip() == '': # Treat empty conditionals as false
+        log_warning('Empty conditional command')
+        return False
+    elif i[0] == 'empty':
+        return empty(i, open_image)
+    else:
+        log_warning('Invalid conditional command: ' + str(i))
+        return False
+    
+# DOCUMENTATION: (empty,0<x>,0<y>,16[width],16[height])
+# True if the area on the old image is completely empty (every pixel is
+# transparent), False otherwise.
+def empty(i, open_image):
+    # No minimum number of arguments
+
+    # For filters, if no x or y specified, apply filter to whole image
+    if len(i) <= 2:
+        i = [i[0], 0, 0, open_image.size[0], open_image.size[1]]
+    x = i[1]
+    y = i[2]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 16×16.
+    # If only width is specified, use that value for height too.
+    if len(i) == 3:
+        i += [16, 16]
+    width = i[3]
+    if len(i) == 4:
+        i += [width]
+    height = i[4]
+
+    region = open_image.crop((x, y, x+width, y+height))
+    
+    # Loop thru each pixel in region, making sure it's transparent
+    for loop_x in range(width):
+        for loop_y in range(height):
+            rgba = region.getpixel((loop_x, loop_y))
+            # If a single pixel isn't transparent, return False
+            if rgba[3] != 0:
+                return False
+    # If we make it here, it's empty, return True\
+    return True
+
+###########################################################################
 #### COMING SOON ##########################################################
 ###########################################################################
 
@@ -1010,9 +1112,6 @@ def scale(i, base_image):
 # Much further down the pipeline (requires completely new syntax)
     
 def select(i, base_image):
-    log_warning(i[0]+' is coming soon...')
-    
-def if_(i, base_image):
     log_warning(i[0]+' is coming soon...')
 
 ###########################################################################
@@ -1084,35 +1183,33 @@ def dialog(heading_text, msg_text, bottom_text, icon_name,
                 justify='left')
         heading.place(x=0, y=0)
 
-    msg = []
+    msg_labels = []
     next_y = 0
     if heading_text:
         # If there’s a heading, leave space so msg_text doesn't cover it up
-        next_y = 36
-
+        next_y = 30
     if isinstance(msg_text, str): 
         # Convert to list if message is only one line / a string
         msg_text = [msg_text]
 
     for index, item in enumerate(msg_text):
-        msg.append(Label(main_frame, text=item, justify='left', 
+        msg_labels.append(Label(main_frame, text=item, justify='left', 
                 wraplength=470))
 
         # Apply bold styling as needed
         if item.startswith('<b>'):
-            msg[-1].config(font=f_bold, text=item[3:]) # strip <b> tag
+            msg_labels[-1].config(font=f_bold, text=item[3:]) # strip <b> tag
 
         # Shorten wrapping if dialog box has icon, so text doesn’t cover it
         if icon and next_y < 100:
-            msg[-1].config(wraplength=380)
+            msg_labels[-1].config(wraplength=380)
 
-        msg[index].place(x=0, y=next_y)
-        next_y += msg[-1].winfo_reqheight()
+        msg_labels[index].place(x=0, y=next_y)
+        next_y += msg_labels[-1].winfo_reqheight() + 4
 
     if bottom_text:
         bottom = []
         bottom_next_y = 280
-
         if isinstance(bottom_text, str): 
             # Convert to list if bottom text is only one line / a string
             bottom_text = [bottom_text]
@@ -1126,7 +1223,7 @@ def dialog(heading_text, msg_text, bottom_text, icon_name,
                 bottom[-1].config(font=f_bold, text=item[3:]) # strip <b> tag
 
             bottom[index].place(x=0, y=bottom_next_y, anchor=SW)
-            bottom_next_y -= bottom[-1].winfo_reqheight()
+            bottom_next_y -= bottom[-1].winfo_reqheight() - 4
 
     btn1 = Button(main_frame, text=btn1_text)
     if btn2_text:
@@ -1144,7 +1241,7 @@ def dialog(heading_text, msg_text, bottom_text, icon_name,
 
 def the_W():
     dialog('There’s a new bird among us', 'We will only be adding the W.',
-        '', 'info', 'Clear cache', main)
+        '', 'info', 'Clear cache', menu)
 
 def log_warning(w):
     global warnings
@@ -1192,8 +1289,11 @@ def update_subhead(subhead):
 #### MAIN FUNCTIONS #######################################################
 ###########################################################################
 
-def main():
+def setup():
     #### INITIAL GUI SETUP ####
+    # setup is a separate function from menu() 
+    # because we only need to do everything here once
+
     # Place frames
     side_frame.place(x=0, y=0)
     main_frame.place(x=160, y=0) 
@@ -1204,10 +1304,13 @@ def main():
     for index, item in enumerate(steps):
         item.place(x=0, y=24+24*index)
     back_btn.place(x=80, y=295, anchor=S)
-    back_btn.bind('<Button-1>', lambda _: main())
+    back_btn.bind('<Button-1>', lambda _: menu())
     # Note that the position of anything with main_frame as parent is 
     # RELATIVE (i.e. 160 will be added to x)
 
+    menu()
+
+def menu():
     #### STEP 1: SELECT SCRIPT ####
     cls()
     status_set(['blue', 'gray', 'gray', 'gray', 'gray', 'gray'])
@@ -1263,6 +1366,63 @@ If you’re not sure, try 16×32 first.''', None, 'question',
         '16×32', lambda: open_script(path16),
         '32×32', lambda: open_script(path32))
 
+# Takes 1 script line (in string format) and converts it to a program-readable
+# list. Account for comments, nesting, etc.
+def parse_line(line: str):
+    # Strip whitespace from start and end of line
+    line = line.lstrip().rstrip()
+
+    # Remove comments (like this one)
+    # Note: This applies to filenames too if they're hardcoded into the script,
+    # but I'm not fixing this because it's an edge case.
+    line = line.split('#')[0].rstrip()
+
+    # Split line on commas
+    output = ['']
+    paren_depth = 0 # 0 = not inside parens, 1 = "(", 2 = "((" and so on
+    for char in line:
+        if char == ',' and paren_depth == 0:
+            # Split if not in parentheses
+            output.append('')
+        else:
+            output[-1] += char
+
+        # Separately from building the output list, update paren_depth
+        if char == '(':
+            paren_depth += 1
+        elif char == ')':
+            paren_depth -= 1
+            # If paren_depth is ever negative, there are too many ")"s
+            if paren_depth < 0:
+                log_warning('\
+Too many closing parentheses. Skipping line: '+line)
+                return [''] # Return empty line so converter skips it
+
+    # If paren_depth isn't back to 0 after exiting splitter loop, syntax error
+    if paren_depth > 0:
+        log_warning('\
+Not enough closing parentheses. Skipping line: '+line)
+        return [''] # Return empty line so converter skips it
+
+    for i in range(len(output)):
+        # Descriptions may contain commas, so keep space after those.
+        # Otherwise, remove whitespace from sides of commands. 
+        # Ditto for file paths.
+        if output[0] != 'description' \
+                and output[0] != 'open' \
+                and output[0] != 'save' \
+                and output[0] != 'alt' \
+                and output[0] != 'template':
+            output[i] = output[i].strip()
+
+        try:
+            # Convert data to int if possible
+            output[i] = int(output[i])
+        except ValueError:
+            pass
+
+    return output
+
 def open_script(script_file):
     global data, version, version_str
 
@@ -1273,7 +1433,7 @@ def open_script(script_file):
                 initialdir='./scripts/')
         # If script file path is still empty, user cancelled, back to menu
         if script_file == '':
-            main()
+            menu()
             return
 
     #### STEP 2: SCRIPT INFO ####
@@ -1289,7 +1449,7 @@ def open_script(script_file):
         status_fail()
         dialog('Error', 
             'Couldn’t find a file with that name. Please try again.', 
-            '', 'error', 'Back', main)
+            '', 'error', 'Back', menu)
         return
     except UnicodeDecodeError: 
         # If user opens a “script” with weird characters
@@ -1297,7 +1457,7 @@ def open_script(script_file):
         dialog('Error', 
             ['Couldn’t read the file with that name.',
                 'Are you sure it’s a conversion script?'],
-            '', 'error', 'Back', main)
+            '', 'error', 'Back', menu)
         return
     except IsADirectoryError: 
         # If user opens a folder or Mac app bundle
@@ -1305,45 +1465,30 @@ def open_script(script_file):
         dialog('Error', 
             '''That file is a folder or application. 
 Please try again.''',
-            '', 'error', 'Back', main)
+            '', 'error', 'Back', menu)
         return
 
     lines = raw_content.split('\n')
     data = []
-    for l in range(len(lines)):
-        # Ignore comments like this one
-        lines[l] = lines[l].split('#')[0].rstrip()
-        # Load the rest of the line
-        data.append(lines[l].split(','))
-
-    # Strip whitespace from lines, then if it can be an int, make it an int
-    for i in range(len(data)):
-        for j in range(len(data[i])):
-            try:
-                # Descriptions may contain commas, 
-                # so keep space after those.
-                # Otherwise, remove whitespace from sides of commands.
-                # Ditto for file paths.
-                if data[i][0] != 'description' \
-                        and data[i][0] != 'open' \
-                        and data[i][0] != 'save' \
-                        and data[i][0] != 'alt' \
-                        and data[i][0] != 'template':
-                    data[i][j] = data[i][j].strip()
-                data[i][j] = int(data[i][j])
-            except ValueError:
-                pass
+    for l in lines:
+        data.append(parse_line(l))
 
     version = app_version.copy()
     version_str = '(UNKNOWN; defaulting to %s)' % app_version_str
     for i in data:
         if i[0] == 'version':
-            # Make sure user entered enough numbers
-            if len(i) >= 3:
+            # If user entered 1 or 2 numbers for the version (e.g. "1" or
+            # "4,1", assume the other numbers are 0s
+            if len(i) == 1:
+                version.append(0)
+                version.append(0)
+            if len(i) == 2:
+                version.append(0)
+            elif len(i) >= 3:
                 version = i[1:4]
                 version_str = '.'.join([str(x) for x in version])
-            # Otherwise, assume it’s for the current converter version
-            # (but display the version as unknown)
+            # If user didn't specify a version, assume it’s for the current
+            # converter version (but display the version as unknown)
             break
 
     name = 'Unknown Script'
@@ -1373,7 +1518,7 @@ Please try again.''',
             ['<b>Do you want to run this script?',
 '''If you click “Yes”, this program will check for problems with the script.
 If no problems are found, the script will run right away.'''], 'question',
-            'Yes', compatibility_check, 'No', main)
+            'Yes', compatibility_check, 'No', menu)
 
 def compatibility_check():
     global data, version, version_str, open_path, save_path, template_path,\
@@ -1461,7 +1606,7 @@ use “grayscale,...”''', #1
 'You can try to run it if you want, but we can’t guarantee it’ll work.',
 'We are not responsible for any damage to your files this may cause.'], 
             'Do you want to continue anyway?', 'warning',
-            'Yes', get_paths, 'No', main)
+            'Yes', get_paths, 'No', menu)
     else:
         # Scan file for compatibility issues
         for i in data:
@@ -1509,7 +1654,7 @@ use “grayscale,...”''', #1
 'Do you wish to continue anyway, even though things may not work properly?'),
                     Label(main_frame, text=\
 'We are not responsible for any damage to your files this may cause.'),
-                ], 'warning', 'Yes', get_paths, 'No', main)
+                ], 'warning', 'Yes', get_paths, 'No', menu)
         else:
             get_paths()
             return
@@ -1531,11 +1676,11 @@ def get_paths():
     # Make user choose file if that's what the script wants
     if open_path.upper() == '.INPUT':
         open_path = filedialog.askopenfilename(\
-                title='Select an image to open and copy from',
+                title='Choose an image to open and copy from',
                 initialdir='./')
         # If open_path is still empty, user cancelled — go back to step 1
         if not open_path:
-            main()
+            menu()
             return
 
     # Only run the open-path existence check on single-file conversions. 
@@ -1551,7 +1696,7 @@ def get_paths():
             dialog('Error', 
 ['The script tried to open the following file, but it does not exist.',
 '<b>'+open_path,
-'Check your spelling and try again.'], '', 'error', 'Back', main)
+'Check your spelling and try again.'], '', 'error', 'Back', menu)
             return
         except IsADirectoryError: 
             # If user opens a folder or Mac app bundle
@@ -1559,17 +1704,17 @@ def get_paths():
             dialog('Error', 
                 '''The path '''+open_path+''' is a folder or application.
 Please try again.''',
-                '', 'error', 'Back', main)
+                '', 'error', 'Back', menu)
             return
 
     if save_path.upper() == '.INPUT':
         save_path = filedialog.asksaveasfilename(\
-                title='Select a path to save to', defaultextension='.png',
+                title='Choose a location to save to', defaultextension='.png',
                 filetypes=[('PNG image', '*.png')],
                 initialdir='./')
         # If save_path is still empty, user cancelled — go back to step 1
         if save_path == '':
-            main()
+            menu()
             return
         else: 
             # We don't need to check overwriting on our end because
@@ -1587,7 +1732,7 @@ Please try again.''',
             dialog('Error', 
 ['The script is trying to save to a folder that doesn’t exist.',
 'The path that caused the error was:', '<b>'+parent_dir], 
-                '', 'error', 'Back', main)
+                '', 'error', 'Back', menu)
             return
 
         # Check if the file already exists
@@ -1632,7 +1777,7 @@ Running the script will overwrite the file. You can’t undo this action.',
 
         dialog('Warning', main_text, 
             'Do you want to run this script anyway?', 'warning',
-            'Yes', run_script, 'No', main)
+            'Yes', run_script, 'No', menu)
 
 def run_script():
     global data, open_path, save_path, template_path, alt_path, base_blank,\
@@ -1756,7 +1901,7 @@ def run_script():
             # If no base is specified, start new image as copy of old image
             base_image = open_image.copy()
 
-        base_image = process(open_image, template_image, 
+        base_image = process(data, open_image, template_image, 
                             alt_image, base_image)
         base_image.save(save_path.replace('*', str(i)))
 
@@ -1791,7 +1936,7 @@ def replit(conv_time):
 
 def summary(conv_time, warning_page=0):
     # Roll warning page over to 0 if needed
-    warn_per_page = 10
+    warn_per_page = 10 # TODO: turn this into a scrolling thing
     num_warn_pages = (len(warnings)-1)//warn_per_page + 1
     if warning_page >= num_warn_pages:
         warning_page = 0
@@ -1817,105 +1962,185 @@ def summary(conv_time, warning_page=0):
             dialog('Conversion complete!', main_text,
                 bottom_text, 'warning', 'More warnings', 
                 lambda: summary(conv_time, warning_page+1), # next page
-                'Okay', main)
+                'Okay', menu)
         else:
             # Display dialog with warnings but no extra button
             # if there's only 1 page worth of warnings
             dialog('Conversion complete!', main_text,
-                bottom_text, 'warning', 'Okay', main)
+                bottom_text, 'warning', 'Okay', menu)
     else:
         dialog('Conversion complete!', main_text,
-            None, 'done', 'Okay', main)
+            None, 'done', 'Okay', menu)
 
 # Reads lines from one file and executes its instructions
-def process(open_image, template_image=None, alt_image=None, 
+def process(data: list, open_image, template_image=None, alt_image=None, 
         base_image=None):
-    HEADER_COMMANDS = ['mrconverter', 'version', 'name', 'description', 
+    header_commands = ['mrconverter', 'version', 'name', 'description', 
         'author', 'open', 'save', 'template', 'alt', 'base', 
         'start', 'stop']
 
-    for i in data:
+    skip_index = -1 # Variable used to skip lines
+    for index, item in enumerate(data):
+        # Skip line if it's in a block
+        if index <= skip_index:
+            continue
+
+        # Uncomment this to print line-by-line output
+        #p#rint(index+1, item) # +1 to get correct line number
+
         try:
-            if i[0].strip() == '': # Skip blank lines
+            if item[0].strip() == '': # Skip blank lines
                 pass
-            elif i[0] == 'warning':
-                warning(i)
+            elif item[0] == 'warning':
+                warning(item)
+
+            # Control commands
+            elif item[0] == 'if':
+                # Make sure the if statement is properly constructed
+                if len(item) < 2: 
+                    log_warning('if: missing conditional statement')
+                    continue
+
+                # Result of conditional command in the if statement
+                cond_result = oper_bool(item[1], base_image, open_image)
+                
+                # Bundle together the code inside the block
+                block_depth = 1
+                if_block_data = []
+                reached_else = False
+                skip_to_end = False
+                for j in range(index+1, len(data)):
+                                # ^ index+1 means we skip "if" line
+                    # Check if we've reached end of the whole thing
+                    if data[j][0] in ['endif']:
+                        block_depth -= 1
+                        if block_depth == 0:
+                            break
+
+                    # Skip to end if that's on
+                    if skip_to_end:
+                        continue
+
+                    # Check if we've reached else
+                    if not reached_else and block_depth == 1 and \
+                            data[j][0] in ['else']:
+                        reached_else = True
+                        continue
+                    
+                    # If condition is false and we're not at else yet,
+                    # skip until we are
+                    if block_depth == 1 and \
+                            not cond_result and not reached_else:
+                        continue
+                    # If condition is true and we're at else, start 
+                    # skipping to end so we don't fall through to the else code
+                    elif block_depth == 1 and \
+                            cond_result and reached_else:
+                        skip_to_end = True
+                        continue
+
+                    if data[j][0] in ['if']:
+                        block_depth += 1
+
+                    # If we're still here, add line to block_data
+                    if_block_data.append(data[j])
+
+                # If it still thinks we're in a block when we leave the loop, 
+                # that's an error
+                if block_depth != 0:
+                    log_warning('Reached end of code while still in a block')
+
+                # Recursively call this function on the block.
+                # This *should* work for nested blocks.
+                # This will be given the code in the "if" part OR the "else"
+                # part depending on the conditional and the loop above.
+                base_image = process(if_block_data, open_image, template_image, 
+                        alt_image, base_image)
+
+                # Skip the lines inside the block by setting main loop 
+                # index variable to j
+                skip_index = j
             
             # Basic copying commands
-            elif i[0] == 'copy':
-                copy(i, open_image, base_image)
-            elif i[0] == 'copyalt':
+            elif item[0] == 'copy':
+                copy(item, open_image, base_image)
+            elif item[0] == 'copyalt':
                 if not alt_image:
                     log_warning('\
     Skipped all “copyalt” commands since no “alt” image was specified.')
                 else:
-                    copyalt(i, alt_image, base_image)
-            elif i[0] == 'default':
+                    copyalt(item, alt_image, base_image)
+            elif item[0] == 'default':
                 if not template_image:
                     log_warning('\
     Skipped all “default” commands since no “template” image was specified.')
                 else:
-                    default(i, template_image, base_image)
-            elif i[0] == 'clear' or i[0] == 'delete':
-                clear(i, base_image)
+                    default(item, template_image, base_image)
+            elif item[0] == 'clear' or item[0] == 'delete':
+                clear(item, base_image)
+            elif item[0] == 'duplicate':
+                duplicate(item, base_image)
             # Advanced copying commands
-            elif i[0] == 'tile':
-                tile(i, open_image, alt_image, base_image)
+            elif item[0] == 'tile':
+                tile(item, open_image, alt_image, base_image)
             # Transformation commands
-            elif i[0] == 'resize':
-                base_image = resize(i, base_image)
-            elif i[0] == 'rotate':
-                rotate(i, base_image)
-            elif i[0] == 'flip':
-                flip(i, base_image)
+            elif item[0] == 'resize':
+                base_image = resize(item, base_image)
+            elif item[0] == 'rotate':
+                rotate(item, base_image)
+            elif item[0] == 'flip':
+                flip(item, base_image)
             # Filter commands
-            elif i[0] == 'grayscale':
-                grayscale(i, base_image)
-            elif i[0] == 'invert':
-                invert(i, base_image)
-            elif i[0] == 'colorfilter':
-                colorfilter(i, base_image)
-            elif i[0] == 'opacity':
-                threshold(i, base_image)
-            elif i[0] == 'hue':
-                hue(i, base_image)
-            elif i[0] == 'saturation':
-                saturation(i, base_image)
-            elif i[0] == 'lightness':
-                lightness(i, base_image)
-            elif i[0] == 'fill':
-                fill(i, base_image)
-            elif i[0] == 'contrast':
-                contrast(i, base_image)
-            elif i[0] == 'colorize':
-                colorize(i, base_image)
-            elif i[0] == 'sepia':
-                sepia(i, base_image)
+            elif item[0] == 'grayscale':
+                grayscale(item, base_image)
+            elif item[0] == 'invert':
+                invert(item, base_image)
+            elif item[0] == 'colorfilter':
+                colorfilter(item, base_image)
+            elif item[0] == 'opacity':
+                threshold(item, base_image)
+            elif item[0] == 'hue':
+                hue(item, base_image)
+            elif item[0] == 'saturation':
+                saturation(item, base_image)
+            elif item[0] == 'lightness':
+                lightness(item, base_image)
+            elif item[0] == 'fill':
+                fill(item, base_image)
+            elif item[0] == 'contrast':
+                contrast(item, base_image)
+            elif item[0] == 'colorize':
+                colorize(item, base_image)
+            elif item[0] == 'sepia':
+                sepia(item, base_image)
 
             # COMING SOON
-            elif i[0] == 'threshold':
-                threshold(i, base_image)
-            elif i[0] == 'scale':
-                scale(i, base_image)
-            elif i[0] == 'select':
-                select(i, base_image)
-            elif i[0] == 'if':
-                if_(i, base_image)
+            elif item[0] == 'threshold':
+                threshold(item, base_image)
+            elif item[0] == 'scale':
+                scale(item, base_image)
+            elif item[0] == 'select':
+                select(item, base_image)
 
-            elif i[0] in HEADER_COMMANDS:
-                pass # Just so it doesn't think header commands are unknown
+            # Just so it doesn't think header commands are unknown
+            elif item[0] in header_commands:
+                # I always mess this particular command up so I'll just 
+                # put in a note to self
+                if item[0] == 'template' and len(item) > 2:
+                    log_warning('Clippy, you idiot, the command you’re looking \
+for is “default”, not “template”')
             else:
-                log_warning('Unknown command: '+str(i[0]))
+                log_warning('Unknown command: '+str(item[0]))
         except Exception as e: 
             # Handle any errors in the command functions so they don’t bring
             # the whole program to a halt
-            log_warning(str(i[0])+' command skipped due to error: '+str(e))
+            log_warning(str(item[0])+' command skipped due to error: '+str(e))
     return base_image 
 
 def crash(exctype=None, excvalue=None, tb=None):
     import tkinter.messagebox as messagebox
     try:
-        bomb = PhotoImage(file='assets/ui/bomb.png')
+        bomb = PhotoImage(file='ui/bomb.gif')
         window.iconphoto(False, bomb)
     finally:
         messagebox.showerror(window, 
@@ -1959,12 +2184,13 @@ and hide your browser’s toolbar.''')
 2. Click “Fork Repl” and follow the instructions.
 3. In your newly-forked project, drag the images you want to convert \
 into the list of files in the left sidebar.''')
-        main()
+        setup()
     else:
-        main()
+        setup()
 
 except Exception as e:
     ei = sys.exc_info()
     crash(None, ei[1])
 
 # TODO: Add batch skin conversion without needing to know the scripting language
+# TODO: Add "source,NAME,PATH" command to replace alt/copyalt
