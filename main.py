@@ -1,11 +1,11 @@
 '''
 MR Skin Converter 
-Version 4.1
+Version 4.1.1
 
 Copyright © 2022–2023 clippy#4722
 
 Having trouble running the program? Try running it online:
-https://replit.com/@WaluigiRoyale/MR-Converter-3?embed=true
+https://replit.com/@WaluigiRoyale/MR-Converter-GUI?embed=true
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,128 +21,7 @@ https://replit.com/@WaluigiRoyale/MR-Converter-3?embed=true
     along with this program (see the file license.txt).
     If not, see <https://www.gnu.org/licenses/>.
 
-Version 1.0 (Feb. 12, 2022): Launch
-
-Version 1.1 (Feb. 19, 2022): “default” command now only copies from same 
-    position in template vs. new; added compatibility check
-
-Version 1.2 (Feb. 21, 2022): Adds alternate image to copy from (“alt” and
-    “copyalt” commands)
-
-Version 1.3 (Feb. 27, 2022): Rewrote each command as a separate function instead
-    of having one big if statement; “base” command to start from blank image
-
-Version 1.3.1 (Aug. 29, 2022): Fixed empty-line check in copyalt
-
-Version 1.4 (Oct. 10, 2022):
-  + rotate and flip commands
-  + filter command with basic grayscale and filter commands
-  * Fixed bug where base_image was a reference to open_image rather than a copy
-  * Only pay attention to the first occurrence of a given header command
-    (previously, only the LAST one counted)
-  * Restructured logic for optional arguments so there are fewer errors
-
-Version 2.0 (Oct. 10, 2022)
-NEW FEATURES:
-  + Split filter into grayscale and invert commands (because future filters
-    may have multiple arguments)
-  + colorfilter command to adjust RGB color levels
-EASE OF USE:
-  + Compatibility check now automatically fixes problems on the fly with old 
-    scripts (without making permanent changes to the scripts)
-  + Prints save path so user knows the file will be overwritten
-  + Warning if file doesn't start with “mrconverter”
-  + Better error-catching: rejects commands if user doesn't provide enough 
-    arguments
-UNDER THE HOOD:
-  + Massive rewrite to improve code readability.
-
-Version 2.1 (Oct. 11, 2022): 
-  + Special “.INPUT” path for open and save commands
-  + More instructions on scripts the user can run
-  * Fixed error checking for alt and template
-  - Template no longer supports wildcards (*) in path because it made no sense
-
-Version 2.2 (Oct. 25, 2022):
-  + hue, saturation, lightness filters
-  + fill command to fill a rectangular area with all one color
-  * Better code organization
-  + Added the W
-  - Removed Herobrine
-
-Version 2.2.1 (Oct. 31, 2022):
-  + Allows script writers to exclude x and y values in filters to apply the
-    filter to the whole image
-  * Bug fixes
-  * Preparing for a major update
-
-Version 3.0 (Nov. 18, 2022):
-  + Turned converter into a GUI
-  + contrast filter
-  + Converter is now usable on Replit, no Python installation needed
-  + Added Remake-to-Deluxe skin conversion script
-  * Many, many bug fixes, including lots of rare crash bugs
-  + Added the W
-  - Removed Herobrine
-
-Version 3.0.1 (Nov. 19, 2022 / ONLINE ONLY):
-  + Better instructions for online use
-
-Version 3.0.2 (Nov. 20, 2022):
-  + ReadMe file
-  * Fixed bug in R2D and L2D skin conversion scripts that replaced a frame of
-    the Fire climb animation with Fire power-down
-  * Fixed allowing commas in filenames
-
-Version 3.0.3 (Dec. 10, 2022):
-  + More instructions for Replit users on how to import files
-  + Only display message about entering fullscreen if Replit output window
-    is too small
-  * If script is missing version, default to current version instead of 0.0.0
-
-Version 4.0 (Feb. 2, 2023):
-  + Scripts for converting to Deluxe skins now convert to the 32×32 template
-      * I will never write a script involving the “Remake 32×32” format that
-        was never actually added to the game. Making any skins for that format
-        without it being officially confirmed was a mistake to begin with.
-        Speaking of Remake-related mistakes... chat.
-      * I’m not going to write a DeluxeBeta -> Deluxe32 conversion script either
-        because it was always a possibility that the template could change 
-        without warning (it was a beta, after all)
-  + colorize and sepia filters
-  + tile command for creating repeating backgrounds
-  + Back to Menu button
-  + Improved dialog box code 
-      * Text is less likely to overlap with icons or other text
-      * Bottom text can now have paragraph spacing
-  * Renamed most conversion scripts for consistency
-  * Fixed the RGBA->HSLA converter which has been broken for who knows how long
-  * “mrconverter”, “open”, and “save” lines are now optional
-      * If a script is missing either line, the converter defaults to “.INPUT”
-        as the path (i.e. asking the user what image they want to use)
-  * Writing “copy”, “copyalt”, or “default” on their own now copies the entire
-    source image onto the canvas. “clear” on its own clears the whole canvas. 
-    “flip” on its own can be applied to the whole canvas, but not “rotate”
-    because it expects a square area.
-  - Deprecated Legacy Taunt script and Deluxe Beta scripts because they’re no
-    longer useful
-      * They’re still available in the standard installation, but I took away
-        the buttons on the main menu so you’ll have to run them manually
-
-Version 4.1 (Feb. 19, 2023):
-  + "if" and "else" statements
-      * Any code after an if command will be inside a block, until the converter
-        encounters an "endif" command. Blocks can be nested. 
-      * No "else if" yet, sorry
-  + "empty" conditional command, to be used inside if to check if an area on
-    the old image is empty/transparent
-  + "duplicate" command, to duplicate an area on the converted image
-  * Updated Obj L->Dx script to also convert Remake obj mods
-      * The script uses if statements to automatically detect whether the 
-        original mod is for Remake or Legacy
-  * Updated all Skin->Dx32 conversion scripts to reflect latest templates
-  * Rewrote parser to account for conditional commands
-  - Removed Herobrine
+See changelog.txt for version history.
 '''
 
 import os, sys, colorsys
@@ -156,7 +35,7 @@ import tkinter.filedialog as filedialog
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [4,1,0]
+app_version = [4,1,1]
 
 def app_version_str():
     return str(app_version[0])+'.'+str(app_version[1])+'.'+\
@@ -166,7 +45,7 @@ window = Tk()
 window.wm_title('Clippy’s Skin Converter v' + app_version_str())
 window.geometry('640x320')
 # UNCOMMENT THIS LINE ON REPL.IT BUILDS OR TO RUN THE APP IN FULLSCREEN
-window.attributes('-fullscreen', True)
+##window.attributes('-fullscreen', True)
 
 app_icon = PhotoImage(file='assets/ui/icon.png')
 window.iconphoto(False, app_icon)
