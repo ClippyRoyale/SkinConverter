@@ -1,9 +1,12 @@
-version,4,1,0
+version,4,1,1
 name,Legacy to Deluxe32
 author,Clippy
 description,Converts a 16×32 Legacy skin to the 32×32 Deluxe format. (If Fire sprites are 32×32, they may be cut off.)
 alt,assets/deluxe/smb_mario.png
 base,blank
+
+# Made for Deluxe 2.4.0
+# Supports Deluxe ≥ 2.3.0
 
 # TEST
 #open,assets/legacy/smb_skin0.png
@@ -11,18 +14,22 @@ base,blank
 
 resize,256,480
 
+# ICON
+copy,	208,0,	0,0
+flip,x,	0,0
+
 # SMALL
 # walk/skid/jump/climb
-copy,	96,0,	128,0,	128,16
+copy,	96,0,	128,16,	128,16
 # swim
-copy,	240,80,	112,0
-copy,	192,80,	96,0
-copy,	176,80,	80,0
+copy,	240,80,	112,16
+copy,	192,80,	96,16
+copy,	176,80,	80,16
 # taunt
-copy,	80,0,	48,0
-copy,	80,0,	64,0
+copy,	80,0,	48,16
+copy,	80,0,	64,16
 # dead
-copy,	0,0,	32,0
+copy,	0,0,	32,16
 
 # SUPER
 # stand

@@ -1,9 +1,12 @@
-version,4,1,0
+version,4,1,1
 name,Remake32 to Deluxe32
 author,Clippy
 description,Special version of the Remake to Deluxe converter that properly handles Fire sprites that use the 32×32 space. Bonus: The hitboxes will actually work in the expected way!
 alt,assets/deluxe/smb_mario.png
 base,blank
+
+# Made for Deluxe 2.4.0
+# Supports Deluxe ≥ 2.3.0
 
 # TEST
 #open,assets/remake/smb_skin0.png
@@ -11,18 +14,22 @@ base,blank
 
 resize,256,480
 
+# ICON
+copy,	208,0,	0,0
+flip,x,	0,0
+
 # SMALL
 # walk/skid/jump/climb
-copy,	96,0,	128,0,	128,16
+copy,	96,0,	128,16,	128,16
 # swim
-copy,	128,0,	112,0
-copy,	128,0,	96,0
-copy,	128,0,	80,0
+copy,	128,80,	112,16
+copy,	128,80,	96,16
+copy,	128,80,	80,16
 # taunt
-copy,	208,0,	48,0
-copy,	208,0,	64,0
+copy,	80,0,	48,16
+copy,	80,0,	64,16
 # dead
-copy,	0,0,	32,0
+copy,	0,0,	32,16
 
 # SUPER
 # stand
