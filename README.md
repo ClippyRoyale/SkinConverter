@@ -1,6 +1,6 @@
 # MRoyale Skin Converter
 
-Source code and documentation copyright (C) MMXXII clippy#4722 (AKA WaCopyrightInfringio)
+Source code and documentation copyright (C) 2022–2023 clippy#4722 (AKA WaCopyrightInfringio)
 (See https://tinyurl.com/infernopatch for an explanation of my old username.)
 
 # Quick start link: https://replit.com/@WaluigiRoyale/MR-Converter-3
@@ -34,3 +34,12 @@ There are two main ways to run this program:
 ### I can’t get it to run! All I see is a blank screen!
 
 Try clicking “Stop” then clicking “Run” again. If that doesn’t work, clear your cache ( ͡° ͜ʖ ͡°)
+
+### I downloaded the code, and when I run the program, it's in fullscreen!
+
+This is the source code for the Online Version as seen on Replit. Either download the Offline Version on the Discord, or delete the following lines from the source code:
+
+```
+# UNCOMMENT THIS LINE ON REPLIT BUILDS OR TO RUN THE APP IN FULLSCREEN
+window.attributes('-fullscreen', True)
+```
