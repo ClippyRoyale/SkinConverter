@@ -1,3 +1,7 @@
+print('The online version of the Skin Converter is temporarily disabled for security reasons.')
+import sys
+sys.exit()
+
 '''
 MR Skin Converter 
 Version 4.1.1
