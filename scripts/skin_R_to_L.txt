@@ -3,6 +3,12 @@ name,Swim & Taunt
 author,clippy
 description,Converts a Remake skin to Legacy format by adding placeholder swim and taunt sprites.
 
+# TEST
+open,smb_skin*.png
+save,dx_skin*.png
+start,0
+stop,2600
+
 # resize to standard canvas size
 resize,256,256
 

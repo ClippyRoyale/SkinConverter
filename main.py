@@ -1,10 +1,6 @@
-print('The online version of the Skin Converter is temporarily disabled for security reasons.')
-import sys
-sys.exit()
-
 '''
 MR Skin Converter 
-Version 4.1.1
+Version 5.0
 
 Copyright © 2022–2023 clippy#4722
 
@@ -29,6 +25,7 @@ See changelog.txt for version history.
 '''
 
 import os, sys, colorsys
+import urllib.request # for installing assets
 import PIL.Image, PIL.ImageOps, PIL.ImageTk
 from time import time
 from tkinter import *
@@ -39,7 +36,7 @@ import tkinter.filedialog as filedialog
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [4,1,1]
+app_version = [5,0,0]
 
 def app_version_str():
     return str(app_version[0])+'.'+str(app_version[1])+'.'+\
@@ -49,9 +46,9 @@ window = Tk()
 window.wm_title('Clippy’s Skin Converter v' + app_version_str())
 window.geometry('640x320')
 # UNCOMMENT THIS LINE ON REPL.IT BUILDS OR TO RUN THE APP IN FULLSCREEN
-##window.attributes('-fullscreen', True)
+window.attributes('-fullscreen', True)
 
-app_icon = PhotoImage(file='assets/ui/icon.png')
+app_icon = PhotoImage(file='ui/icon.png')
 window.iconphoto(False, app_icon)
 
 colors = {
@@ -129,6 +126,7 @@ menu_btns_p2 = [
     Label(main_frame), # filler
     Button(main_frame, text='Run a custom script'),
     Button(main_frame, text='Submit your custom script'),
+    Button(main_frame, text='Update game images'),
     Label(main_frame), # filler
     Button(main_frame, text='Back'),
 ]
@@ -137,15 +135,15 @@ back_btn = Button(side_frame, text='Back to Menu')
 
 icons = {
     'info': \
-        PIL.ImageTk.PhotoImage(PIL.Image.open('assets/ui/info.png')),
+        PIL.ImageTk.PhotoImage(PIL.Image.open('ui/info.png')),
     'question': \
-        PIL.ImageTk.PhotoImage(PIL.Image.open('assets/ui/question.png')),
+        PIL.ImageTk.PhotoImage(PIL.Image.open('ui/question.png')),
     'warning': \
-        PIL.ImageTk.PhotoImage(PIL.Image.open('assets/ui/warning.png')),
+        PIL.ImageTk.PhotoImage(PIL.Image.open('ui/warning.png')),
     'error': \
-        PIL.ImageTk.PhotoImage(PIL.Image.open('assets/ui/denied.png')),
+        PIL.ImageTk.PhotoImage(PIL.Image.open('ui/denied.png')),
     'done': \
-        PIL.ImageTk.PhotoImage(PIL.Image.open('assets/ui/accepted.png')),
+        PIL.ImageTk.PhotoImage(PIL.Image.open('ui/accepted.png')),
 }
 
 # warnings is for any problem with conversion scripts that mean a command
@@ -1049,82 +1047,134 @@ def status_fail():
 
     status_refresh()
 
-# Generic function to display a dialog box in the window, 
-# with text and buttons.
+# Displays a dialog box with one or more buttons to the user. Holds until the
+# user clicks a button. Returns the name of the button clicked.
+# Intended to replace dialog().
 # icon is one of: info, question, warning, error, done, bomb
-def dialog(heading_text, msg_text, bottom_text, icon_name, 
-        btn1_text, btn1_event, btn2_text=None, btn2_event=None):
+def button_dialog(title:str, message:str|list,
+                  buttons=['Cancel', 'Okay'], *, icon:str=None):
     cls()
 
-    icon = None
-    if icon_name in icons:
-        icon = Label(main_frame, image=icons[icon_name])
-        icon.place(x=470, y=10, anchor=NE)
+    button_clicked = None
+    # Local function that all button event bindings point to
+    # Sets the button_clicked variable one layer up so the function knows
+    # it can return
+    def button_event(index:int):
+        nonlocal button_clicked
+        button_clicked = index
 
-    if heading_text:
-        heading = Label(main_frame, text=heading_text, font=f_heading, 
-                justify='left')
-        heading.place(x=0, y=0)
+    dialog_icon = None
+    if icon in icons:
+        dialog_icon = Label(main_frame, image=icons[icon])
+        dialog_icon.place(x=470, y=10, anchor=NE)
 
-    msg_labels = []
     next_y = 0
-    if heading_text:
-        # If there’s a heading, leave space so msg_text doesn't cover it up
+    if title:
+        dialog_title = Label(main_frame, text=title, font=f_heading, 
+                justify='left')
+        dialog_title.place(x=0, y=0)
+        # If there’s title text, leave space so msg_text doesn't cover it up
         next_y = 30
-    if isinstance(msg_text, str): 
-        # Convert to list if message is only one line / a string
-        msg_text = [msg_text]
 
-    for index, item in enumerate(msg_text):
-        msg_labels.append(Label(main_frame, text=item, justify='left', 
+    dialog_message = []
+    if isinstance(message, str): 
+        # Convert to list if message is only one line / a string
+        message = [message]
+
+    for index, item in enumerate(message): # TODO: Scroll if not enough space
+        dialog_message.append(Label(main_frame, text=item, justify='left', 
                 wraplength=470))
 
         # Apply bold styling as needed
         if item.startswith('<b>'):
-            msg_labels[-1].config(font=f_bold, text=item[3:]) # strip <b> tag
+            dialog_message[-1].config(font=f_bold, 
+                                      text=item[3:]) # strip <b> tag
 
         # Shorten wrapping if dialog box has icon, so text doesn’t cover it
         if icon and next_y < 100:
-            msg_labels[-1].config(wraplength=380)
+            dialog_message[-1].config(wraplength=380)
 
-        msg_labels[index].place(x=0, y=next_y)
-        next_y += msg_labels[-1].winfo_reqheight() + 4
+        dialog_message[index].place(x=0, y=next_y)
+        next_y += dialog_message[-1].winfo_reqheight() + 4
+
+    # Reworked dialogs won't support bottom text 
+    # (it adds unnecessary complexity).
+
+    dialog_buttons = []
+    for i in buttons:
+        dialog_buttons.append(Button(main_frame, text=i))
+
+    # Place buttons one by one on the frame, aligned right and starting with
+    # the rightmost button
+    next_button_x = 470
+    for i in reversed(dialog_buttons):
+        i.place(x=next_button_x, y=310, anchor=SE)
+        next_button_x -= i.winfo_reqwidth()
+        next_button_x -= 10 # a little extra space between buttons
+
+    # Set event bindings for all buttons
+    for index, item in enumerate(dialog_buttons):
+        item.bind('<ButtonRelease-1>', lambda _: button_event(index))
+
+    # Wait for user to click a button
+    while button_clicked == None:
+        window.update()
+    # Once we get here, a button has been clicked, so return the button's name
+    return button_clicked
+
+# Simplified version of button_dialog() that only allows 2 buttons and returns
+# a boolean value. If the user clicks the right/Okay button, return True.
+# Otherwise, if the user clicks the left/Cancel button, return False.
+def bool_dialog(title:str, message:str|list,
+                  button1='Cancel', button2='Okay', *, icon:str=None):
+    button_name = button_dialog(title, message, [button1, button2], icon=icon)
+    if button_name == button2:
+        return True
+    else:
+        return False
+    
+# Single-button dialog. Returns None.
+def simple_dialog(title:str, message:str|list, button='Okay', *, icon:str=None):
+    button_dialog(title, message, [button], icon=icon)
+
+# Legacy function to display a dialog box in the window, 
+# with text and buttons. Use in new code is not recommended,
+# as simple_dialog, bool_dialog, and button_dialog make code easier to follow.
+def dialog(heading_text, msg_text, bottom_text, icon_name, 
+        btn1_text, btn1_event, btn2_text=None, btn2_event=None):
+    cls()
+
+    if isinstance(msg_text, str): 
+        # Convert to list if message is only one line / a string
+        msg_text = [msg_text]
 
     if bottom_text:
-        bottom = []
-        bottom_next_y = 280
-        if isinstance(bottom_text, str): 
-            # Convert to list if bottom text is only one line / a string
-            bottom_text = [bottom_text]
+        msg_text.append('') # Blank line to separate from main text
+        if type(bottom_text) == list:
+            msg_text.extend(bottom_text)
+        else: # i.e. if string
+            msg_text.append(bottom_text)
 
-        for index, item in enumerate(reversed(bottom_text)):
-            bottom.append(Label(main_frame, text=item, justify='left', 
-                    wraplength=470))
-
-            # Apply bold styling as needed
-            if item.startswith('<b>'):
-                bottom[-1].config(font=f_bold, text=item[3:]) # strip <b> tag
-
-            bottom[index].place(x=0, y=bottom_next_y, anchor=SW)
-            bottom_next_y -= bottom[-1].winfo_reqheight() - 4
-
-    btn1 = Button(main_frame, text=btn1_text)
+    # Starting in version 5.0, this deprecated function is just a wrapper for
+    # bool_dialog.
     if btn2_text:
-        btn2 = Button(main_frame, text=btn2_text)
+        answer = bool_dialog(heading_text, msg_text, btn1_text, btn2_text, 
+                            icon=icon_name)
 
-    if btn2_text:
-        btn1.place(x=230, y=310, anchor=SE)
-        btn2.place(x=250, y=310, anchor=SW)
+        # Replicate function-executing behavior of original dialog()
+        if answer:
+            btn2_event()
+        else:
+            btn1_event()
     else:
-        btn1.place(x=240, y=310, anchor=S)
-
-    btn1.bind('<Button-1>', lambda _: btn1_event())
-    if btn2_text:
-        btn2.bind('<Button-1>', lambda _: btn2_event())
+        simple_dialog(heading_text, msg_text, btn1_text, icon=icon_name)
+        btn1_event()
 
 def the_W():
-    dialog('There’s a new bird among us', 'We will only be adding the W.',
-        '', 'info', 'Clear cache', menu)
+    simple_dialog('There’s a new bird among us', 
+                  'We will only be adding the W.',
+                  'Clear cache', icon='info')
+    menu()
 
 def log_warning(w):
     global warnings
@@ -1187,9 +1237,26 @@ def setup():
     for index, item in enumerate(steps):
         item.place(x=0, y=24+24*index)
     back_btn.place(x=80, y=295, anchor=S)
-    back_btn.bind('<Button-1>', lambda _: menu())
+    back_btn.bind('<ButtonRelease-1>', lambda _: menu())
     # Note that the position of anything with main_frame as parent is 
     # RELATIVE (i.e. 160 will be added to x)
+
+    # check if we need to install assets
+    need_assets = check_assets()
+    if need_assets:
+        confirm_assets = bool_dialog('Setup', 
+['The program will now download the needed game images from the internet.',
+'Is this okay?'],
+                icon='question')
+        if confirm_assets:
+            install_assets()
+        else:
+            simple_dialog('Warning', 
+['While you can use the converter without downloading the images, some \
+conversions may not work properly.',
+'You can download the images at any time by going to Legacy/Custom → \
+Update Game Images from the main menu.'], icon='warning')
+    # If no installation needed, proceed silently
 
     menu()
 
@@ -1198,32 +1265,34 @@ def menu():
     cls()
     status_set(['blue', 'gray', 'gray', 'gray', 'gray', 'gray'])
 
-    menu_btns_p1[0].bind('<Button-1>', 
+    menu_btns_p1[0].bind('<ButtonRelease-1>', 
             lambda _: script_variant('scripts/skin_L_to_Dx32.txt',
                                     'scripts/skin_L32_to_Dx32.txt'))
-    menu_btns_p1[1].bind('<Button-1>', 
+    menu_btns_p1[1].bind('<ButtonRelease-1>', 
             lambda _: script_variant('scripts/skin_R_to_Dx32.txt',
                                     'scripts/skin_R32_to_Dx32.txt'))
-    menu_btns_p1[2].bind('<Button-1>', 
+    menu_btns_p1[2].bind('<ButtonRelease-1>', 
             lambda _: open_script('scripts/obj_L_to_Dx.txt'))
 
-    menu_btns_p1[4].bind('<Button-1>', 
+    menu_btns_p1[4].bind('<ButtonRelease-1>', 
             lambda _: menu_p2())
 
-    menu_btns_p1[6].bind('<Button-1>', 
+    menu_btns_p1[6].bind('<ButtonRelease-1>', 
             lambda _: exit_app())
 
-    menu_btns_p2[0].bind('<Button-1>', 
+    menu_btns_p2[0].bind('<ButtonRelease-1>', 
             lambda _: open_script('scripts/skin_R_to_L.txt'))
-    menu_btns_p2[1].bind('<Button-1>', 
+    menu_btns_p2[1].bind('<ButtonRelease-1>', 
             lambda _: open_script('scripts/map_new.txt'))
 
-    menu_btns_p2[3].bind('<Button-1>', 
+    menu_btns_p2[3].bind('<ButtonRelease-1>', 
             lambda _: open_script(''))
-    menu_btns_p2[4].bind('<Button-1>', 
+    menu_btns_p2[4].bind('<ButtonRelease-1>', 
             lambda _: the_W())
+    menu_btns_p2[5].bind('<ButtonRelease-1>', 
+            lambda _: install_assets())
 
-    menu_btns_p2[6].bind('<Button-1>', 
+    menu_btns_p2[7].bind('<ButtonRelease-1>', 
             lambda _: menu_p1())
 
     menu_p1()
@@ -1236,7 +1305,7 @@ def menu():
 # 16×32 or 32×32. This allows the user to select which one they want
 # without cluttering the main menu with buttons and explanatory text.
 def script_variant(path16, path32):
-    dialog('What size are your skin’s Fire sprites?', 
+    is_32 = bool_dialog('What size are your skin’s Fire sprites?', 
         '''If the 3rd row of sprites has noticeable empty spaces like this:
 \u2003█\u2003█\u2003█\u2003█\u2003██\u2003██\u2003█ 
 ...it’s probably 16×32.
@@ -1245,9 +1314,12 @@ If the 3rd row looks more like this:
 ████████████████ 
 ...it’s probably 32×32.
 
-If you’re not sure, try 16×32 first.''', None, 'question',
-        '16×32', lambda: open_script(path16),
-        '32×32', lambda: open_script(path32))
+If you’re not sure, try 16×32 first.''', '16×32', '32×32', icon='question')
+    
+    if is_32:
+        open_script(path32)
+    else:
+        open_script(path16)
 
 # Takes 1 script line (in string format) and converts it to a program-readable
 # list. Account for comments, nesting, etc.
@@ -1310,7 +1382,9 @@ def open_script(script_file):
     global data, version, version_str
 
     # Ask user to pick a script if they want to run a custom script
+    custom_script = False
     if not script_file:
+        custom_script = True
         script_file = filedialog.askopenfilename(
                 title='Select a script to run',
                 initialdir='./scripts/')
@@ -1330,26 +1404,26 @@ def open_script(script_file):
     except FileNotFoundError: 
         # If user somehow tries to run a nonexistent file
         status_fail()
-        dialog('Error', 
+        simple_dialog('Error', 
             'Couldn’t find a file with that name. Please try again.', 
-            '', 'error', 'Back', menu)
-        return
+            'Back', icon='error')
+        menu()
     except UnicodeDecodeError: 
         # If user opens a “script” with weird characters
         status_fail()
-        dialog('Error', 
+        simple_dialog('Error', 
             ['Couldn’t read the file with that name.',
                 'Are you sure it’s a conversion script?'],
-            '', 'error', 'Back', menu)
-        return
+            'Back', icon='error')
+        menu()
     except IsADirectoryError: 
         # If user opens a folder or Mac app bundle
         status_fail()
-        dialog('Error', 
+        simple_dialog('Error', 
             '''That file is a folder or application. 
 Please try again.''',
-            '', 'error', 'Back', menu)
-        return
+            'Back', icon='error')
+        menu()
 
     lines = raw_content.split('\n')
     data = []
@@ -1392,16 +1466,24 @@ Please try again.''',
             description = ','.join(i[1:])
             break
 
-    dialog('Loaded script: %s'%name, 
-            [
-                'File path: %s'%script_file, 'By: %s'%author, 
-                'Made for converter version %s'%version_str,
-                'Description: %s'%description,
-            ], 
-            ['<b>Do you want to run this script?',
-'''If you click “Yes”, this program will check for problems with the script.
-If no problems are found, the script will run right away.'''], 'question',
-            'Yes', compatibility_check, 'No', menu)
+    # Only show script info if it's a custom script, because default script
+    # are assumed to work
+    if custom_script:
+        confirm = bool_dialog('Loaded script: %s'%name, 
+                ['File path: %s'%script_file, 'By: %s'%author, 
+                    'Made for converter version %s'%version_str,
+                    'Description: %s'%description,
+                    '',
+                    '<b>Do you want to run this script?', '''\
+If you click “Continue”, this program will check for problems with the script.
+If no problems are found, the script will run right away.'''], 
+                'Cancel', 'Continue', icon='question')
+        if confirm:
+            compatibility_check()
+        else:
+            menu()
+    else:
+        compatibility_check()
 
 def compatibility_check():
     global data, version, version_str, open_path, save_path, template_path,\
@@ -1576,19 +1658,19 @@ def get_paths():
             open(open_path).close()
         except FileNotFoundError:
             status_fail()
-            dialog('Error', 
+            simple_dialog('Error', 
 ['The script tried to open the following file, but it does not exist.',
 '<b>'+open_path,
-'Check your spelling and try again.'], '', 'error', 'Back', menu)
-            return
+'Check your spelling and try again.'], 'Back', icon='error')
+            menu()
         except IsADirectoryError: 
             # If user opens a folder or Mac app bundle
             status_fail()
-            dialog('Error', 
+            simple_dialog('Error', 
                 '''The path '''+open_path+''' is a folder or application.
 Please try again.''',
-                '', 'error', 'Back', menu)
-            return
+                'Back', icon='error')
+            menu()
 
     if save_path.upper() == '.INPUT':
         save_path = filedialog.asksaveasfilename(\
@@ -1612,11 +1694,11 @@ Please try again.''',
         # saving to the current working directory, skip the directory check
         if parent_dir and not os.path.exists(parent_dir):
             status_fail()
-            dialog('Error', 
+            simple_dialog('Error', 
 ['The script is trying to save to a folder that doesn’t exist.',
 'The path that caused the error was:', '<b>'+parent_dir], 
-                '', 'error', 'Back', menu)
-            return
+                'Back', icon='error')
+            menu()
 
         # Check if the file already exists
         files_to_overwrite = []
@@ -1627,17 +1709,18 @@ Please try again.''',
                 check_path = save_path.replace('*', str(i))
                 if os.path.exists(check_path):
                     files_to_overwrite.append(check_path)
-                    # In the future, I may add a way to display all the
-                    # files that would be overwritten
+                    # TODO: add a way to display all the
+                    # files that would be overwritten 
+                    # (3-button box with More button)
 
             if files_to_overwrite:
                 main_text = [
                     '\
-This script will save to one or more paths where files already exist.',
+This script will overwrite one or more existing files. \
+You can’t undo this action.',
                     '\
-Please check the path %s for existing files.' % save_path,
-                    '\
-Running the script will overwrite existing files. You can’t undo this action.',
+Please check the path %s (where * is any number) for existing files.' \
+    % save_path,
                     'Only run scripts from users you trust!',
                 ]
             else:
@@ -1812,10 +1895,8 @@ def replit(conv_time):
             'This will download a lot of unnecessary files but it’s faster',
             'than downloading each image one at a time.'
         ]
-        dialog('Replit Help', help_text, None, 'info', 'Okay', 
-            lambda: summary(conv_time))
-    else:
-        summary(conv_time)
+        simple_dialog('Replit Help', help_text, 'Okay', icon='info')
+    summary(conv_time)
 
 def summary(conv_time, warning_page=0):
     # Roll warning page over to 0 if needed
@@ -1852,8 +1933,9 @@ def summary(conv_time, warning_page=0):
             dialog('Conversion complete!', main_text,
                 bottom_text, 'warning', 'Okay', menu)
     else:
-        dialog('Conversion complete!', main_text,
-            None, 'done', 'Okay', menu)
+        simple_dialog('Conversion complete!', main_text,
+            'Okay', icon='done')
+        menu()
 
 # Reads lines from one file and executes its instructions
 def process(data: list, open_image, template_image=None, alt_image=None, 
@@ -2020,6 +2102,57 @@ for is “default”, not “template”')
             log_warning(str(item[0])+' command skipped due to error: '+str(e))
     return base_image 
 
+# List of files to install on first run
+# Only download images that a script actually uses
+install_list = [
+    ['https://marioroyale.com/royale/img/game/smb_obj.png', 
+        'deluxe/smb_obj.png'],
+    ['https://marioroyale.com/royale/img/game/smb_mario.png', 
+        'deluxe/smb_mario.png'],
+    ['https://github.com/mroyale/assets/raw/legacy/img/game/smb_map_new.png', 'legacy/smb_map_new.png']
+]
+
+# Check if assets need to be (re)installed
+def check_assets():
+    global install_list
+
+    for i in install_list:
+        if not os.path.isfile('assets/'+i[1]): 
+            # If a file in the install list is missing, we need to reinstall
+            return True
+    
+    # If all the files exist, no need to install
+    return False
+
+# Install the latest game assets
+def install_assets():
+    global install_list
+
+    # Create subfolders if they don't exist
+    if not os.path.isdir('./assets/deluxe'):
+        os.makedirs('./assets/deluxe')
+    if not os.path.isdir('assets/legacy'):
+        os.makedirs('./assets/legacy')
+
+    for i in install_list:
+        try:
+            urllib.request.urlretrieve(i[0], 'assets/'+i[1])
+        # Deal with connection errors
+        except urllib.error.URLError:
+            simple_dialog('Connection error', 
+'Failed to download image %s. Check your internet connection and try again.' % \
+i[0], icon='error')
+            menu()
+        except Exception:
+            simple_dialog('Connection error', 
+'An unknown error occurred while downloading the image %s.' % \
+i[0], icon='error')
+            menu()
+
+    simple_dialog('Success', 'The images were successfully downloaded.',
+                icon='done')
+    menu()
+
 def crash(exctype=None, excvalue=None, tb=None):
     import tkinter.messagebox as messagebox
     try:
@@ -2040,6 +2173,7 @@ def exit_app():
 ###########################################################################
 
 try:
+    # Comment the next line out to print full crash messages to the console
     window.report_callback_exception = crash
     
     # Check if we're running on replit
@@ -2067,9 +2201,9 @@ and hide your browser’s toolbar.''')
 2. Click “Fork Repl” and follow the instructions.
 3. In your newly-forked project, drag the images you want to convert \
 into the list of files in the left sidebar.''')
-        setup()
-    else:
-        setup()
+
+    # Proceed to setup on all platforms
+    setup()
 
 except Exception as e:
     ei = sys.exc_info()
@@ -2077,3 +2211,4 @@ except Exception as e:
 
 # TODO: Add batch skin conversion without needing to know the scripting language
 # TODO: Add "source,NAME,PATH" command to replace alt/copyalt
+#       (or maybe call the command "load"?)

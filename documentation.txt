@@ -1,4 +1,4 @@
-version,4,0,0 # The version of the Converter app that this script is made for.
+version,4,1,1 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
@@ -42,6 +42,8 @@ copyalt,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy from alt ima
 default,0[x],0[y],16[width],16[height] # Copy from template image to same position in new image.
 
 clear,0[x],0[y],16[width],16[height] # Clear area from new image. Used to be called "delete" -- this still works for compatiblity reasons.
+
+duplicate,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy an area on the NEW image to another position on the same canvas.
 
 
 
@@ -97,6 +99,22 @@ sepia,0[x],0[y],16[width],16[height] # Simplified colorize syntax for creating s
 
 
 
+# CONTROL FLOW COMMANDS
+
+if,(empty,0,0,16,16)
+# Run the commands here if the above condition is true
+else
+# Otherwise, run the commands here
+endif
+
+
+
+# CONDITIONAL SUBCOMMANDS FOR IF
+
+(empty,0<x>,0<y>,16[width],16[height]) # True if the area on the old image is completely empty (every pixel is transparent), False otherwise.
+
+
+
 # MISCELLANEOUS COMMANDS
 
 warning,Your warning here (will be displayed onscreen after conversion)
@@ -113,7 +131,19 @@ scale,256<newWidth>,256<newHeight> # Scale the image to the new width and height
 threshold,128<lightestBlack: 1 to 255>,0[x],0[y],16[width],16[height]
 # Converts the image to 1-bit black & white based on a numeric lightness threshold. Any number LESS THAN or EQUAL to lightestBlack is black, any number GREATER is white. TODO: How to determine threshold value? Use lightness? Luma?
 
-# If statements (ifempty?) and subroutines
+# Path variables (to replace template/alt)
+
+set,template,smb_skin2580.png # Set a name for an image path, to use later with "copyfrom". Give this command a better name?
+copyfrom,open<pathvar>,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy from the specified path variable to specified position in new image.
+
+# If statements and subroutines
+
+# ELSEIF:
+if,<...>
+# Run the commands here if the above condition is true
+elseif,(empty,128,128,32,32)
+# Run the commands here if the first condition is false but the second condition is true
+endif # maybe change to "end"?
 
 select(selcolor,green,0,0,16,16){
 hue,-120,0,0 # ...etc.
@@ -139,6 +169,3 @@ WIDTH, HEIGHT
 (>=,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
 (<=,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
 (selcolor,red<color>,0<x>,0<y>,16[width],16[height]) # Selective color: selects all colors within a given sixth of the HSL color wheel
-
-# Conditional subcommands for if:
-(empty,0<x>,0<y>,16[width],16[height]) # True if the area is completely empty (every pixel is transparent), False otherwise

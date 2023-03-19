@@ -1,4 +1,4 @@
-version,4,1,0
+version,5,0,0
 name,Deluxifier for Obj
 description,Converts a Legacy obj mod to Deluxe format.
 author,clippy
@@ -87,14 +87,13 @@ copy,16,80,64,112,16,32
 copy,224,112,224,64,32,48
 grayscale,224,64,32,48
 
-
 if,(empty,192,112,32,16) # If no buzzy beetle enemies (Remake)
-    template,192,112,32,16
+    default,192,112,32,16
 endif
 
 if,(empty,240,80,16,16) # If no buzzy beetle shells (Remake)
     default,80,112,64,16
-else # Legacy - TODO: this part doesn't get handled properly yet
+else # Legacy
     # Copy Legacy sheet's Buzzy Beetle shell to new location 4 times
     copy,240,80,80,112
     copy,240,80,96,112
@@ -103,12 +102,6 @@ else # Legacy - TODO: this part doesn't get handled properly yet
 endif
 
 default,0,64,48,16 # Goombrat
-if,(empty,64,160,32,16) # Spiny egg
-    default,64,160,32,16
-endif
-if,(empty,96,160,32,16) # Spiny
-    default,96,160,32,16
-endif
 if,(empty,128,144,32,32) # Lakitu
     default,128,144,32,32
 endif
@@ -118,3 +111,20 @@ endif
 if,(empty,192,144,32,32) # Blooper
     default,192,144,32,32
 endif
+
+# Spiny
+# Use 16×16 area for checking instead of 32×16 because the default Remake obj has a message that partially covers the spiny area
+if,(empty,96,160,16,16)
+    default,96,160,32,16
+endif
+# Spiny egg
+if,(empty,64,160,32,16)
+    default,64,160,32,16
+endif
+# Metal Spiny + Egg (spiny but grayscale)
+duplicate,64,160,64,144,64,16
+grayscale,64,144,64,16
+
+# New powerups
+default,176,224 # Leaf
+default,224,208 # Hammer suit

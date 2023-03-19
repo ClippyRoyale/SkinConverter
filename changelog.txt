@@ -126,3 +126,20 @@ Version 4.1 (Feb. 19, 2023):
 Version 4.1.1 (Feb. 22, 2023):
   * Updated all 4 skin conversion scripts for Dx2.3.0 sprite sheet
       * Converted skins now have 16×32 Small sprites and a skin icon
+
+Version 5.0 (Mar. 18, 2023):
+  + More flexible interface
+      * Dialog boxes can have multiple buttons
+      * Dialog boxes are easier to place in code; they can be inline instead of
+        having to trigger a function to continue
+      * All buttons now fire on mouse button RELEASE instead of hold (more
+        consistent with other apps)
+  * Fixed obj conversion script to work with latest Deluxe obj
+  - Game assets are now installed on first run rather than being included with 
+    the program
+      * This means if the game gets minor graphical updates, you won't have to
+        wait for me to update the images. Of course if there's a larger update,
+        I'll need to update the conversion scripts on my end anyway.
+      * It also makes the program take up less space
+  - Removed scripts for converting to Deluxe Beta skins (deprecated since 4.0)
+      * They no longer had any use and were broken in recent releases
