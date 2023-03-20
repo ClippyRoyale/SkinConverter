@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 5.0
+Version 5.0.1
 
 Copyright © 2022–2023 clippy#4722
 
@@ -36,7 +36,7 @@ import tkinter.filedialog as filedialog
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [5,0,0]
+app_version = [5,0,1]
 
 def app_version_str():
     return str(app_version[0])+'.'+str(app_version[1])+'.'+\
@@ -57,6 +57,8 @@ colors = {
     'blue': '#0080ff',
     'gray': '#808080',
     'silver': '#c0c0c0',
+    # Light-gray background color #f0f0f0
+    'BG': '#f0f0f0',
 }
 
 # Different platforms use different default font sizes.
@@ -71,7 +73,7 @@ f_bold = tkfont.Font(weight='bold', size=relative_font_size(1))
 f_large = tkfont.Font(size=relative_font_size(1.5))
 f_heading = tkfont.Font(weight='bold', size=relative_font_size(1.5))
 
-side_frame = LabelFrame(window, width=160, height=320)
+side_frame = LabelFrame(window, width=160, height=320, bg=colors['BG'])
 
 '''
 gray = not yet reached
@@ -82,56 +84,64 @@ red = failed
 step_status = ['blue', 'gray', 'gray', 'gray', 'gray', 'gray']
 steps = [
     Label(side_frame, text='● Select Script', fg=colors[step_status[0]], 
-        justify='left'),
+        justify='left', bg=colors['BG']),
     Label(side_frame, text='● Load Script', fg=colors[step_status[1]], 
-        justify='left'),
+        justify='left', bg=colors['BG']),
     Label(side_frame, text='● Compatibility Check', 
         fg=colors[step_status[2]], 
-        justify='left'),
+        justify='left', bg=colors['BG']),
     Label(side_frame, text='● Open & Save Paths', fg=colors[step_status[3]], 
-        justify='left'),
+        justify='left', bg=colors['BG']),
     Label(side_frame, text='● Run Script', fg=colors[step_status[4]], 
-        justify='left'),
+        justify='left', bg=colors['BG']),
     Label(side_frame, text='● Summary', fg=colors[step_status[5]], 
-        justify='left'),
+        justify='left', bg=colors['BG']),
 ]
 
 title = Label(side_frame, text='Skin Converter v'+app_version_str(), 
-        font=f_bold)
-footer = Label(side_frame, text='a Clippy production', fg=colors['gray'])
+        font=f_bold, bg=colors['BG'])
+footer = Label(side_frame, text='a Clippy production', 
+        fg=colors['gray'], bg=colors['BG'])
 
-main_frame = LabelFrame(window, width=480, height=320)
+main_frame = LabelFrame(window, width=480, height=320, bg=colors['BG'])
 main_frame.grid_propagate(False)
 
 menu_heading = Label(main_frame, text='What do you want to convert?', 
-        font=f_heading)
+        font=f_heading, bg=colors['BG'])
 
 menu_btns_p1 = [
     Button(main_frame, text='Convert a Legacy skin to Deluxe',
-            font=f_large),
+            font=f_large, highlightbackground=colors['BG']),
     Button(main_frame, text='Convert a Remake skin to Deluxe',
-            font=f_large),
+            font=f_large, highlightbackground=colors['BG']),
     Button(main_frame, text='Convert ANY obj mod to Deluxe',
-            font=f_large),
-    Label(main_frame), # filler
-    Button(main_frame, text='Legacy/Custom...'),
-    Label(main_frame), # filler
-    Button(main_frame, text='Exit'),
+            font=f_large, highlightbackground=colors['BG']),
+    Label(main_frame, bg=colors['BG']), # filler
+    Button(main_frame, text='Legacy/Custom...', 
+            highlightbackground=colors['BG']),
+    Label(main_frame, bg=colors['BG']), # filler
+    Button(main_frame, text='Exit', highlightbackground=colors['BG']),
 ]
 
 menu_btns_p2 = [
-    Button(main_frame, text='Convert a Remake skin to Legacy'),
+    Button(main_frame, text='Convert a Remake skin to Legacy', 
+            highlightbackground=colors['BG']),
     Button(main_frame, 
-            text='Convert a Legacy map mod to Legacy map_new'),
-    Label(main_frame), # filler
-    Button(main_frame, text='Run a custom script'),
-    Button(main_frame, text='Submit your custom script'),
-    Button(main_frame, text='Update game images'),
-    Label(main_frame), # filler
-    Button(main_frame, text='Back'),
+            text='Convert a Legacy map mod to Legacy map_new', 
+            highlightbackground=colors['BG']),
+    Label(main_frame, bg=colors['BG']), # filler
+    Button(main_frame, text='Run a custom script', 
+            highlightbackground=colors['BG']),
+    Button(main_frame, text='Submit your custom script', 
+            highlightbackground=colors['BG']),
+    Button(main_frame, text='Update game images', 
+            highlightbackground=colors['BG']),
+    Label(main_frame, bg=colors['BG']), # filler
+    Button(main_frame, text='Back', highlightbackground=colors['BG']),
 ]
 
-back_btn = Button(side_frame, text='Back to Menu')
+back_btn = Button(side_frame, text='Back to Menu', 
+                  highlightbackground=colors['BG'])
 
 icons = {
     'info': \
@@ -1051,7 +1061,7 @@ def status_fail():
 # user clicks a button. Returns the name of the button clicked.
 # Intended to replace dialog().
 # icon is one of: info, question, warning, error, done, bomb
-def button_dialog(title:str, message:str|list,
+def button_dialog(title:str, message,
                   buttons=['Cancel', 'Okay'], *, icon:str=None):
     cls()
 
@@ -1065,13 +1075,13 @@ def button_dialog(title:str, message:str|list,
 
     dialog_icon = None
     if icon in icons:
-        dialog_icon = Label(main_frame, image=icons[icon])
+        dialog_icon = Label(main_frame, image=icons[icon], bg=colors['BG'])
         dialog_icon.place(x=470, y=10, anchor=NE)
 
     next_y = 0
     if title:
         dialog_title = Label(main_frame, text=title, font=f_heading, 
-                justify='left')
+                justify='left', bg=colors['BG'])
         dialog_title.place(x=0, y=0)
         # If there’s title text, leave space so msg_text doesn't cover it up
         next_y = 30
@@ -1083,7 +1093,7 @@ def button_dialog(title:str, message:str|list,
 
     for index, item in enumerate(message): # TODO: Scroll if not enough space
         dialog_message.append(Label(main_frame, text=item, justify='left', 
-                wraplength=470))
+                wraplength=470, bg=colors['BG']))
 
         # Apply bold styling as needed
         if item.startswith('<b>'):
@@ -1102,7 +1112,8 @@ def button_dialog(title:str, message:str|list,
 
     dialog_buttons = []
     for i in buttons:
-        dialog_buttons.append(Button(main_frame, text=i))
+        dialog_buttons.append(Button(main_frame, text=i, 
+                                     highlightbackground=colors['BG']))
 
     # Place buttons one by one on the frame, aligned right and starting with
     # the rightmost button
@@ -1125,7 +1136,7 @@ def button_dialog(title:str, message:str|list,
 # Simplified version of button_dialog() that only allows 2 buttons and returns
 # a boolean value. If the user clicks the right/Okay button, return True.
 # Otherwise, if the user clicks the left/Cancel button, return False.
-def bool_dialog(title:str, message:str|list,
+def bool_dialog(title:str, message,
                   button1='Cancel', button2='Okay', *, icon:str=None):
     button_name = button_dialog(title, message, [button1, button2], icon=icon)
     if button_name == button2:
@@ -1134,7 +1145,7 @@ def bool_dialog(title:str, message:str|list,
         return False
     
 # Single-button dialog. Returns None.
-def simple_dialog(title:str, message:str|list, button='Okay', *, icon:str=None):
+def simple_dialog(title:str, message, button='Okay', *, icon:str=None):
     button_dialog(title, message, [button], icon=icon)
 
 # Legacy function to display a dialog box in the window, 
@@ -1213,7 +1224,7 @@ def update_subhead(subhead):
     subhead = Label(main_frame, 
         text='Now converting: file '+str(current_num)+\
             ' ('+str(rounded_pct)+'%)', 
-        justify='left')
+        justify='left', bg=colors['BG'])
     subhead.place(x=0, y=36)
 
     return subhead
@@ -1606,9 +1617,11 @@ use “grayscale,...”''', #1
         if len(file_issues) > 0:
             main_text = [
                 Label(main_frame, text=\
-'Your script was designed for version '+version_str+' of this converter.'),
+'Your script was designed for version '+version_str+' of this converter.', 
+bg=colors['BG']),
                 Label(main_frame, text=\
-'It contains the following compatibility issues:'),
+'It contains the following compatibility issues:', 
+bg=colors['BG']),
             ]
             for i in file_issues:  
                 main_text.append(Label(main_frame, text='- '+all_issues[i]))
@@ -1616,9 +1629,11 @@ use “grayscale,...”''', #1
             dialog('Compatibility warning', main_text, 
                 [
                     Label(main_frame, text=\
-'Do you wish to continue anyway, even though things may not work properly?'),
+'Do you wish to continue anyway, even though things may not work properly?',
+bg=colors['BG']),
                     Label(main_frame, text=\
-'We are not responsible for any damage to your files this may cause.'),
+'We are not responsible for any damage to your files this may cause.', 
+bg=colors['BG']),
                 ], 'warning', 'Yes', get_paths, 'No', menu)
         else:
             get_paths()
@@ -1754,19 +1769,20 @@ def run_script():
     status_complete()
 
     heading_text = Label(main_frame, text='Converting image...', 
-        font=f_heading)
+        font=f_heading, bg=colors['BG'])
     heading_text.place(x=0, y=0)
 
     # Update screen differently based on how many files we're converting
-    heading = Label()
-    subhead = Label()
+    heading = Label(bg=colors['BG'])
+    subhead = Label(bg=colors['BG'])
     if multi:
         heading = Label(main_frame, text='Converting all images from '+\
-            str(start_num)+' to '+str(stop_num-1), font=f_heading)
+            str(start_num)+' to '+str(stop_num-1), font=f_heading, 
+            bg=colors['BG'])
         subhead = update_subhead(subhead)
     else:
         heading = Label(main_frame, text='Converting 1 image...', 
-            font=f_heading)
+            font=f_heading, bg=colors['BG'])
         start_num = 0
         stop_num = 1
     heading.place(x=0, y=0)

@@ -143,3 +143,10 @@ Version 5.0 (Mar. 18, 2023):
       * It also makes the program take up less space
   - Removed scripts for converting to Deluxe Beta skins (deprecated since 4.0)
       * They no longer had any use and were broken in recent releases
+  * Requires Python 3.10 or later (union type hinting)
+
+Version 5.0.1 (Mar. 20, 2023 / ONLINE ONLY):
+  * Changed UI background color
+  * Moving toward a shared UI codebase for this and Deluxifier 
+  * Temp fix for crash bugs on repl.it
+  * Requires Python 3.5 or later (type hinting)
