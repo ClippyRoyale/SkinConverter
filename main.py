@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 5.0.1
+Version 5.1.0
 
 Copyright © 2022–2023 clippy#4722
 
@@ -27,6 +27,7 @@ See changelog.txt for version history.
 import os, sys, colorsys
 import urllib.request # for installing assets
 import PIL.Image, PIL.ImageOps, PIL.ImageTk
+from typing import Union
 from time import time
 from tkinter import *
 import tkinter.font as tkfont
@@ -36,7 +37,7 @@ import tkinter.filedialog as filedialog
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [5,0,1]
+app_version = [5,1,0]
 
 def app_version_str():
     return str(app_version[0])+'.'+str(app_version[1])+'.'+\
@@ -45,8 +46,9 @@ def app_version_str():
 window = Tk()
 window.wm_title('Clippy’s Skin Converter v' + app_version_str())
 window.geometry('640x320')
-# UNCOMMENT THIS LINE ON REPL.IT BUILDS OR TO RUN THE APP IN FULLSCREEN
-window.attributes('-fullscreen', True)
+# Run in fullscreen on Replit only
+if os.path.isdir("/home/runner") == True:
+    window.attributes('-fullscreen', True)
 
 app_icon = PhotoImage(file='ui/icon.png')
 window.iconphoto(False, app_icon)
@@ -126,6 +128,8 @@ menu_btns_p1 = [
 menu_btns_p2 = [
     Button(main_frame, text='Convert a Remake skin to Legacy', 
             highlightbackground=colors['BG']),
+    Button(main_frame, text='Convert a Remake obj to Deluxe', 
+            highlightbackground=colors['BG']),
     Button(main_frame, 
             text='Convert a Legacy map mod to Legacy map_new', 
             highlightbackground=colors['BG']),
@@ -164,8 +168,24 @@ warnings = []
 
 # Lists of commands that start and/or end blocks
 block_starts = ['if', 'for', 'while']
-block_ends = ['endif', 'endfor', 'endwhile']
+block_ends = ['end', 'endif']
 block_starts_ends = ['elseif', 'else']
+
+###########################################################################
+#### LOG/EXIT COMMANDS ####################################################
+###########################################################################
+
+# Displays a warning shown after conversion finishes. Only other i-argument is
+# the text of the warning.
+def warning(i):
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('Unknown warning from script')
+        return
+
+    log_warning('Warning from script: '+i[1])
+
+# EXIT and ERROR are handled in the main command-checking loop
 
 ###########################################################################
 #### BASIC COPYING COMMANDS ###############################################
@@ -927,15 +947,43 @@ def sepia(i, base_image):
 
     colorize(['colorize', 30, 25, 50, x, y, width, height], base_image)
 
-# Displays a warning shown after conversion finishes. Only other i-argument is
-# the text of the warning.
-def warning(i):
+def threshold(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('Unknown warning from script')
+        log_warning('The command '+i[0]+' requires at least '+\
+                min_args+' arguments.')
         return
 
-    log_warning('Warning from script: '+i[1])
+    minWhite = i[1]
+
+    # For filters, if no x or y specified, apply filter to whole image
+    if len(i) <= 3:
+        i = [i[0], i[1], 0, 0, base_image.size[0], base_image.size[1]]
+    x = i[2]
+    y = i[3]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 16×16.
+    # If only width is specified, use that value for height too.
+    if len(i) == 4:
+        i += [16, 16]
+    width = i[4]
+    if len(i) == 5:
+        i += [width]
+    height = i[5]
+        
+    # First, to get the input values, convert the region to grayscale
+    grayscale(['grayscale', x, y, width, height], base_image)
+
+    region = base_image.crop((x, y, x+width, y+height))
+    for loop_x in range(width):
+        for loop_y in range(height):
+            luma = region.getpixel((loop_x, loop_y)) # returns int (luma value)
+            if luma < minWhite: # black
+                region.putpixel((loop_x, loop_y), 0)
+            else: # white
+                region.putpixel((loop_x, loop_y), 255)
+    base_image.paste(region, (x, y, x+width, y+height))
 
 ###########################################################################
 #### SUBCOMMANDS ##########################################################
@@ -993,9 +1041,6 @@ def empty(i, open_image):
 ###########################################################################
 #### COMING SOON ##########################################################
 ###########################################################################
-
-def threshold(i, base_image):
-    log_warning(i[0]+' is coming soon...')
 
 def scale(i, base_image):
     log_warning(i[0]+' is coming soon...')
@@ -1059,9 +1104,8 @@ def status_fail():
 
 # Displays a dialog box with one or more buttons to the user. Holds until the
 # user clicks a button. Returns the name of the button clicked.
-# Intended to replace dialog().
 # icon is one of: info, question, warning, error, done, bomb
-def button_dialog(title:str, message,
+def button_dialog(title:str, message:Union[str, list],
                   buttons=['Cancel', 'Okay'], *, icon:str=None):
     cls()
 
@@ -1071,7 +1115,7 @@ def button_dialog(title:str, message,
     # it can return
     def button_event(index:int):
         nonlocal button_clicked
-        button_clicked = index
+        button_clicked = buttons[index]
 
     dialog_icon = None
     if icon in icons:
@@ -1136,7 +1180,7 @@ def button_dialog(title:str, message,
 # Simplified version of button_dialog() that only allows 2 buttons and returns
 # a boolean value. If the user clicks the right/Okay button, return True.
 # Otherwise, if the user clicks the left/Cancel button, return False.
-def bool_dialog(title:str, message,
+def bool_dialog(title:str, message:Union[str, list],
                   button1='Cancel', button2='Okay', *, icon:str=None):
     button_name = button_dialog(title, message, [button1, button2], icon=icon)
     if button_name == button2:
@@ -1144,42 +1188,20 @@ def bool_dialog(title:str, message,
     else:
         return False
     
-# Single-button dialog. Returns None.
-def simple_dialog(title:str, message, button='Okay', *, icon:str=None):
-    button_dialog(title, message, [button], icon=icon)
-
-# Legacy function to display a dialog box in the window, 
-# with text and buttons. Use in new code is not recommended,
-# as simple_dialog, bool_dialog, and button_dialog make code easier to follow.
-def dialog(heading_text, msg_text, bottom_text, icon_name, 
-        btn1_text, btn1_event, btn2_text=None, btn2_event=None):
-    cls()
-
-    if isinstance(msg_text, str): 
-        # Convert to list if message is only one line / a string
-        msg_text = [msg_text]
-
-    if bottom_text:
-        msg_text.append('') # Blank line to separate from main text
-        if type(bottom_text) == list:
-            msg_text.extend(bottom_text)
-        else: # i.e. if string
-            msg_text.append(bottom_text)
-
-    # Starting in version 5.0, this deprecated function is just a wrapper for
-    # bool_dialog.
-    if btn2_text:
-        answer = bool_dialog(heading_text, msg_text, btn1_text, btn2_text, 
-                            icon=icon_name)
-
-        # Replicate function-executing behavior of original dialog()
-        if answer:
-            btn2_event()
-        else:
-            btn1_event()
+# yn_dialog is like bool_dialog but the buttons' return values are reversed.
+# The left/Yes button returns True, and the right/No button returns false.
+def yn_dialog(title:str, message:Union[str, list],
+                  button1='Yes', button2='No', *, icon:str=None):
+    button_name = button_dialog(title, message, [button1, button2], icon=icon)
+    if button_name == button1:
+        return True
     else:
-        simple_dialog(heading_text, msg_text, btn1_text, icon=icon_name)
-        btn1_event()
+        return False
+
+# Single-button dialog. Returns None.
+def simple_dialog(title:str, message:Union[str, list], 
+                  button='Okay', *, icon:str=None):
+    button_dialog(title, message, [button], icon=icon)
 
 def the_W():
     simple_dialog('There’s a new bird among us', 
@@ -1294,16 +1316,18 @@ def menu():
     menu_btns_p2[0].bind('<ButtonRelease-1>', 
             lambda _: open_script('scripts/skin_R_to_L.txt'))
     menu_btns_p2[1].bind('<ButtonRelease-1>', 
+            lambda _: open_script('scripts/obj_R_to_Dx.txt'))
+    menu_btns_p2[2].bind('<ButtonRelease-1>', 
             lambda _: open_script('scripts/map_new.txt'))
 
-    menu_btns_p2[3].bind('<ButtonRelease-1>', 
-            lambda _: open_script(''))
     menu_btns_p2[4].bind('<ButtonRelease-1>', 
-            lambda _: the_W())
+            lambda _: open_script(''))
     menu_btns_p2[5].bind('<ButtonRelease-1>', 
+            lambda _: the_W())
+    menu_btns_p2[6].bind('<ButtonRelease-1>', 
             lambda _: install_assets())
 
-    menu_btns_p2[7].bind('<ButtonRelease-1>', 
+    menu_btns_p2[8].bind('<ButtonRelease-1>', 
             lambda _: menu_p1())
 
     menu_p1()
@@ -1343,12 +1367,19 @@ def parse_line(line: str):
     # but I'm not fixing this because it's an edge case.
     line = line.split('#')[0].rstrip()
 
+    # Commands where the parser should NOT treat commas as separators.
+    # Note that all commands here have max 1 argument as a result.
+    no_split_cmds = ['description', 'open', 'save', 'alt', 'template',
+                     'warning', 'error']
+
     # Split line on commas
     output = ['']
     paren_depth = 0 # 0 = not inside parens, 1 = "(", 2 = "((" and so on
     for char in line:
-        if char == ',' and paren_depth == 0:
-            # Split if not in parentheses
+        if char == ',' and paren_depth == 0 and \
+                (len(output) == 1 or output[0] not in no_split_cmds):
+            # Split on commas if not in parens and not in the 
+            # list of no-split commands
             output.append('')
         else:
             output[-1] += char
@@ -1374,11 +1405,7 @@ Not enough closing parentheses. Skipping line: '+line)
         # Descriptions may contain commas, so keep space after those.
         # Otherwise, remove whitespace from sides of commands. 
         # Ditto for file paths.
-        if output[0] != 'description' \
-                and output[0] != 'open' \
-                and output[0] != 'save' \
-                and output[0] != 'alt' \
-                and output[0] != 'template':
+        if output[0] not in no_split_cmds:
             output[i] = output[i].strip()
 
         try:
@@ -1577,67 +1604,76 @@ use “grayscale,...”''', #1
     # Chat will continue to be a mistake.
     if version[0] > app_version[0] or \
             (version[0] == app_version[0] and version[1] > app_version[1]):
-        dialog('Compatiblity warning', 
+        conf = yn_dialog('Compatiblity warning', 
             ['This script was designed for a newer converter version.',
 'You can try to run it if you want, but we can’t guarantee it’ll work.',
-'We are not responsible for any damage to your files this may cause.'], 
-            'Do you want to continue anyway?', 'warning',
-            'Yes', get_paths, 'No', menu)
-    else:
-        # Scan file for compatibility issues
-        for i in data:
-            # Version 1.1: “default” no longer takes newX and newY arguments
-            # Automatically fixed by converter
-            if i[0] == 'default' and version[0] < 1 or \
-                    (version[0] == 1 and version[1] < 1):
-                file_issues.append(0)
-                del i[3]
-                del i[4]
-            # Version 1.5: “filter” command split into subcommands 
-            # like “grayscale”
-            # Automatically fixed by converter
-            if i[0] == 'filter' and version[0] < 1 or \
-                    (version[0] == 1 and version[1] < 4):
-                file_issues.append(1)
-                del i[0]
-            # Version 2.1: “template” command no longer supports wildcards 
-            # in path
-            # Cannot be fixed
-            if '*' in template_path and version[0] < 2 or \
-                    (version[0] == 2 and version[1] < 1):
-                file_issues.append(2)
-            # Version 3.0: alt command no longer supports wildcards in path
-            # Cannot be fixed
-            if '*' in alt_path and version[0] < 3: 
-                # don't need to check minor version above, 
-                # as there’s no minor version less than 0
-                file_issues.append(3)
-
-        # Compatibility warnings
-        if len(file_issues) > 0:
-            main_text = [
-                Label(main_frame, text=\
-'Your script was designed for version '+version_str+' of this converter.', 
-bg=colors['BG']),
-                Label(main_frame, text=\
-'It contains the following compatibility issues:', 
-bg=colors['BG']),
-            ]
-            for i in file_issues:  
-                main_text.append(Label(main_frame, text='- '+all_issues[i]))
-            
-            dialog('Compatibility warning', main_text, 
-                [
-                    Label(main_frame, text=\
-'Do you wish to continue anyway, even though things may not work properly?',
-bg=colors['BG']),
-                    Label(main_frame, text=\
-'We are not responsible for any damage to your files this may cause.', 
-bg=colors['BG']),
-                ], 'warning', 'Yes', get_paths, 'No', menu)
-        else:
+'We are not responsible for any damage to your files this may cause.',
+'',
+'Do you want to continue anyway?'], 
+            icon='warning')
+        if conf:
             get_paths()
-            return
+        else:
+            menu()
+    else:
+        try:
+            # Scan file for compatibility issues
+            for i in data:
+                # Version 1.1: “default” no longer takes newX and newY arguments
+                # Automatically fixed by converter
+                if i[0] == 'default' and len(i) > 4 and (version[0] < 1 or \
+                        (version[0] == 1 and version[1] < 1)):
+                    file_issues.append(0)
+                    del i[3]
+                    del i[4]
+                # Version 1.5: “filter” command split into subcommands 
+                # like “grayscale”
+                # Automatically fixed by converter
+                if i[0] == 'filter' and (version[0] < 1 or \
+                        (version[0] == 1 and version[1] < 4)):
+                    file_issues.append(1)
+                    del i[0]
+                # Version 2.1: “template” command no longer supports wildcards 
+                # in path
+                # Cannot be fixed
+                if '*' in template_path and (version[0] < 2 or \
+                        (version[0] == 2 and version[1] < 1)):
+                    file_issues.append(2)
+                # Version 3.0: alt command no longer supports wildcards in path
+                # Cannot be fixed
+                if '*' in alt_path and (version[0] < 3): 
+                    # don't need to check minor version above, 
+                    # as there’s no minor version less than 0
+                    file_issues.append(3)
+
+            # Compatibility warnings
+            if len(file_issues) > 0:
+                main_text = [
+'Your script was designed for version %s of this converter.' % version_str, 
+'It contains the following compatibility issues:', 
+                ]
+                for i in file_issues:  
+                    main_text.append(Label(main_frame, text='- '+all_issues[i]))
+                
+                conf = yn_dialog('Compatibility warning', main_text.extend([
+'',
+'Do you wish to continue anyway, even though things may not work properly?',
+'We are not responsible for any damage to your files this may cause.', 
+                    ]), icon='warning')
+                if conf:
+                    get_paths()
+                else:
+                    menu()
+            else:
+                get_paths()
+                return
+        except:
+            # If we find an error while compatibility checking, just skip it
+            # and get right to converting
+            simple_dialog('Compatibility checker error', 
+                    ['Skipping compatibility check due to an error.',
+                    'Please tell Clippy how you got here so he can fix it.'],
+                    icon='warning')
 
 def get_paths():
     global multi, start_num, stop_num, open_path, save_path
@@ -1712,7 +1748,7 @@ Please try again.''',
             simple_dialog('Error', 
 ['The script is trying to save to a folder that doesn’t exist.',
 'The path that caused the error was:', '<b>'+parent_dir], 
-                'Back', icon='error')
+                'Back to Menu', icon='error')
             menu()
 
         # Check if the file already exists
@@ -1756,9 +1792,14 @@ Running the script will overwrite the file. You can’t undo this action.',
                 run_script() # No files to overwrite -- move on
                 return
 
-        dialog('Warning', main_text, 
-            'Do you want to run this script anyway?', 'warning',
-            'Yes', run_script, 'No', menu)
+        conf = yn_dialog('Warning', main_text.extend([
+                '', 
+                'Do you want to run this script anyway?'
+            ]), icon='warning')
+        if conf:
+            run_script()
+        else:
+            menu()
 
 def run_script():
     global data, open_path, save_path, template_path, alt_path, base_blank,\
@@ -1916,7 +1957,7 @@ def replit(conv_time):
 
 def summary(conv_time, warning_page=0):
     # Roll warning page over to 0 if needed
-    warn_per_page = 10 # TODO: turn this into a scrolling thing
+    warn_per_page = 10 # TODO: turn this into a scrolling thing (maybe popup?)
     num_warn_pages = (len(warnings)-1)//warn_per_page + 1
     if warning_page >= num_warn_pages:
         warning_page = 0
@@ -1939,15 +1980,18 @@ def summary(conv_time, warning_page=0):
 
         if num_warn_pages > 1:
             # Display dialog with extra button to go to next warning page
-            dialog('Conversion complete!', main_text,
-                bottom_text, 'warning', 'More warnings', 
-                lambda: summary(conv_time, warning_page+1), # next page
-                'Okay', menu)
+            confirm_exit = button_dialog('Conversion complete!', 
+                    main_text + ['', bottom_text], 
+                    'More warnings', 'Okay', icon='warning')
+            if confirm_exit == 'More warnings':
+                summary(conv_time, warning_page+1) # next page
+            else:
+                menu()
         else:
             # Display dialog with warnings but no extra button
             # if there's only 1 page worth of warnings
-            dialog('Conversion complete!', main_text,
-                bottom_text, 'warning', 'Okay', menu)
+            simple_dialog('Conversion complete!', main_text + ['', bottom_text], icon='warning')
+            menu()
     else:
         simple_dialog('Conversion complete!', main_text,
             'Okay', icon='done')
@@ -1972,6 +2016,20 @@ def process(data: list, open_image, template_image=None, alt_image=None,
         try:
             if item[0].strip() == '': # Skip blank lines
                 pass
+
+            elif item[0] == 'exit': 
+                # End the conversion early, but save the target file as is 
+                # and exit properly.
+                break
+            elif item[0] == 'error':
+                # Stop conversion without saving, and optionally display a 
+                # message on the screen
+                if len(item) < 2: # If the script doesn't include error msg
+                    item.append('The conversion script was stopped due to an \
+unknown error.')
+                simple_dialog('Conversion error', item[1], 'Back to Menu',
+                              icon='error')
+                menu()
             elif item[0] == 'warning':
                 warning(item)
 
@@ -1993,7 +2051,8 @@ def process(data: list, open_image, template_image=None, alt_image=None,
                 for j in range(index+1, len(data)):
                                 # ^ index+1 means we skip "if" line
                     # Check if we've reached end of the whole thing
-                    if data[j][0] in ['endif']:
+                    if data[j][0] in ['end', 'endif']: 
+                        # endif retained for compatibility
                         block_depth -= 1
                         if block_depth == 0:
                             break
@@ -2061,9 +2120,11 @@ def process(data: list, open_image, template_image=None, alt_image=None,
                 clear(item, base_image)
             elif item[0] == 'duplicate':
                 duplicate(item, base_image)
+
             # Advanced copying commands
             elif item[0] == 'tile':
                 tile(item, open_image, alt_image, base_image)
+
             # Transformation commands
             elif item[0] == 'resize':
                 base_image = resize(item, base_image)
@@ -2071,6 +2132,7 @@ def process(data: list, open_image, template_image=None, alt_image=None,
                 rotate(item, base_image)
             elif item[0] == 'flip':
                 flip(item, base_image)
+
             # Filter commands
             elif item[0] == 'grayscale':
                 grayscale(item, base_image)
@@ -2079,7 +2141,7 @@ def process(data: list, open_image, template_image=None, alt_image=None,
             elif item[0] == 'colorfilter':
                 colorfilter(item, base_image)
             elif item[0] == 'opacity':
-                threshold(item, base_image)
+                opacity(item, base_image)
             elif item[0] == 'hue':
                 hue(item, base_image)
             elif item[0] == 'saturation':
@@ -2094,10 +2156,10 @@ def process(data: list, open_image, template_image=None, alt_image=None,
                 colorize(item, base_image)
             elif item[0] == 'sepia':
                 sepia(item, base_image)
-
-            # COMING SOON
             elif item[0] == 'threshold':
                 threshold(item, base_image)
+
+            # COMING SOON
             elif item[0] == 'scale':
                 scale(item, base_image)
             elif item[0] == 'select':
@@ -2112,6 +2174,7 @@ def process(data: list, open_image, template_image=None, alt_image=None,
 for is “default”, not “template”')
             else:
                 log_warning('Unknown command: '+str(item[0]))
+
         except Exception as e: 
             # Handle any errors in the command functions so they don’t bring
             # the whole program to a halt
@@ -2175,10 +2238,20 @@ def crash(exctype=None, excvalue=None, tb=None):
         bomb = PhotoImage(file='ui/bomb.gif')
         window.iconphoto(False, bomb)
     finally:
-        messagebox.showerror(window, 
-            message='''An error has occurred:
-%s''' % (excvalue))
-        exit_app()
+        # Tkinter doesn't have a "public" way to show the error dialog I want,
+        # but the options are hidden under the hood. 
+        # Code based on Tkinter messagebox.py
+        btn = messagebox._show('Error', '''An error has occurred.
+%s: %s''' % (str(exctype)[8:-2], excvalue), 
+messagebox.ERROR, messagebox.ABORTRETRYIGNORE)
+        # btn might be a Tcl index object, so convert it to a string
+        btn = str(btn)
+        if btn == 'ignore':
+            return
+        elif btn == 'retry':
+            menu()
+        else: # abort
+            exit_app()
 
 def exit_app():
     window.destroy()
@@ -2190,7 +2263,7 @@ def exit_app():
 
 try:
     # Comment the next line out to print full crash messages to the console
-    window.report_callback_exception = crash
+    # window.report_callback_exception = crash
     
     # Check if we're running on replit
     if os.path.isdir("/home/runner") == True:

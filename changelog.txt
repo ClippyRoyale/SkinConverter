@@ -150,3 +150,24 @@ Version 5.0.1 (Mar. 20, 2023 / ONLINE ONLY):
   * Moving toward a shared UI codebase for this and Deluxifier 
   * Temp fix for crash bugs on repl.it
   * Requires Python 3.5 or later (type hinting)
+
+Version 5.1 (Mar. 25, 2023):
+  + "threshold" command to turn areas into 1-bit black & white
+      * AKA "Hard-boiled" on the Wii Photo Channel
+      * Useful for making silhouettes
+  + "exit" & "error" commands to end conversion early
+  + Remake-to-Deluxe obj conversion script
+      * The Legacy-to-Deluxe script should work in most cases, but some objs may
+        have credits areas that mess up the version detection
+  * "endif" deprecated in favor of "end" (which will be used to end any block
+    types added in the future)
+      * "endif" will still be supported for backwards compatibility
+  * UI improvements from Deluxifier: better bomb dialogs, automatically detect
+  Replit for fullscreen
+  * Readded union type hinting in a way that's compatible with Py3.5+
+  * Fixed interface bug that was breaking dialog boxes
+  * Fixed bug in the compatibility checker that's been present for an 
+    embarrassingly long time
+  * Fixed opacity command calling the threshold function
+  - Removed dialog()
+  - Removed Herobrine
