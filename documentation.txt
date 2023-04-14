@@ -1,4 +1,4 @@
-version,4,1,1 # The version of the Converter app that this script is made for.
+version,5,2,0 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
@@ -26,6 +26,20 @@ stop,42
 # The main conversion code is below.
 # <> = required arguments
 # [] = optional arguments (with default value used when omitted)
+
+
+
+# LOG/EXIT COMMANDS
+# By default, the converter will run through the whole conversion script, then save the new image and exit.
+
+warning,Your warning here (will be displayed onscreen after conversion)
+
+error,Stop conversion without saving and display this optional message on the screen
+
+exit # End the conversion early, but save the target file as is and exit properly.
+
+# Comment: The hash (#) and everything after it will be ignored by the interpreter.
+# You may also want to "comment out" lines that aren't working in your scripts.
 
 
 
@@ -97,6 +111,9 @@ colorize,180<hue: 0 to 360>,50<saturation: 0 to 100>,50<lightness: 0 to 100>,0[x
 
 sepia,0[x],0[y],16[width],16[height] # Simplified colorize syntax for creating sepia-toned images. Based on hex code #a08060 or HSL(30,25,50)
 
+threshold,128<minWhite: 0 to 256>,0[x],0[y],16[width],16[height]
+# Converts the image to 1-bit black & white based on a numeric lightness threshold, determined by grayscale (luma) value. Any number LESS THAN minWhite is black, any number GREATER or EQUAL is white. Set minWhite to 0 to make everything white. Set minWhite to 256 to make everything black.
+
 
 
 # CONTROL FLOW COMMANDS
@@ -105,7 +122,7 @@ if,(empty,0,0,16,16)
 # Run the commands here if the above condition is true
 else
 # Otherwise, run the commands here
-endif
+end # "end" is the preferred way to end blocks in 5.1+ but "endif" is supported for backwards compatibility
 
 
 
@@ -115,21 +132,9 @@ endif
 
 
 
-# MISCELLANEOUS COMMANDS
-
-warning,Your warning here (will be displayed onscreen after conversion)
-
-# Comment: The hash (#) and everything after it will be ignored by the interpreter.
-# You may also want to "comment out" lines that aren't working in your scripts.
-
-
-
 # COMING SOON:
 
 scale,256<newWidth>,256<newHeight> # Scale the image to the new width and height, using nearest-neighbor scaling (add other algorithms? add percentages? scale specific areas as part of copying?)
-
-threshold,128<lightestBlack: 1 to 255>,0[x],0[y],16[width],16[height]
-# Converts the image to 1-bit black & white based on a numeric lightness threshold. Any number LESS THAN or EQUAL to lightestBlack is black, any number GREATER is white. TODO: How to determine threshold value? Use lightness? Luma?
 
 # Path variables (to replace template/alt)
 
@@ -143,7 +148,7 @@ if,<...>
 # Run the commands here if the above condition is true
 elseif,(empty,128,128,32,32)
 # Run the commands here if the first condition is false but the second condition is true
-endif # maybe change to "end"?
+end
 
 select(selcolor,green,0,0,16,16){
 hue,-120,0,0 # ...etc.

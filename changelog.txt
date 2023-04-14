@@ -127,7 +127,7 @@ Version 4.1.1 (Feb. 22, 2023):
   * Updated all 4 skin conversion scripts for Dx2.3.0 sprite sheet
       * Converted skins now have 16×32 Small sprites and a skin icon
 
-Version 5.0 (Mar. 18, 2023):
+Version 5.0.0 (Mar. 18, 2023):
   + More flexible interface
       * Dialog boxes can have multiple buttons
       * Dialog boxes are easier to place in code; they can be inline instead of
@@ -151,11 +151,12 @@ Version 5.0.1 (Mar. 20, 2023 / ONLINE ONLY):
   * Temp fix for crash bugs on repl.it
   * Requires Python 3.5 or later (type hinting)
 
-Version 5.1 (Mar. 25, 2023):
+Version 5.1.0 (Mar. 25, 2023):
   + "threshold" command to turn areas into 1-bit black & white
       * AKA "Hard-boiled" on the Wii Photo Channel
       * Useful for making silhouettes
   + "exit" & "error" commands to end conversion early
+      * Intended to be put in if statements mostly
   + Remake-to-Deluxe obj conversion script
       * The Legacy-to-Deluxe script should work in most cases, but some objs may
         have credits areas that mess up the version detection
@@ -169,5 +170,15 @@ Version 5.1 (Mar. 25, 2023):
   * Fixed bug in the compatibility checker that's been present for an 
     embarrassingly long time
   * Fixed opacity command calling the threshold function
-  - Removed dialog()
+  - Removed internal dialog() function (shouldn't cause any end-user change)
+  - Removed Herobrine
+
+Version 5.2.0 (Apr. 13, 2023):
+  + New batch conversion system that non-programmers can understand
+  + Message of the Day dialog displays a message I can customize on Github
+      * May be used for emergency messages (e.g. bug warnings) or just news
+  + If user selects an invalid file at various points, they are now given the
+    opportunity to choose a new file
+  * Fixed dialog boxes so they don't treat "Cancel" clicks as "Okay"
+  * Fixed Remake skin conversion scripts (no longer missing small swim/taunt)
   - Removed Herobrine

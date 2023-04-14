@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 5.1.0
+Version 5.2.0
 
 Copyright © 2022–2023 clippy#4722
 
@@ -24,6 +24,7 @@ https://replit.com/@WaluigiRoyale/MR-Converter-GUI?embed=true
 See changelog.txt for version history.
 '''
 
+from glob import glob
 import os, sys, colorsys
 import urllib.request # for installing assets
 import PIL.Image, PIL.ImageOps, PIL.ImageTk
@@ -37,7 +38,7 @@ import tkinter.filedialog as filedialog
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [5,1,0]
+app_version = [5,2,0]
 
 def app_version_str():
     return str(app_version[0])+'.'+str(app_version[1])+'.'+\
@@ -116,8 +117,10 @@ menu_btns_p1 = [
             font=f_large, highlightbackground=colors['BG']),
     Button(main_frame, text='Convert a Remake skin to Deluxe',
             font=f_large, highlightbackground=colors['BG']),
-    Button(main_frame, text='Convert ANY obj mod to Deluxe',
-            font=f_large, highlightbackground=colors['BG']),
+    Button(main_frame, text='Convert a Legacy obj mod to Deluxe',
+            highlightbackground=colors['BG']),
+    Button(main_frame, text='Convert a Remake obj mod to Deluxe', 
+            highlightbackground=colors['BG']),
     Label(main_frame, bg=colors['BG']), # filler
     Button(main_frame, text='Legacy/Custom...', 
             highlightbackground=colors['BG']),
@@ -128,8 +131,6 @@ menu_btns_p1 = [
 menu_btns_p2 = [
     Button(main_frame, text='Convert a Remake skin to Legacy', 
             highlightbackground=colors['BG']),
-    Button(main_frame, text='Convert a Remake obj to Deluxe', 
-            highlightbackground=colors['BG']),
     Button(main_frame, 
             text='Convert a Legacy map mod to Legacy map_new', 
             highlightbackground=colors['BG']),
@@ -137,6 +138,8 @@ menu_btns_p2 = [
     Button(main_frame, text='Run a custom script', 
             highlightbackground=colors['BG']),
     Button(main_frame, text='Submit your custom script', 
+            highlightbackground=colors['BG']),
+    Button(main_frame, text='Convert multiple images...', 
             highlightbackground=colors['BG']),
     Button(main_frame, text='Update game images', 
             highlightbackground=colors['BG']),
@@ -165,6 +168,7 @@ icons = {
 # the conversion completely. Any warnings are displayed to the user after
 # the script finishes running.
 warnings = []
+multi_open_paths = []
 
 # Lists of commands that start and/or end blocks
 block_starts = ['if', 'for', 'while']
@@ -1151,25 +1155,25 @@ def button_dialog(title:str, message:Union[str, list],
         dialog_message[index].place(x=0, y=next_y)
         next_y += dialog_message[-1].winfo_reqheight() + 4
 
-    # Reworked dialogs won't support bottom text 
+    # Reworked dialogs don't support bottom text 
     # (it adds unnecessary complexity).
 
-    dialog_buttons = []
-    for i in buttons:
-        dialog_buttons.append(Button(main_frame, text=i, 
-                                     highlightbackground=colors['BG']))
+    button_objs = []
+    for index, item in enumerate(buttons):
+        # Create new button object
+        new_btn = Button(main_frame, text=item, 
+                highlightbackground=colors['BG'],
+                command=lambda c=index: button_event(c))
+        # Add to button obj list
+        button_objs.append(new_btn)
 
     # Place buttons one by one on the frame, aligned right and starting with
     # the rightmost button
     next_button_x = 470
-    for i in reversed(dialog_buttons):
+    for i in reversed(button_objs):
         i.place(x=next_button_x, y=310, anchor=SE)
         next_button_x -= i.winfo_reqwidth()
         next_button_x -= 10 # a little extra space between buttons
-
-    # Set event bindings for all buttons
-    for index, item in enumerate(dialog_buttons):
-        item.bind('<ButtonRelease-1>', lambda _: button_event(index))
 
     # Wait for user to click a button
     while button_clicked == None:
@@ -1274,6 +1278,9 @@ def setup():
     # Note that the position of anything with main_frame as parent is 
     # RELATIVE (i.e. 160 will be added to x)
 
+    # check message of the day
+    motd()
+
     # check if we need to install assets
     need_assets = check_assets()
     if need_assets:
@@ -1298,32 +1305,38 @@ def menu():
     cls()
     status_set(['blue', 'gray', 'gray', 'gray', 'gray', 'gray'])
 
+    # PAGE 1
+
     menu_btns_p1[0].bind('<ButtonRelease-1>', 
             lambda _: script_variant('scripts/skin_L_to_Dx32.txt',
-                                    'scripts/skin_L32_to_Dx32.txt'))
+                    'scripts/skin_L32_to_Dx32.txt'))
     menu_btns_p1[1].bind('<ButtonRelease-1>', 
             lambda _: script_variant('scripts/skin_R_to_Dx32.txt',
-                                    'scripts/skin_R32_to_Dx32.txt'))
+                    'scripts/skin_R32_to_Dx32.txt'))
     menu_btns_p1[2].bind('<ButtonRelease-1>', 
-            lambda _: open_script('scripts/obj_L_to_Dx.txt'))
+            lambda _: script_button('scripts/obj_L_to_Dx.txt'))
+    menu_btns_p1[3].bind('<ButtonRelease-1>', 
+            lambda _: script_button('scripts/obj_R_to_Dx.txt'))
 
-    menu_btns_p1[4].bind('<ButtonRelease-1>', 
+    menu_btns_p1[5].bind('<ButtonRelease-1>', 
             lambda _: menu_p2())
 
-    menu_btns_p1[6].bind('<ButtonRelease-1>', 
+    menu_btns_p1[7].bind('<ButtonRelease-1>', 
             lambda _: exit_app())
+    
+    # PAGE 2
 
     menu_btns_p2[0].bind('<ButtonRelease-1>', 
-            lambda _: open_script('scripts/skin_R_to_L.txt'))
+            lambda _: script_button('scripts/skin_R_to_L.txt'))
     menu_btns_p2[1].bind('<ButtonRelease-1>', 
-            lambda _: open_script('scripts/obj_R_to_Dx.txt'))
-    menu_btns_p2[2].bind('<ButtonRelease-1>', 
-            lambda _: open_script('scripts/map_new.txt'))
+            lambda _: script_button('scripts/map_new.txt'))
 
+    menu_btns_p2[3].bind('<ButtonRelease-1>', 
+            lambda _: script_button(''))
     menu_btns_p2[4].bind('<ButtonRelease-1>', 
-            lambda _: open_script(''))
-    menu_btns_p2[5].bind('<ButtonRelease-1>', 
             lambda _: the_W())
+    menu_btns_p2[5].bind('<ButtonRelease-1>', 
+            lambda _: new_multi())
     menu_btns_p2[6].bind('<ButtonRelease-1>', 
             lambda _: install_assets())
 
@@ -1336,6 +1349,23 @@ def menu():
 
     window.mainloop()
 
+# EVENT HANDLER for most menu buttons
+def script_button(script_file:str=None):
+    open_result = open_script(script_file)
+    if open_result:
+        check_result = compatibility_check()
+        if check_result:
+            path_result = get_paths()
+            if path_result:
+                run_script()
+            else:
+                menu()
+        else:
+            menu()
+    else:
+        menu()
+
+# SPECIAL EVENT HANDLER
 # Two scripts have variants based on whether the Fire sprites are 
 # 16×32 or 32×32. This allows the user to select which one they want
 # without cluttering the main menu with buttons and explanatory text.
@@ -1352,9 +1382,38 @@ If the 3rd row looks more like this:
 If you’re not sure, try 16×32 first.''', '16×32', '32×32', icon='question')
     
     if is_32:
-        open_script(path32)
+        script_button(path32)
     else:
-        open_script(path16)
+        script_button(path16)
+
+# SPECIAL EVENT HANDLER for new multi-file conversion
+def new_multi():
+    global open_path, save_path
+
+    confirm1 = bool_dialog('Multi-File Conversion - Step 1: Select Script', 
+['Want to convert an entire folder of images? You’ve come to the right place!',
+ 'First, you’ll need to select the script file you want to run.'], 
+            'Cancel', 'Continue', icon='info')
+    if confirm1:
+        open_result = open_script()
+        if open_result:
+            check_result = compatibility_check()
+            if check_result:
+                confirm2 = bool_dialog(\
+'Multi-File Conversion - Step 2: Select Folder',
+['Next, you’ll need to select your source folder.',
+ 'All images in this folder will be converted.',
+ 'The converted images will be saved in a subfolder of the folder you select.'],
+                        'Cancel', 'Continue', icon='info')
+                if confirm2:
+                    path_result = get_paths(new_multi=True)
+                    if path_result:
+                        run_script(new_multi=True)
+    # else
+    menu()
+# TODO: First select script to run (show script info dialog), 
+# then select a folder (all images in folder will be converted and put in a
+# new subfolder titled "converted"
 
 # Takes 1 script line (in string format) and converts it to a program-readable
 # list. Account for comments, nesting, etc.
@@ -1392,13 +1451,13 @@ def parse_line(line: str):
             # If paren_depth is ever negative, there are too many ")"s
             if paren_depth < 0:
                 log_warning('\
-Too many closing parentheses. Skipping line: '+line)
+Parser error: Too many closing parentheses. Skipping line: '+line)
                 return [''] # Return empty line so converter skips it
 
     # If paren_depth isn't back to 0 after exiting splitter loop, syntax error
     if paren_depth > 0:
         log_warning('\
-Not enough closing parentheses. Skipping line: '+line)
+Parser error: Not enough closing parentheses. Skipping line: '+line)
         return [''] # Return empty line so converter skips it
 
     for i in range(len(output)):
@@ -1412,11 +1471,16 @@ Not enough closing parentheses. Skipping line: '+line)
             # Convert data to int if possible
             output[i] = int(output[i])
         except ValueError:
+            # Just keep it as a string
             pass
 
     return output
 
-def open_script(script_file):
+# Open a script, run some validity checks on it, and display info to the user
+# if it's a custom script.
+# Return True if it's a valid script and the user wants to run it.
+# Return False if there was an error or the user declined to run it.
+def open_script(script_file=''):
     global data, version, version_str
 
     # Ask user to pick a script if they want to run a custom script
@@ -1428,8 +1492,7 @@ def open_script(script_file):
                 initialdir='./scripts/')
         # If script file path is still empty, user cancelled, back to menu
         if script_file == '':
-            menu()
-            return
+            return False
 
     #### STEP 2: SCRIPT INFO ####
     cls()
@@ -1445,7 +1508,7 @@ def open_script(script_file):
         simple_dialog('Error', 
             'Couldn’t find a file with that name. Please try again.', 
             'Back', icon='error')
-        menu()
+        return False
     except UnicodeDecodeError: 
         # If user opens a “script” with weird characters
         status_fail()
@@ -1453,7 +1516,7 @@ def open_script(script_file):
             ['Couldn’t read the file with that name.',
                 'Are you sure it’s a conversion script?'],
             'Back', icon='error')
-        menu()
+        return False
     except IsADirectoryError: 
         # If user opens a folder or Mac app bundle
         status_fail()
@@ -1461,9 +1524,9 @@ def open_script(script_file):
             '''That file is a folder or application. 
 Please try again.''',
             'Back', icon='error')
-        menu()
+        return False
 
-    lines = raw_content.split('\n')
+    lines = raw_content.splitlines()
     data = []
     for l in lines:
         data.append(parse_line(l))
@@ -1517,22 +1580,24 @@ If you click “Continue”, this program will check for problems with the scrip
 If no problems are found, the script will run right away.'''], 
                 'Cancel', 'Continue', icon='question')
         if confirm:
-            compatibility_check()
+            return True
         else:
-            menu()
+            return False
     else:
-        compatibility_check()
+        return True
 
+# Load header data from script, then perform a compatibility check.
+# Return False if the user cancels, and True otherwise.
 def compatibility_check():
     global data, version, version_str, open_path, save_path, template_path,\
-            alt_path, base_blank, start_num, stop_num, current_num, multi
+            alt_path, base_blank, start_num, stop_num, current_num
 
     #### STEP 3: COMPATIBILITY CHECK ####
     cls()
     status_complete()
 
     # Load header data
-    open_path = '.INPUT' # New in v3.1: Default to user input if no path given
+    open_path = '.INPUT' # New in v4.0: Default to user input if no path given
     for i in data:
         if i[0] == 'open' and len(i) > 0:
             open_path = i[1]
@@ -1550,7 +1615,7 @@ def compatibility_check():
             template_path = i[1]
             break
             
-    save_path = '.INPUT' # New in v3.1: Default to user input if no path given
+    save_path = '.INPUT' # New in v4.0: Default to user input if no path given
     for i in data:
         if i[0] == 'save' and len(i) > 0:
             save_path = i[1]
@@ -1584,8 +1649,6 @@ def compatibility_check():
             # e.g. if stop is 10, it will convert #10 but not #11
             break
 
-    current_num = start_num
-
     all_issues = [ 
         '“default” command had 6 arguments (instead of 4) before v1.1.', #0
         '''\
@@ -1612,9 +1675,9 @@ use “grayscale,...”''', #1
 'Do you want to continue anyway?'], 
             icon='warning')
         if conf:
-            get_paths()
+            return True
         else:
-            menu()
+            return False
     else:
         try:
             # Scan file for compatibility issues
@@ -1661,12 +1724,11 @@ use “grayscale,...”''', #1
 'We are not responsible for any damage to your files this may cause.', 
                     ]), icon='warning')
                 if conf:
-                    get_paths()
+                    return True
                 else:
-                    menu()
+                    return False
             else:
-                get_paths()
-                return
+                return True
         except:
             # If we find an error while compatibility checking, just skip it
             # and get right to converting
@@ -1674,9 +1736,14 @@ use “grayscale,...”''', #1
                     ['Skipping compatibility check due to an error.',
                     'Please tell Clippy how you got here so he can fix it.'],
                     icon='warning')
+            return True
 
-def get_paths():
-    global multi, start_num, stop_num, open_path, save_path
+# Get the paths for the IMAGES the user wants to open and save to.
+# Return False if there’s an invalid path or the user cancelled.
+# Return True otherwise.
+def get_paths(*, new_multi=False):
+    global legacy_multi, start_num, stop_num, open_path, save_path, \
+        multi_open_paths, multi_save_paths
 
     #### STEP 4: OPEN & SAVE PATHS ####
     cls()
@@ -1684,78 +1751,157 @@ def get_paths():
 
     # Determine whether script is converting 1 file (single-file mode)
     # or multiple files (multi-file mode)
-    multi = False
+    # For a valid legacy multi-file conversion, open_path & save_path must have 
+    # wildcards, and there must be start and stop numbers provided. Otherwise,
+    # the script will be treated as a single-file conversion.
+    legacy_multi = False # reset in case past conversions set this global var
     if start_num != None and stop_num != None and \
             '*' in open_path and '*' in save_path:
-        multi = True
+        # Note that both open and save paths must have a * in them
+        legacy_multi = True
+    # If a script is not a valid legacy multi-file conversion but it has start 
+    # and stop numbers, throw a warning
+    if not legacy_multi and (start_num != None or stop_num != None):
+        log_warning('Script has start/stop numbers but is not a valid legacy \
+multi-file conversion script')
 
-    # Make user choose file if that's what the script wants
-    if open_path.upper() == '.INPUT':
-        open_path = filedialog.askopenfilename(\
-                title='Choose an image to open and copy from',
+    # Make user choose image to open if that's what the script wants
+    if new_multi:
+        # For new multi-file conversions, ask for a FOLDER
+        # (and override any open/save header commands)
+        open_path = filedialog.askdirectory(
+                title='Select a folder. All images in the folder will be \
+converted.',
                 initialdir='./')
         # If open_path is still empty, user cancelled — go back to step 1
         if not open_path:
-            menu()
-            return
+            return False
+        # Else, generate a list of paths for the main processor to loop through
+        multi_open_paths = glob(open_path+'/*')
+        start_num = 0
+        stop_num = len(multi_open_paths)
+    else:
+        if open_path.upper() == '.INPUT':
+            open_path = filedialog.askopenfilename(\
+                    title='Choose an image to open and copy from',
+                    initialdir='./')
+            # If open_path is still empty, user cancelled — go back to step 1
+            if not open_path:
+                return False
 
     # Only run the open-path existence check on single-file conversions. 
-    # For multi-file conversions, existence will be checked file-by-file 
-    # in the main loop.
-    if not multi:
+    # For legacy multi-file conversions, existence will be checked file-by-file 
+    # in the main loop. 
+    # For new multi-file conversions, both error types should be moot.
+    if not legacy_multi and not new_multi:
         try:
             # This part doesn't actually open the file for conversion --
             # it's just to make sure it exists
             open(open_path).close()
         except FileNotFoundError:
-            status_fail()
-            simple_dialog('Error', 
+            # This code will only be reached in legacy single-file mode because
+            # the OS file selector shouldn't select a nonexistent file
+            #   Removed status_fail() as this error is now recoverable
+            choose_new_path = yn_dialog('File warning', 
 ['The script tried to open the following file, but it does not exist.',
 '<b>'+open_path,
-'Check your spelling and try again.'], 'Back', icon='error')
-            menu()
+'Do you want to select a different file to open?'], 'Yes', 
+                    'No (back to menu)', icon='warning')
+            if choose_new_path:
+                open_path = filedialog.askopenfilename(\
+                        title='Choose an image to open and copy from',
+                        initialdir='./')
+                # If open_path is still empty, user cancelled
+                if not open_path:
+                    return False
+            else:
+                return False
         except IsADirectoryError: 
             # If user opens a folder or Mac app bundle
-            status_fail()
-            simple_dialog('Error', 
-                '''The path '''+open_path+''' is a folder or application.
-Please try again.''',
-                'Back', icon='error')
-            menu()
+            #   Removed status_fail() as this error is now recoverable
+            choose_new_path = yn_dialog('File warning', 
+                    '''The path '''+open_path+''' is a folder or application.
+Do you want to select a different file to open?''', 'Yes', 
+                    'No (back to menu)', icon='error')
+            if choose_new_path:
+                open_path = filedialog.askopenfilename(\
+                        title='Choose an image to open and copy from',
+                        initialdir='./')
+                # If open_path is still empty, user cancelled
+                if not open_path:
+                    return False
+            else:
+                return False
 
-    if save_path.upper() == '.INPUT':
+    # Make user choose image to save if that's what the script wants
+    if new_multi:
+        base_save_path = open_path + '/_converted'
+        save_path = base_save_path
+        
+        i = 1
+        while os.path.exists(save_path): 
+            # If there's already a subfolder called _converted, 
+            # tack a number on the end
+            save_path = base_save_path + str(i)
+            i += 1
+        # Actually make the subfolder
+        os.makedirs(save_path)
+
+        # Generate a save path for each image
+        multi_save_paths = [save_path+os.sep+(i.split(os.sep)[-1]) \
+                            for i in multi_open_paths]
+
+        return True
+    elif save_path.upper() == '.INPUT': # i.e. modern single-file scripts
         save_path = filedialog.asksaveasfilename(\
                 title='Choose a location to save to', defaultextension='.png',
                 filetypes=[('PNG image', '*.png')],
                 initialdir='./')
         # If save_path is still empty, user cancelled — go back to step 1
         if save_path == '':
-            menu()
-            return
+            return False
         else: 
-            # We don't need to check overwriting on our end because
-            # the system dialog handles it
-            run_script()
-            return
-    else:
+            # The rest of this function is checking if the save path
+            # would overwrite any existing files, but we don't need 
+            # to check this ourselves here because the system dialog 
+            # handles it
+            return True
+    else: # Only for legacy scripts (single- and multi-file)
         # Make sure parent directory of save_path exists, 
         # if it's saving inside a directory
-        parent_dir = '/'.join(save_path.split('/')[:-1])
+        parent_dir = os.sep.join(save_path.split(os.sep)[:-1])
         # “if parent_dir” => if there’s no parent directory because you’re
         # saving to the current working directory, skip the directory check
         if parent_dir and not os.path.exists(parent_dir):
-            status_fail()
-            simple_dialog('Error', 
+            #   Removed status_fail() as this error is now recoverable
+            choose_new_path = yn_dialog('Error', 
 ['The script is trying to save to a folder that doesn’t exist.',
-'The path that caused the error was:', '<b>'+parent_dir], 
+'The path that caused the error was:', 
+'<b>'+parent_dir,
+'Do you want to select a different location?'], 
                 'Back to Menu', icon='error')
-            menu()
+            if choose_new_path:
+                save_path = filedialog.asksaveasfilename(\
+                        title='Choose a location to save to', 
+                        defaultextension='.png',
+                        filetypes=[('PNG image', '*.png')], initialdir='./')
+                # If save_path is still empty, user cancelled
+                if save_path == '':
+                    return False
+                else: 
+                    # The rest of this function is checking if the save path
+                    # would overwrite any existing files, but we don't need 
+                    # to check this ourselves here because the system dialog 
+                    # handles it
+                    return True
+            else:
+                return False
 
         # Check if the file already exists
         files_to_overwrite = []
         main_text = ['This text shouldn’t show up for any reason.',
-                'If it does, please tell Clippy so he can fix it!']
-        if multi: # …then we need to check EVERY file we're saving to
+'If it does, please tell Clippy how you got here so he can fix it!']
+        if legacy_multi: # …then we need to check EVERY file we're saving to
             for i in range(start_num, stop_num):
                 check_path = save_path.replace('*', str(i))
                 if os.path.exists(check_path):
@@ -1766,17 +1912,19 @@ Please try again.''',
 
             if files_to_overwrite:
                 main_text = [
+                    'This script will overwrite:',
+                    '<b>%s' % files_to_overwrite[0],
+                    '<b>...and %i other files.' % (len(files_to_overwrite)-1),
+                    'You can’t undo this action.',
                     '\
-This script will overwrite one or more existing files. \
-You can’t undo this action.',
-                    '\
-Please check the path %s (where * is any number) for existing files.' \
-    % save_path,
+Please check the path %s (and replace * with any number from %i to %i) to see \
+what other files will be overwritten.' \
+    % (save_path, start_num, stop_num),
                     'Only run scripts from users you trust!',
                 ]
             else:
-                run_script() # No files to overwrite -- move on
-                return
+                # No files to overwrite -- move on
+                return True
         else:
             if os.path.exists(save_path):
                 main_text = [
@@ -1789,25 +1937,29 @@ Running the script will overwrite the file. You can’t undo this action.',
                     'Only run scripts from users you trust!',
                 ]
             else:
-                run_script() # No files to overwrite -- move on
-                return
+                # No files to overwrite -- move on
+                return True
 
         conf = yn_dialog('Warning', main_text.extend([
                 '', 
                 'Do you want to run this script anyway?'
             ]), icon='warning')
         if conf:
-            run_script()
+            return True
         else:
-            menu()
+            return False
 
-def run_script():
+def run_script(*, new_multi=False):
     global data, open_path, save_path, template_path, alt_path, base_blank,\
-            start_num, stop_num, current_num, multi
+            start_num, stop_num, current_num, legacy_multi
 
     #### STEP 5: RUN SCRIPT ####
     cls()
     status_complete()
+
+    # Set current_num after start_num is set but before the first 
+    # update_subhead call
+    current_num = start_num
 
     heading_text = Label(main_frame, text='Converting image...', 
         font=f_heading, bg=colors['BG'])
@@ -1816,12 +1968,20 @@ def run_script():
     # Update screen differently based on how many files we're converting
     heading = Label(bg=colors['BG'])
     subhead = Label(bg=colors['BG'])
-    if multi:
+    if new_multi:
+        heading = Label(main_frame, 
+            text='Converting all images in the folder %s' % \
+                multi_open_paths[0].split(os.sep)[-2], 
+            font=f_heading, bg=colors['BG'])
+        subhead = update_subhead(subhead)
+    elif legacy_multi:
         heading = Label(main_frame, text='Converting all images from '+\
             str(start_num)+' to '+str(stop_num-1), font=f_heading, 
             bg=colors['BG'])
         subhead = update_subhead(subhead)
     else:
+        # For single-image conversions, set start/stop so the main loop will 
+        # only run once
         heading = Label(main_frame, text='Converting 1 image...', 
             font=f_heading, bg=colors['BG'])
         start_num = 0
@@ -1874,6 +2034,13 @@ def run_script():
             ' is a folder or application.')
 
     # Main file-reading loop -- a different function does the actual processing
+    # - For single-file conversion, start_num=0 and stop_num=1; this loop will
+    #   only run once in these cases.
+    # - For new multi-file conversion, stop_num is the length of the list of 
+    #   files in the selected directory, and i is the list index for the 
+    #   filename currently being converted. TODO
+    # - For legacy multi-file conversion, start_num and stop_num are pulled 
+    #   from the conversion script.
     for i in range(start_num, stop_num):
         current_num = i
 
@@ -1889,13 +2056,20 @@ def run_script():
 
         open_image = None
         try:
-            if multi:
+            if new_multi:
+                # New multi-image conversions change open_path and save_path
+                # for every iteration of the file-reading loop
+                open_path = multi_open_paths[i]
+                save_path = multi_save_paths[i]
+                # Read image based on the new open path
+                open_image = PIL.Image.open(open_path).convert('RGBA')
+            elif legacy_multi:
                 open_image = PIL.Image.open(open_path.replace('*', 
                     str(i))).convert('RGBA')
             else:
                 open_image = PIL.Image.open(open_path).convert('RGBA')
         except FileNotFoundError:
-            # Don't need to check for multi because in single mode,
+            # Don't need to check for legacy_multi because in single mode,
             # invalid paths will be rejected earlier
             log_warning('Couldn’t find a file with the path ' + \
                 open_path.replace('*', str(i))+\
@@ -1909,6 +2083,7 @@ def run_script():
         except IsADirectoryError: # If user opens a folder or Mac app bundle
             log_warning('\
                 The path '+open_path+' is a folder or application.')
+            continue
 
         if base_blank:
             # Create a blank base if the script starts with that
@@ -2011,7 +2186,7 @@ def process(data: list, open_image, template_image=None, alt_image=None,
             continue
 
         # Uncomment this to print line-by-line output
-        #p#rint(index+1, item) # +1 to get correct line number
+        #p#rint(index+1, item) # includes a +1 to get correct line number
 
         try:
             if item[0].strip() == '': # Skip blank lines
@@ -2232,6 +2407,45 @@ i[0], icon='error')
                 icon='done')
     menu()
 
+# Download and display the online Message of the Day
+'''
+For each line, everything before the first space is the full list versions that should show the message. The rest of the line is the message itself.
+The program displays a maximum of 1 MOTD -- the first that matches its version.
+
+EXAMPLE MOTD FORMAT:
+
+5.0.0_5.0.1_5.1.0 WARNING: Please update your program to 5.2.0 or later. \
+    The version you're currently using has a bug that could damage your files.
+* We will only be adding the W.
+
+This version of the program would display "We will only be adding the W."
+because it doesn't match any of the versions specified for the warning.
+'''
+def motd():
+    motd_url = 'https://raw.githubusercontent.com/WaluigiRoyale/\
+MR-Converter-GUI/main/motd.txt'
+    try:
+        # Download and read MOTD
+        urllib.request.urlretrieve(motd_url, 'motd.txt')
+        motd_file = open('motd.txt')
+        motd_lines = motd_file.read().splitlines()
+        for i in range(len(motd_lines)):
+            # Split into version and message
+            motd_lines[i] = motd_lines[i].split(' ', 1) 
+            if (len(motd_lines[i]) == 2) and \
+                    ((app_version_str() in motd_lines[i][0]) or \
+                        (motd_lines[i][0] == '*')):
+                motd = motd_lines[i][1]
+                motd_continue = bool_dialog('News!', motd, 'Exit', 'Continue')
+                if motd_continue:
+                    return
+                else:
+                    exit_app()
+    except:
+        # If the internet isn't cooperating or the MOTD file is malformed, 
+        # no big deal, just skip it
+        pass
+
 def crash(exctype=None, excvalue=None, tb=None):
     import tkinter.messagebox as messagebox
     try:
@@ -2298,6 +2512,6 @@ except Exception as e:
     ei = sys.exc_info()
     crash(None, ei[1])
 
-# TODO: Add batch skin conversion without needing to know the scripting language
 # TODO: Add "source,NAME,PATH" command to replace alt/copyalt
 #       (or maybe call the command "load"?)
+# TODO: Don't add goto. Seriously, don't.

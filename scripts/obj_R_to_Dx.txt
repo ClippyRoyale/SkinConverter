@@ -1,6 +1,6 @@
 version,5,1,0
-name,Legacy to Deluxe Obj
-description,Converts a Legacy obj mod to Deluxe format.
+name,Remake to Deluxe Obj
+description,Converts a Remake obj mod to Deluxe format. The Legacy conversion script should work in most cases, but if you're having credits-area-related problems, this will work more reliably.
 author,clippy
 template,assets/deluxe/smb_obj.png
 
@@ -87,45 +87,18 @@ copy,16,80,64,112,16,32
 copy,224,112,224,64,32,48
 grayscale,224,64,32,48
 
-# Buzzy Beetle enemies
-if,(empty,192,112,32,16) # If no buzzy beetle enemies (Remake)
-    warning,It looks like you’re using the Legacy-to-Deluxe converter to convert a Remake object sheet. The auto-detection should be fine in most cases, but if you're having issues because your original object sheet has a credits area, try using the Remake-to-Deluxe obj converter.
-    # TODO: Once I add variables to scripts, just make "isRemake" equal True if there are no buzzy beetles. Since they're out of the credits area, this should properly detect most Remake obj sheets.
-    default,192,112,32,16
-endif
-
-# Buzzy Beetle shells
-if,(empty,240,80,16,16) # If no buzzy beetle shells (Remake)
-    default,80,112,64,16
-else # Legacy
-    # Copy Legacy sheet's Buzzy Beetle shell to new location 4 times
-    copy,240,80,80,112
-    copy,240,80,96,112
-    copy,240,80,112,112
-    copy,240,80,128,112
-endif
+default,192,112,32,16 # Buzzy beetle enemy
+default,80,112,64,16 # Buzzy beetle shell
 
 default,0,64,48,16 # Goombrat
-if,(empty,128,144,32,32) # Lakitu
-    default,128,144,32,32
-endif
-if,(empty,160,144,32,32) # Red piranha plant
-    default,160,144,32,32
-endif
-if,(empty,192,144,32,32) # Blooper
-    default,192,144,32,32
-endif
-# TODO: For discretionary Legacy sprites (Blooper, NOT Spiny), check if it's Remake OR is empty (because of credits areas)
+default,128,144,32,32 # Lakitu
+default,160,144,32,32 # Red piranha plant
+default,192,144,32,32 # Blooper
 
 # Spiny
-# Use 16×16 area for checking instead of 32×16 because the default Remake obj has a message that partially covers the spiny area
-if,(empty,96,160,16,16)
-    default,96,160,32,16
-endif
+default,96,160,32,16
 # Spiny egg
-if,(empty,64,160,32,16)
-    default,64,160,32,16
-endif
+default,64,160,32,16
 # Metal Spiny + Egg (spiny but grayscale)
 duplicate,64,160,64,144,64,16
 grayscale,64,144,64,16

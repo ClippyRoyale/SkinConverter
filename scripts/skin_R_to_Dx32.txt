@@ -1,4 +1,4 @@
-version,4,1,1
+version,5,2,0
 name,Remake to Deluxe32
 author,Clippy
 description,Converts a 16×32 Remake skin to the 32×32 Deluxe format. (If Fire sprites are 32×32, they may be cut off.)
@@ -22,12 +22,12 @@ flip,x,	0,0
 # walk/skid/jump/climb
 copy,	96,0,	128,16,	128,16
 # swim
-copy,	128,80,	112,16
-copy,	128,80,	96,16
-copy,	128,80,	80,16
+copy,	128,0,	112,16
+copy,	128,0,	96,16
+copy,	128,0,	80,16
 # taunt
-copy,	80,0,	48,16
-copy,	80,0,	64,16
+copy,	208,0,	48,16
+copy,	208,0,	64,16
 # dead
 copy,	0,0,	32,16
 
