@@ -14,6 +14,8 @@ This is a GUI-based program for converting skins or other sprite sheets for diff
 * Remake skins to Legacy format
 * Legacy smb_map to smb_map_new
 
+While this program is not designed for maximum efficiency, it’s still pretty fast — as of version 5.2.1, it converts about 69.2 files per second.
+
 ## Why is this useful?
 
 Let’s say you made a skin that was in MR Remake or MR Legacy and you want to use it in MR Deluxe. You know that player skins won’t be officially added to Deluxe but you still want to change the skin on your own computer with Redirector or something. But you also don’t want to spend half an hour remaking all your skins manually because you’d just be doing the same thing over and over.
