@@ -182,3 +182,7 @@ Version 5.2.0 (Apr. 13, 2023):
   * Fixed dialog boxes so they don't treat "Cancel" clicks as "Okay"
   * Fixed Remake skin conversion scripts (no longer missing small swim/taunt)
   - Removed Herobrine
+
+Version 5.2.1 (May 1, 2023):
+  * Compatibility improvements
+      * Can now run conversion scripts going back to v1.0 without modification
