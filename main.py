@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 5.2.0
+Version 5.2.1
 
 Copyright © 2022–2023 clippy#4722
 
@@ -38,7 +38,7 @@ import tkinter.filedialog as filedialog
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [5,2,0]
+app_version = [5,2,1]
 
 def app_version_str():
     return str(app_version[0])+'.'+str(app_version[1])+'.'+\
@@ -1357,13 +1357,27 @@ def script_button(script_file:str=None):
         if check_result:
             path_result = get_paths()
             if path_result:
-                run_script()
-            else:
-                menu()
-        else:
-            menu()
-    else:
-        menu()
+                run_result = run_script()
+
+                # If no files converted (legacy multi only)
+                while run_result < 1: 
+                    try_new_folder = yn_dialog('Warning', 
+['The converter finished its task without any errors, but no files were \
+converted.',
+'Most likely this is because you ran a batch conversion on an \
+empty or invalid folder.',
+'Do you want to try converting a different folder instead?'],
+icon='warning')
+                    if try_new_folder:
+                        path_result = get_paths(new_multi=True)
+                        if path_result:
+                            run_result = run_script(new_multi=True)
+                        else:
+                            break
+                    else:
+                        break
+    # Go back to the menu at the end
+    menu()
 
 # SPECIAL EVENT HANDLER
 # Two scripts have variants based on whether the Fire sprites are 
@@ -1388,8 +1402,6 @@ If you’re not sure, try 16×32 first.''', '16×32', '32×32', icon='question')
 
 # SPECIAL EVENT HANDLER for new multi-file conversion
 def new_multi():
-    global open_path, save_path
-
     confirm1 = bool_dialog('Multi-File Conversion - Step 1: Select Script', 
 ['Want to convert an entire folder of images? You’ve come to the right place!',
  'First, you’ll need to select the script file you want to run.'], 
@@ -1408,7 +1420,25 @@ def new_multi():
                 if confirm2:
                     path_result = get_paths(new_multi=True)
                     if path_result:
-                        run_script(new_multi=True)
+                        run_result = run_script(new_multi=True)
+
+                        # If no files converted
+                        while run_result < 1: 
+                            try_new_folder = yn_dialog('Warning', 
+['The converter finished its task without any errors, but no files were \
+converted.',
+'Most likely this is because you ran a batch conversion on an \
+empty or invalid folder.',
+'Do you want to try converting a different folder instead?'],
+icon='warning')
+                            if try_new_folder:
+                                path_result = get_paths(new_multi=True)
+                                if path_result:
+                                    run_result = run_script(new_multi=True)
+                                else:
+                                    break
+                            else:
+                                break
     # else
     menu()
 # TODO: First select script to run (show script info dialog), 
@@ -1761,9 +1791,10 @@ def get_paths(*, new_multi=False):
         legacy_multi = True
     # If a script is not a valid legacy multi-file conversion but it has start 
     # and stop numbers, throw a warning
-    if not legacy_multi and (start_num != None or stop_num != None):
-        log_warning('Script has start/stop numbers but is not a valid legacy \
-multi-file conversion script')
+    # TODO: Disabled due to possible bugs
+#     if not legacy_multi and (start_num != None or stop_num != None):
+#         log_warning('Script has start/stop numbers but is not a valid legacy \
+# multi-file conversion script')
 
     # Make user choose image to open if that's what the script wants
     if new_multi:
@@ -1879,7 +1910,7 @@ Do you want to select a different file to open?''', 'Yes',
 'The path that caused the error was:', 
 '<b>'+parent_dir,
 'Do you want to select a different location?'], 
-                'Back to Menu', icon='error')
+                'Yes', 'Back to Menu', icon='error')
             if choose_new_path:
                 save_path = filedialog.asksaveasfilename(\
                         title='Choose a location to save to', 
@@ -1949,6 +1980,8 @@ Running the script will overwrite the file. You can’t undo this action.',
         else:
             return False
 
+# Runs the selected conversion script on as many files as called for.
+# Return number of files successfully converted.
 def run_script(*, new_multi=False):
     global data, open_path, save_path, template_path, alt_path, base_blank,\
             start_num, stop_num, current_num, legacy_multi
@@ -1993,6 +2026,7 @@ def run_script(*, new_multi=False):
     t1 = time()
     time_last_refresh = t1
     time_since_refresh = 0
+    conv_count = 0 # Count how many files have been converted
 
     # Load template image only once because it doesn't allow wildcards
     template_image = None
@@ -2038,7 +2072,7 @@ def run_script(*, new_multi=False):
     #   only run once in these cases.
     # - For new multi-file conversion, stop_num is the length of the list of 
     #   files in the selected directory, and i is the list index for the 
-    #   filename currently being converted. TODO
+    #   filename currently being converted.
     # - For legacy multi-file conversion, start_num and stop_num are pulled 
     #   from the conversion script.
     for i in range(start_num, stop_num):
@@ -2102,11 +2136,13 @@ def run_script(*, new_multi=False):
         base_image = process(data, open_image, template_image, 
                             alt_image, base_image)
         base_image.save(save_path.replace('*', str(i)))
+        conv_count += 1
 
     t2 = time()
-    replit(t2-t1)
+    return pre_summary(t2-t1, conv_count) # Return helper func's result
 
-def replit(conv_time):
+# Returns number of files successfully converted.
+def pre_summary(conv_time, conv_count):
     #### STEP 6: SUMMARY ####
     cls()
     status_complete()
@@ -2128,16 +2164,23 @@ def replit(conv_time):
             'than downloading each image one at a time.'
         ]
         simple_dialog('Replit Help', help_text, 'Okay', icon='info')
-    summary(conv_time)
 
-def summary(conv_time, warning_page=0):
+    if conv_count == 0 and (legacy_multi or new_multi):
+        # Break out before we would show summary
+        return 0
+
+    summary(conv_time, conv_count)
+    return conv_count
+
+def summary(conv_time, conv_count, warning_page=0):
     # Roll warning page over to 0 if needed
     warn_per_page = 10 # TODO: turn this into a scrolling thing (maybe popup?)
     num_warn_pages = (len(warnings)-1)//warn_per_page + 1
     if warning_page >= num_warn_pages:
         warning_page = 0
 
-    main_text = ['Done in '+str(round(conv_time, 3))+' seconds']
+    main_text = ['Converted %d files in %s seconds' % 
+                 (conv_count, str(round(conv_time, 3)))]
     bottom_text = ''
 
     if warnings:
@@ -2159,18 +2202,18 @@ def summary(conv_time, warning_page=0):
                     main_text + ['', bottom_text], 
                     'More warnings', 'Okay', icon='warning')
             if confirm_exit == 'More warnings':
-                summary(conv_time, warning_page+1) # next page
+                summary(conv_time, conv_count, warning_page+1) # next page
             else:
-                menu()
+                return
         else:
             # Display dialog with warnings but no extra button
             # if there's only 1 page worth of warnings
             simple_dialog('Conversion complete!', main_text + ['', bottom_text], icon='warning')
-            menu()
+            return
     else:
         simple_dialog('Conversion complete!', main_text,
             'Okay', icon='done')
-        menu()
+        return
 
 # Reads lines from one file and executes its instructions
 def process(data: list, open_image, template_image=None, alt_image=None, 
@@ -2414,6 +2457,7 @@ The program displays a maximum of 1 MOTD -- the first that matches its version.
 
 EXAMPLE MOTD FORMAT:
 
+# This line is just a comment and will be ignored.
 5.0.0_5.0.1_5.1.0 WARNING: Please update your program to 5.2.0 or later. \
     The version you're currently using has a bug that could damage your files.
 * We will only be adding the W.
@@ -2463,7 +2507,7 @@ messagebox.ERROR, messagebox.ABORTRETRYIGNORE)
         if btn == 'ignore':
             return
         elif btn == 'retry':
-            menu()
+            setup()
         else: # abort
             exit_app()
 
@@ -2477,7 +2521,7 @@ def exit_app():
 
 try:
     # Comment the next line out to print full crash messages to the console
-    # window.report_callback_exception = crash
+    window.report_callback_exception = crash
     
     # Check if we're running on replit
     if os.path.isdir("/home/runner") == True:
