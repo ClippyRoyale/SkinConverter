@@ -1,1 +1,1 @@
-
+5.2.0_5.2.1 There's a crash bug in versions 5.1.0 through 5.2.1 that occurs when using the Legacy obj converter to convert a Remake obj mod. It will be fixed in an upcoming major update.
