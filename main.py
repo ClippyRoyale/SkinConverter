@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 5.2.1
+Version 5.2.2
 
 Copyright © 2022–2023 clippy#4722
 
@@ -2200,7 +2200,7 @@ def summary(conv_time, conv_count, warning_page=0):
             # Display dialog with extra button to go to next warning page
             confirm_exit = button_dialog('Conversion complete!', 
                     main_text + ['', bottom_text], 
-                    'More warnings', 'Okay', icon='warning')
+                    ['More warnings', 'Okay'], icon='warning')
             if confirm_exit == 'More warnings':
                 summary(conv_time, conv_count, warning_page+1) # next page
             else:
