@@ -183,6 +183,6 @@ Version 5.2.0 (Apr. 13, 2023):
   * Fixed Remake skin conversion scripts (no longer missing small swim/taunt)
   - Removed Herobrine
 
-Version 5.2.1 (May 1, 2023):
-  * Compatibility improvements
-      * Can now run conversion scripts going back to v1.0 without modification
+Version 5.2.1 (May 1, 2023): Can now run conversion scripts going back to v1.0 without modification
+
+Version 5.2.2 (May 31, 2023): Fixed crash bug that occurred when running any script that generates warnings
