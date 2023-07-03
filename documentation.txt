@@ -1,4 +1,4 @@
-version,5,2,0 # The version of the Converter app that this script is made for.
+version,6,0,0 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
@@ -9,19 +9,23 @@ open,smb_skin*.png # Main image to open and copy from. Skip this line entirely i
 
 save,smb_edit*.png # Filename to save to. (WARNING: Any existing file with this name will be overwritten!) Skip this line entirely if you want the user to enter their own path. If you want to convert multiple images at once, enter a * in the place where you want the converter to insert a number; see "start"/"stop" below for more on this.
 
+# If you want to convert a collection of sequentially-numbered images, use these commands. For example, the commands below mean that image #0 will be the first image converted, and image #42 will be the last image.
+start,0
+stop,42
+
 template,smb_skin2580.png # Template image to copy/paste from in place. No user input offered here because this image is supposed to stay the same.
 
 alt,smb_skin1.png # Alternate image to copy from.
 
 base,blank # Add this code to use a blank template-sized image as the base; otherwise, the "open" image will be the base.
 
-# If you want to convert a collection of sequentially-numbered images, use these commands. For example, the commands below mean that image #0 will be the first image converted, and image #42 will be the last image.
-start,0
-stop,42
+loop_limit,1000 # To prevent infinite loops (or gotos) from freezing the converter, a script will crash if any single line of code runs 1000 times. If you need to run a loop more (or fewer) times than that, you can manually change the loop limit.
 
 # Everything above this line is a header command.
 # Each one can only appear once. If you use the same header command more than once,
 # only the first instance will be used.
+# Header commands cannot contain subcommands or references to variables.
+# Header commands 
 
 # The main conversion code is below.
 # <> = required arguments
@@ -51,11 +55,15 @@ exit # End the conversion early, but save the target file as is and exit properl
 
 copy,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy from old image to specified position in new image.
 
-copyalt,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy from alt image to specified position in new image. WARNING: This command may be folded into “copy” in the future in a manner similar to how I implemented “tile”.
+copy_alt,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy from alt image to specified position in new image. (Alias: copyalt)
+
+copy_from,old<imageName>,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy from any image ("old", "alt", "template", or even "new") to specified position in new image.
 
 default,0[x],0[y],16[width],16[height] # Copy from template image to same position in new image.
 
-clear,0[x],0[y],16[width],16[height] # Clear area from new image. Used to be called "delete" -- this still works for compatiblity reasons.
+default_from,template<imageName>,0[x],0[y],16[width],16[height] # Copy from any image ("old", "alt", "template", or even "new") to same position in new image.
+
+clear,0[x],0[y],16[width],16[height] # Clear area from new image. (Alias: delete -- deprecated in v6.0.0 and later)
 
 duplicate,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy an area on the NEW image to another position on the same canvas.
 
@@ -64,7 +72,7 @@ duplicate,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy an area on
 # ADVANCED COPYING COMMANDS
 # These commands build on the basic commands but allow you to do some tasks with fewer commands.
 
-tile,0<copyX>,0<copyY>,16<copyWidth>,16<copyHeight>,0<pasteStartX>,0<pasteStartY>,16<pasteCountHoriz>,16<pasteCountVert>,open[copySource: open, template, or alt] # Create a tile pattern on the new image using a part of the old image. This command can be very useful but it’s not for the faint of heart.
+tile,0<copyX>,0<copyY>,16<copyWidth>,16<copyHeight>,0<pasteStartX>,0<pasteStartY>,16<pasteCountHoriz>,16<pasteCountVert>,open[copySource: old, template, or alt] # Create a tile pattern on the new image using a part of the old image. This command can be very useful but it’s not for beginners.
 
 
 
@@ -93,7 +101,7 @@ grayscale,0[x],0[y],16[width],16[height] # Converts the area to grayscale (AKA b
 
 invert,0[x],0[y],16[width],16[height] # Inverts the area. For example, black becomes white, and red becomes cyan.
 
-colorfilter,0<redAdjust: -255 to +255>,0<greenAdjust>,0<blueAdjust>,0[x],0[y],16[width],16[height] # Adjusts the R/G/B levels. You can use all three adjust arguments at the same time to adjust brightness.
+color_filter,0<redAdjust: -255 to +255>,0<greenAdjust>,0<blueAdjust>,0[x],0[y],16[width],16[height] # Adjusts the R/G/B levels. You can use all three adjust arguments at the same time to adjust brightness. (Alias: colorfilter)
 
 opacity,0<adjust: -255 to +255>,0[x],0[y],16[width],16[height] # Adjusts the opacity (alpha) levels. Negative = more transparent, positive = more opaque.
 
@@ -103,7 +111,7 @@ saturation,0<adjust: -100 to +100>,0[x],0[y],16[width],16[height] # Adjusts the 
 
 lightness,0<adjust: -100 to +100>,0[x],0[y],16[width],16[height] # Adjusts the lightness (in HSLA color space). Positive adjust means lighter. Negative adjust means darker. -100 means all black, +100 means all white.
 
-fill,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255<alpha: 0 to 255>,0[x],0[y],16[width],16[height] # Fills the area with the selected color.
+fill,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255[alpha: 0 to 255],0[x],0[y],16[width],16[height] # Fills the area with the selected color.
 
 contrast,0<adjust: -128 to 128>,0[x],0[y],16[width],16[height] # Adjusts the contrast. -128 will make all non-transparent pixels medium gray; +127 will make all RGB values either 0 or 255 (8 colors).
 
@@ -119,16 +127,80 @@ threshold,128<minWhite: 0 to 256>,0[x],0[y],16[width],16[height]
 # CONTROL FLOW COMMANDS
 
 if,(empty,0,0,16,16)
-# Run the commands here if the above condition is true
+    # Run the commands here if the above condition is true
+elseif,(empty,128,128,32,32)
+    # Run the commands here if the first condition is false but the second condition is true
 else
-# Otherwise, run the commands here
-end # "end" is the preferred way to end blocks in 5.1+ but "endif" is supported for backwards compatibility
+    # Otherwise, run the commands here
+end 
+# "end" is the preferred way to end blocks in 5.1+ but "endif" is supported for backwards compatibility
+
+if1,(...) # Like if, but rather than being the start of a block, you just execute the next line if the conditional is true, then continue with the program.
+    # This line is the only line inside the if "block". Maybe you could put a goto here?
+# This line is just part of the normal program flow. No "end" needed.
+
+label,hello # Mark a point in the code that you can jump to using "goto".
+
+goto,hello # Jump to a label defined elsewhere in the code.
+goto,10 # Jump to the start of line number 10. The first line of your program is 1.
+
+while,(...) # Keep repeating as long as the condition in argument 1 is true. TODO: Argument 2 will be "min_repeat" for minimum number of times loop must repeat, like a do-while loop
 
 
 
-# CONDITIONAL SUBCOMMANDS FOR IF
+# DATA COMMANDS
+
+set,$hello<name>,"Hello world"<value> # Set variable "hello" to the string "Hello world". Subcommands in second argument will be evaluated before setting the variable. Any value in double quotes will be treated as a string no matter what. If it's not in quotes and it can be parsed as an integer, the value will be an integer. Anything else will be treated as a string for legacy reasons, but watch out for special characters!
+
+
+
+# SUBCOMMANDS
+# These are useful e.g. as conditions in if statements.
 
 (empty,0<x>,0<y>,16[width],16[height]) # True if the area on the old image is completely empty (every pixel is transparent), False otherwise.
+
+
+
+# EQUALITY SUBCOMMANDS
+# These work exactly the way you'd expect.
+# Can be called using Unicode symbols (≥), ASCII approximations (>=), or letters (ge, gte).
+
+(=,x1,x2,...)	# or ==, eq
+(!=,x1,x2,...)	# or ≠, <>, ne
+(<,x1,x2,...)	# or lt
+(>,x1,x2,...)	# or gt
+(<=,x1,x2,...)	# or ≤, le, lte
+(>=,x1,x2,...)	# or ≥, ge, gte
+
+
+
+# LOGICAL SUBCOMMANDS
+# These also work exactly the way you'd expect.
+# Can be called with Python keywords (and) or C operators (&&).
+
+(and,<subcmd1>,<subcmd2>,[subcmd3],...)
+(or,<subcmd1>,<subcmd2>,[subcmd3],...)
+(not,<subcmd1>)
+
+
+
+# MATH SUBCOMMANDS
+# These mostly work exactly the way you'd expect, except unlike in Python they can't be used on strings.
+
+(+,x1,x2,...)	# or add
+(-,x1,x2,...)	# or sub, − [minus sign], or – [en dash]
+(*,x1,x2,...)	# or mul, ×
+
+
+
+# COLOR SUBCOMMANDS
+# These return RGB, HSL, etc. color values of a given pixel -- or if width/height values are given, then the average value across that area (as an integer).
+
+(red,0<x>,0<y>,1[width],1[height]) # Return the red value (from 0 to 255) of a single pixel. If width and height are given, take the average red value over the given rectangle.
+(green,0<x>,0<y>,1[width],1[height])
+(blue,0<x>,0<y>,1[width],1[height])
+
+(alpha,0<x>,0<y>,1[width],1[height]) # This is for GETTING the alpha value (from 0 to 255). For applying a transparency filter, use "opacity".
 
 
 
@@ -136,41 +208,83 @@ end # "end" is the preferred way to end blocks in 5.1+ but "endif" is supported 
 
 scale,256<newWidth>,256<newHeight> # Scale the image to the new width and height, using nearest-neighbor scaling (add other algorithms? add percentages? scale specific areas as part of copying?)
 
-# Path variables (to replace template/alt)
+(selcolor,red<color>,0<x>,0<y>,16[width],16[height]) # Selective color: selects all colors within a given sixth of the HSL color wheel
 
-set,template,smb_skin2580.png # Set a name for an image path, to use later with "copyfrom". Give this command a better name?
-copyfrom,open<pathvar>,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy from the specified path variable to specified position in new image.
+# Image Names (to replace template/alt)
 
-# If statements and subroutines
+load,alt<imageName>,smb_skin2580.png # Set a name for an image path, to use later with "copyfrom".
+copyfrom,open<imageName>,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy from the specified image name to specified position in new image.
 
-# ELSEIF:
-if,<...>
-# Run the commands here if the above condition is true
-elseif,(empty,128,128,32,32)
-# Run the commands here if the first condition is false but the second condition is true
-end
+# Image dimensions
+(width,open<imageName>)
+(height,open<imageName>)
+
+# IF STATEMENTS & SUBCOMMANDS
 
 select(selcolor,green,0,0,16,16){
 hue,-120,0,0 # ...etc.
 }
 
-# Image variables:
-WIDTH, HEIGHT
+# Color subcommands:
 
-# Pixel variables:
-# RED, GREEN, BLUE, HUE, SATURATION, LIGHTNESS, OPACITY, LUMA?
+(hue,0<x>,0<y>,1[width],1[height]) 		# from 0 to 359
+(saturation,0<x>,0<y>,1[width],1[height])	# In the HSL sense; from 0 to 100
+(lightness,0<x>,0<y>,1[width],1[height])	# Not to be confused with value AKA brightness; from 0 to 100
 
-# Math subcommands?
-(+,x1,x2,...)
-(-,x1,x2,...)
-(*,x1,x2,...)
-(/,x1,x2,...)
+(luma,0<x>,0<y>,1[width],1[height]) # The value that would be used if the image were converted to grayscale
 
-# Conditional subcommands for select:
-(>,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
-(<,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
-(=,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height]) # or ==
-(!=,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
-(>=,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
-(<=,RED<value1>,128<value2>,0<x>,0<y>,16[width],16[height])
-(selcolor,red<color>,0<x>,0<y>,16[width],16[height]) # Selective color: selects all colors within a given sixth of the HSL color wheel
+# Math subcommands:
+(/,x1,x2,...)	# or truediv, ÷
+(div,x1,x2,...)	# integer division (quotient) MAYBE // ?
+(mod,x1,x2,...) # modulus (remainder) MAYBE % ?
+(floor,x1) # only need this once floats are added
+(ceil,x1)
+# pow, root, log, round — syntax TBD
+
+# Logical subcommands
+(xor,<>,<>,...)
+# nor, nand, xnor?
+
+# LOOPS
+for,(set,$i,0),(<,$i,10),(++,$i) # C-style loop syntax
+foreach,$i<loopVar>,$l<list> # Python-style loop syntax
+(range,1[start],10<stop>,1[step]) # Generates a list of integers from start to stop (inclusive), stepping by 1 each time. In the example, the list would be [1,2,3,4,5,6,7,8,9,10]. This is different from Python 3 but it's more intuitive (and consistent with the start/stop header commands)
+break,1<numLoops> # Break out of the current loop. If numLoops >= 1, break out of that many levels of loops (assuming loop is nested).
+next # "continue" in C/Java/Python, but "next" is a better name because we're skipping to the next iteration of the loop.
+# Ruby's "redo" and "retry" are probably too rare to be worth implementing. They can easily be replicated with gotos
+
+# VARIABLES
+load,alt2<name>,~/image.png<path> # Load the image at the given path and store it associated with the given string identifier. This is a header command, so it will always be called once at the start of the program and it can't be used with variables. The image cannot be retrieved like a variable, but it does block its name from being used for variables. Maybe call this "setpath"? Or "source"?
+
+# LIST COMMANDS
+(list,x1,x2,x3,...) # Creates an editable, variable-length list with the given items.
+listdata # One list item per line. Empty line = end of list
+# TODO: List manipulation
+
+# DRAWING OPTIONS
+fill_color,[255,0,0,255]<color> # Set fill color.
+line_color,[255,0,0,255]<color> # Set outline color.
+line_width,1<width> # Set outline stroke width
+# All color subcommands return an RGBA hex.
+(rgb,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255<alpha: 0 to 255>) # Alias: rgba. If a list is the default format, is it necessary to have this?
+(hsl,0<hue: 0 to 359>,100<saturation: 0 to 100>,50<lightness: 0 to 100>,255<alpha: 0 to 255>) # Alias: hsla
+# TODO: Should "color" be a list or its own type?
+
+# SHAPE DRAWING
+rect,0<x>,0<y>,16<width>,16<height>,0<outline: 0 for fill, 1 for outline, 2 for both> # Draw a rectangle with the top left corner at the given x and y.
+ellipse,0<x>,0<y>,16<width>,16<height>,0<outline: 0 for fill, 1 for outline, 2 for both> # Draw an ellipse with the top left "corner" at the given x and y.
+line,0<x1>,0<y1>,16<x2>,16<y2> # Draw a line from (x1,y1) to (x2,y2). Note that this is different from the width/height system used for everything else. The example coordinates would have a width and height of 17 pixels.
+
+# LAYERS
+use,layers # Header command to turn layers ON. Without this, no layer commands will work.
+layers.new,0<depth>,layer0[name] # Create a new layer. Default name based on the given depth. For depth, higher numbers are at the front.
+layers.select,0<depth OR name> # Set which layer you're currently working on.
+
+# (Lower-priority layer commands)
+layers.show,0[target: depth OR name] # Default to current layer
+layers.hide,0[target: depth OR name]
+layers.delete,0[target: depth OR name]
+layers.merge,0[fromlayer: depth OR name],0[tolayer: depth OR name] # Default to merging current layer down to the layer behind it
+layers.mergevisible # Merge all visible layers
+
+# Clipboard? cut, copy, paste, clear

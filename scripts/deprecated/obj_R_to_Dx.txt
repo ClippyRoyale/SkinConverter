@@ -1,31 +1,24 @@
 version,6,0,0
-name,Legacy to Deluxe Obj
-description,Converts a Legacy obj mod to Deluxe format.
+name,Remake to Deluxe Obj
+description,Converts a Remake obj mod to Deluxe format. The Legacy conversion script should work in most cases, but if you're having credits-area-related problems, this will work more reliably.
 author,clippy
 template,assets/deluxe/smb_obj.png
 
-# Test for Remake
-# Checking the buzzy beetle locations is the most reliable test
-# because other enemies' space was more likely to be used as a credits area
-if,(and,(empty,240,80,16,32),(empty,192,112,32,32))
-    set,$remake,1
-else
-    set,$remake,0
-end,if
+# This will only convert Legacy obj sheets - not Remake or older ones!
 
 # Delete Mario (no longer in smb_obj)
-clear,0,0,224,16
-clear,0,16,240,32
-clear,0,48,256,32
+delete,0,0,224,16
+delete,0,16,240,32
+delete,0,48,256,32
 
 # Delete areas that are changed in DX
-clear,0,80,192,64
-clear,192,80,64,32
-clear,192,128,32,16
-clear,0,144
-clear,192,192,32,16
-clear,176,208,80,16
-clear,0,176,128,32 # Old Bowser area
+delete,0,80,192,64
+delete,192,80,64,32
+delete,192,128,32,16
+delete,0,144
+delete,192,192,32,16
+delete,176,208,80,16
+delete,0,176,128,32 # Old Bowser area
 
 # Copy Bowser to new (tentative?) location
 copy,0,176,0,16,64,32
@@ -94,43 +87,18 @@ copy,16,80,64,112,16,32
 copy,224,112,224,64,32,48
 grayscale,224,64,32,48
 
-# Buzzy Beetle enemies
-if,(empty,192,112,32,16) # If no buzzy beetle enemies (Remake)
-    default,192,112,32,16
-end,if
-
-# Buzzy Beetle shells
-if,(empty,240,80,16,16) # If no buzzy beetle shells (Remake)
-    default,80,112,64,16
-else # Legacy
-    # Copy Legacy sheet's Buzzy Beetle shell to new location 4 times
-    copy,240,80,80,112
-    copy,240,80,96,112
-    copy,240,80,112,112
-    copy,240,80,128,112
-end,if
+default,192,112,32,16 # Buzzy beetle enemy
+default,80,112,64,16 # Buzzy beetle shell
 
 default,0,64,48,16 # Goombrat
-if,(or,$remake,(empty,128,144,32,32)) # Lakitu
-    default,128,144,32,32
-end,if
-if,(or,$remake,(empty,160,144,32,32)) # Red piranha plant
-    default,160,144,32,32
-end,if
-if,(or,$remake,(empty,192,144,32,32)) # Blooper
-    default,192,144,32,32
-end,if
-# TODO: For discretionary Legacy sprites (Blooper, NOT Spiny), check if it's Remake OR is empty (because of credits areas)
+default,128,144,32,32 # Lakitu
+default,160,144,32,32 # Red piranha plant
+default,192,144,32,32 # Blooper
 
 # Spiny
-# Use 16×16 area for checking instead of 32×16 because the default Remake obj has a message that partially covers the spiny area
-if,(or,$remake,(empty,96,160,16,16))
-    default,96,160,32,16
-end,if
+default,96,160,32,16
 # Spiny egg
-if,(or,$remake,(empty,64,160,32,16))
-    default,64,160,32,16
-end,if
+default,64,160,32,16
 # Metal Spiny + Egg (spiny but grayscale)
 duplicate,64,160,64,144,64,16
 grayscale,64,144,64,16

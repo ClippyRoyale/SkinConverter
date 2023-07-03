@@ -183,6 +183,56 @@ Version 5.2.0 (Apr. 13, 2023):
   * Fixed Remake skin conversion scripts (no longer missing small swim/taunt)
   - Removed Herobrine
 
-Version 5.2.1 (May 1, 2023): Can now run conversion scripts going back to v1.0 without modification
+Version 5.2.1 (May 1, 2023): 
+Can now run conversion scripts going back to v1.0 without modification
 
-Version 5.2.2 (May 31, 2023): Fixed crash bug that occurred when running any script that generates warnings
+Version 5.2.2 (May 31, 2023): 
+Fixed crash bug that occurred when running any script that generates warnings
+
+Version 6.0.0 (Jul. 2, 2023):
+  + Added variables
+      * Set them with `set,$<name>,<value>`
+      * Supported types: integers, strings, booleans (see below)
+      * Get their values at any time with $<name>
+      * Must set script version to 6,0,0 to use variables
+  + Can now use subcommands anywhere, not just with if statements
+  + Can now nest subcommands, e.g. (+,32,(*,$width,16))
+  + Added a bunch of subcommands
+      * MATH: +, -, *
+      * EQUALITY: ==, !=, <, >, <=, >=
+      * LOGIC: and, or, not
+      * COLOR (return color value of a pixel or average for an area):
+        red, green, blue, alpha 
+  + goto command (go to a line number or a label set w/ the new label command)
+  + while loops
+      * “break” and “next” will be added later
+  + Rewrote if statement parser to add support for “elseif”
+      * And the code is actually readable now
+  + if1 command as a simpler alternative to if/end
+  + Boolean values: $_true and $_false (or $_t and $_f)
+  + copy_from and default_from commands to copy from any loaded image by name
+      * The ability to load extra images besides “old”, “template”, and “alt”
+        will be added in a future update
+  + Updated Message of the Day to match revisions from Deluxifier 3, plus an
+    "Update available" header for update news
+  + Updated Legacy Obj conversion script 
+      + Thanks to variables, it can now convert Remake objs equally well
+      - Deprecated the dedicated Remake Obj conversion script
+        (still included in the “deprecated” folder, but no longer has a button
+        on the menu)
+  * Rewrote parser to allow for more blocks similar to “if” in the future
+  * Commands are now case-insensitive
+  - Deprecated "delete" as an alias for "clear" in scripts targeting v6+
+      * It still works for now, but it could be removed at any time
+  - Removed sidebar that showed conversion progress because it's not really that
+    helpful anymore
+  - Removed compatibility checker
+      * It preceded the warning log and only covered ancient syntax changes
+        and edge cases that never actually showed up
+      * Going forward, compatibility issues will be fixed on the fly
+  + Added the W
+  - Removed Herobrine
+
+COMING SOON: Path variables, lists, for?/foreach, switch, layers, 
+  drawing commands,
+  "from" as a subcommand to change the source image (from,template,red,0,0)
