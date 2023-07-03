@@ -1,4 +1,4 @@
-version,5,1,0
+version,6,0,0
 name,Remake to Deluxe Obj
 description,Converts a Remake obj mod to Deluxe format. The Legacy conversion script should work in most cases, but if you're having credits-area-related problems, this will work more reliably.
 author,clippy
@@ -106,3 +106,10 @@ grayscale,64,144,64,16
 # New powerups
 default,176,224 # Leaf
 default,224,208 # Hammer suit
+
+# SMW goalpost
+default, 48,64, 32,16
+
+# Rex
+default, 96,176, 96,32  # regular
+default, 144,128, 48,16 # stomped
