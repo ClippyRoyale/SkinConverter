@@ -1,1 +1,1 @@
-5.2.0_5.2.1 Skin Converter 5.2.2 is out now, with a tiny fix to a crash bug that occurs when using the Legacy obj converter to convert a Remake obj mod.
+u_5.2.0_5.2.1_5.2.2 Skin Converter 6.0.0 is out now, with improved conversion of object mods and an improved user interface.
