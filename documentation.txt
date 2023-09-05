@@ -1,4 +1,4 @@
-version,6,0,0 # The version of the Converter app that this script is made for.
+version,6,1,0 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
@@ -19,7 +19,7 @@ alt,smb_skin1.png # Alternate image to copy from.
 
 base,blank # Add this code to use a blank template-sized image as the base; otherwise, the "open" image will be the base.
 
-loop_limit,1000 # To prevent infinite loops (or gotos) from freezing the converter, a script will crash if any single line of code runs 1000 times. If you need to run a loop more (or fewer) times than that, you can manually change the loop limit.
+loop_limit,10000 # To prevent infinite loops (or gotos) from freezing the converter, a script will crash if any single line of code runs 10,000 times. If you need to run a loop more (or fewer) times than that, you can manually change the loop limit.
 
 # Everything above this line is a header command.
 # Each one can only appear once. If you use the same header command more than once,
@@ -91,35 +91,39 @@ flip,x<direction: x or y>,0[x],0[y],16[width],16[height]
 
 
 # FILTER COMMANDS
+
 # All filters are applied in place to the specified area on the new image.
+
 # For all commands in this section:
 # If you don’t give x or y, apply command to whole image: x=0, y=0, width and height are the same as the image's width and height.
 # If you give x and y but not width or height: width=16, height=16
 # If you give x, y, and width, but not height: height=width 
 
-grayscale,0[x],0[y],16[width],16[height] # Converts the area to grayscale (AKA black-and-white). For the command that literally makes the area only black and white (1-bit), use "threshold".
+# Before v6.1, these commands didn't have the "filter." prefix.
 
-invert,0[x],0[y],16[width],16[height] # Inverts the area. For example, black becomes white, and red becomes cyan.
+filter.grayscale,0[x],0[y],16[width],16[height] # Converts the area to grayscale (AKA black-and-white). For the command that literally makes the area only black and white (1-bit), use "threshold".
 
-color_filter,0<redAdjust: -255 to +255>,0<greenAdjust>,0<blueAdjust>,0[x],0[y],16[width],16[height] # Adjusts the R/G/B levels. You can use all three adjust arguments at the same time to adjust brightness. (Alias: colorfilter)
+filter.invert,0[x],0[y],16[width],16[height] # Inverts the area. For example, black becomes white, and red becomes cyan.
 
-opacity,0<adjust: -255 to +255>,0[x],0[y],16[width],16[height] # Adjusts the opacity (alpha) levels. Negative = more transparent, positive = more opaque.
+filter.color_balance,0<redAdjust: -255 to +255>,0<greenAdjust>,0<blueAdjust>,0[x],0[y],16[width],16[height] # Adjusts the R/G/B levels. You can use all three adjust arguments at the same time to adjust brightness. (Alias: colorfilter, color_filter)
 
-hue,0<adjust: -180 to +180>,0[x],0[y],16[width],16[height] # Adjusts the hue.
+filter.opacity,0<adjust: -255 to +255>,0[x],0[y],16[width],16[height] # Adjusts the opacity (alpha) levels. Negative = more transparent, positive = more opaque.
 
-saturation,0<adjust: -100 to +100>,0[x],0[y],16[width],16[height] # Adjusts the saturation (in HSLA color space). Positive adjust means more colorful. Negative adjust means less colorful. -100 means grayscale.
+filter.hue,0<adjust: -180 to +180>,0[x],0[y],16[width],16[height] # Adjusts the hue.
 
-lightness,0<adjust: -100 to +100>,0[x],0[y],16[width],16[height] # Adjusts the lightness (in HSLA color space). Positive adjust means lighter. Negative adjust means darker. -100 means all black, +100 means all white.
+filter.saturation,0<adjust: -100 to +100>,0[x],0[y],16[width],16[height] # Adjusts the saturation (in HSLA color space). Positive adjust means more colorful. Negative adjust means less colorful. -100 means grayscale.
 
-fill,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255[alpha: 0 to 255],0[x],0[y],16[width],16[height] # Fills the area with the selected color.
+filter.lightness,0<adjust: -100 to +100>,0[x],0[y],16[width],16[height] # Adjusts the lightness (in HSLA color space). Positive adjust means lighter. Negative adjust means darker. -100 means all black, +100 means all white.
 
-contrast,0<adjust: -128 to 128>,0[x],0[y],16[width],16[height] # Adjusts the contrast. -128 will make all non-transparent pixels medium gray; +127 will make all RGB values either 0 or 255 (8 colors).
+filter.fill,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255[alpha: 0 to 255],0[x],0[y],16[width],16[height] # Fills the area with the selected color.
 
-colorize,180<hue: 0 to 360>,50<saturation: 0 to 100>,50<lightness: 0 to 100>,0[x],0[y],16[width],16[height] # Colorizes specified area in place. Converts area to B&W, treats L=127.5 as the specified HSL color, and interpolates the rest from there. Ex.: if the base color was coral [hsl(0,100,75)], it'll turn black->gray50->white to red->coral->white.
+filter.contrast,0<adjust: -128 to 128>,0[x],0[y],16[width],16[height] # Adjusts the contrast. -128 will make all non-transparent pixels medium gray; +127 will make all RGB values either 0 or 255 (8 colors).
 
-sepia,0[x],0[y],16[width],16[height] # Simplified colorize syntax for creating sepia-toned images. Based on hex code #a08060 or HSL(30,25,50)
+filter.colorize,180<hue: 0 to 360>,50<saturation: 0 to 100>,50<lightness: 0 to 100>,0[x],0[y],16[width],16[height] # Colorizes specified area in place. Converts area to B&W, treats L=127.5 as the specified HSL color, and interpolates the rest from there. Ex.: if the base color was coral [hsl(0,100,75)], it'll turn black->gray50->white to red->coral->white.
 
-threshold,128<minWhite: 0 to 256>,0[x],0[y],16[width],16[height]
+filter.sepia,0[x],0[y],16[width],16[height] # Simplified colorize syntax for creating sepia-toned images. Based on hex code #a08060 or HSL(30,25,50)
+
+filter.threshold,128<minWhite: 0 to 256>,0[x],0[y],16[width],16[height]
 # Converts the image to 1-bit black & white based on a numeric lightness threshold, determined by grayscale (luma) value. Any number LESS THAN minWhite is black, any number GREATER or EQUAL is white. Set minWhite to 0 to make everything white. Set minWhite to 256 to make everything black.
 
 
@@ -190,11 +194,35 @@ set,$hello<name>,"Hello world"<value> # Set variable "hello" to the string "Hell
 (+,x1,x2,...)	# or add
 (-,x1,x2,...)	# or sub, − [minus sign], or – [en dash]
 (*,x1,x2,...)	# or mul, ×
+(/,x1,x2,...)	# or truediv, ÷
+(div,x1,x2,...)	# integer division (or floordiv). May use // as future alias but I'll wait for now
+(mod,x1,x2,...) # modulo. May use % as future alias but I'll wait for now
+
+(floor,x1)
+(ceil,x1)
+(abs,x1)
+
+
+
+# STRING SUBCOMMANDS
+# Subcommands for working with strings, of course.
+
+(str+,"Hello"<s1>,"World"<s2>,...) # (or str_add) Concatenate two or more values. The inputs don't have to be strings, but the output will always be a string. The output in the preceding example is "HelloWorld" (with no space in between because neither string had a space in it).
+(str*,"Hello"<s>,3<n>) # (or str_mul) Repeat s, n times. s doesn't have to be a string, but the output will always be a string. n must be an integer.
+
+
+
+# TYPE SUBCOMMANDS
+# For converting between data types.
+(int,1.5)
+(float,1)
+(str,1)
+(bool,1)
 
 
 
 # COLOR SUBCOMMANDS
-# These return RGB, HSL, etc. color values of a given pixel -- or if width/height values are given, then the average value across that area (as an integer).
+# These return RGB, HSL, etc. color values of a given pixel -- or if width/height values are given, then the average value across that area (as an integer). TODO: "get_"? "color." prefix? Or "filter." prefix for filters? Should probably figure out before adding a "saturation" subcommand here as that name's used by a filter
 
 (red,0<x>,0<y>,1[width],1[height]) # Return the red value (from 0 to 255) of a single pixel. If width and height are given, take the average red value over the given rectangle.
 (green,0<x>,0<y>,1[width],1[height])
@@ -220,35 +248,23 @@ copyfrom,open<imageName>,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # 
 (height,open<imageName>)
 
 # IF STATEMENTS & SUBCOMMANDS
-
-select(selcolor,green,0,0,16,16){
-hue,-120,0,0 # ...etc.
-}
+# Dropped the "select" subcommand idea because the functionality can be handled with loops
+(len,"thing"<data>) # Length of any variable or literal. Most useful for strings and lists. Calls the python function of the same name.
 
 # Color subcommands:
-
 (hue,0<x>,0<y>,1[width],1[height]) 		# from 0 to 359
 (saturation,0<x>,0<y>,1[width],1[height])	# In the HSL sense; from 0 to 100
-(lightness,0<x>,0<y>,1[width],1[height])	# Not to be confused with value AKA brightness; from 0 to 100
-
+(lightness,0<x>,0<y>,1[width],1[height])	# AKA luminosity. Not to be confused with value AKA brightness; from 0 to 100
 (luma,0<x>,0<y>,1[width],1[height]) # The value that would be used if the image were converted to grayscale
 
 # Math subcommands:
-(/,x1,x2,...)	# or truediv, ÷
-(div,x1,x2,...)	# integer division (quotient) MAYBE // ?
-(mod,x1,x2,...) # modulus (remainder) MAYBE % ?
-(floor,x1) # only need this once floats are added
-(ceil,x1)
-# pow, root, log, round — syntax TBD
-
-# Logical subcommands
-(xor,<>,<>,...)
-# nor, nand, xnor?
+(pow,x1,x2,...) # x1 to the x2-th power
+# log, round — syntax TBD
+# trigonometry — probably in degrees by default
 
 # LOOPS
-for,(set,$i,0),(<,$i,10),(++,$i) # C-style loop syntax
-foreach,$i<loopVar>,$l<list> # Python-style loop syntax
-(range,1[start],10<stop>,1[step]) # Generates a list of integers from start to stop (inclusive), stepping by 1 each time. In the example, the list would be [1,2,3,4,5,6,7,8,9,10]. This is different from Python 3 but it's more intuitive (and consistent with the start/stop header commands)
+for,$i<loopVar>,$l<list> # Python-style loop syntax
+(range,0[start],10<stop>,1[step]) # Generates a list of integers from start to stop (not including stop), stepping by 1 each time. For example, the sample code generates the list [0,1,2,3,4,5,6,7,8,9]
 break,1<numLoops> # Break out of the current loop. If numLoops >= 1, break out of that many levels of loops (assuming loop is nested).
 next # "continue" in C/Java/Python, but "next" is a better name because we're skipping to the next iteration of the loop.
 # Ruby's "redo" and "retry" are probably too rare to be worth implementing. They can easily be replicated with gotos
@@ -258,33 +274,45 @@ load,alt2<name>,~/image.png<path> # Load the image at the given path and store i
 
 # LIST COMMANDS
 (list,x1,x2,x3,...) # Creates an editable, variable-length list with the given items.
-listdata # One list item per line. Empty line = end of list
-# TODO: List manipulation
+(list.data
+ ) # One list item per line. Close paren (outside string) = end of list
+(list.index,$l1<listVar>,0<index>) OR $l1[0] # Returns the item at index 0 of the given list. The first item of the list has index 0. Index -1 is the last item, -2 is the second-to-last item, etc. There are two ways to do this, because you can only use the former if you're getting an item from a list returned by a subcommand, and you can only set list items with the latter.
+(list.slice,$l1<listVar>,0[start],2<stop>,1[step]) # Returns a sublist of the given list. Entering "_" for stop means slice the entire rest of the list.
+list.add,$l1<listVar>,"thing"<item>,0[index] # Add an item to an existing list (in place). If an index argument is given, insert the item BEFORE the given index. Otherwise, add the item to the end
+list.remove,$l1<listVar>,0<index> # Remove the item at the given index from the list; shift the items after it to the left.
+
+# SHAPE DRAWING
+draw.rect,0<x>,0<y>,16<width>,16<height>,0<outline: 0 for fill, 1 for outline, 2 for both> # Draw a rectangle with the top left corner at the given x and y.
+draw.ellipse,0<x>,0<y>,16<width>,16<height>,0<outline: 0 for fill, 1 for outline, 2 for both> # Draw an ellipse with the top left "corner" at the given x and y.
+draw.line,0<x1>,0<y1>,16<x2>,16<y2> # Draw a line from (x1,y1) to (x2,y2). Note that this is different from the width/height system used for everything else. The example coordinates would have a width and height of 17 pixels.
 
 # DRAWING OPTIONS
-fill_color,[255,0,0,255]<color> # Set fill color.
-line_color,[255,0,0,255]<color> # Set outline color.
-line_width,1<width> # Set outline stroke width
+draw.fill_color,(rgb,255,0,0)<color> # Set fill color.
+draw.line_color,(rgb,255,0,0)<color> # Set outline color.
+draw.line_width,1<width> # Set outline stroke width.
 # All color subcommands return an RGBA hex.
 (rgb,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255<alpha: 0 to 255>) # Alias: rgba. If a list is the default format, is it necessary to have this?
 (hsl,0<hue: 0 to 359>,100<saturation: 0 to 100>,50<lightness: 0 to 100>,255<alpha: 0 to 255>) # Alias: hsla
-# TODO: Should "color" be a list or its own type?
+# TODO: color data type
 
-# SHAPE DRAWING
-rect,0<x>,0<y>,16<width>,16<height>,0<outline: 0 for fill, 1 for outline, 2 for both> # Draw a rectangle with the top left corner at the given x and y.
-ellipse,0<x>,0<y>,16<width>,16<height>,0<outline: 0 for fill, 1 for outline, 2 for both> # Draw an ellipse with the top left "corner" at the given x and y.
-line,0<x1>,0<y1>,16<x2>,16<y2> # Draw a line from (x1,y1) to (x2,y2). Note that this is different from the width/height system used for everything else. The example coordinates would have a width and height of 17 pixels.
+# TEXT DRAWING
+draw.text,"Hello world"<textContent>,0<x>,0<y>,80[width],24[height],-1<outline: -1 for no box, 0 for fill, 1 for outline, 2 for both> # Draw a text box with the given text. x and y are the position of the top left corner. Width and height are in pixels -- NOT characters/lines. Any text past the maximum width will be wrapped to the next line. Any text past the maximum height will be cut off, with ellipsis in the bottom right corner. If outline is set to 0, 1, or 2: a rectangle with the given width and height will be drawn under the text. 
+(draw.try_text,"Hello world"<textContent>,0<x>,0<y>,80[width],24[height],-1<outline: -1 for no box, 0 for fill, 1 for outline, 2 for both>) # Works the same as draw.text, except that instead of actually drawing the text box, return a list with the width and height the box WOULD have.
 
-# LAYERS
-use,layers # Header command to turn layers ON. Without this, no layer commands will work.
-layers.new,0<depth>,layer0[name] # Create a new layer. Default name based on the given depth. For depth, higher numbers are at the front.
-layers.select,0<depth OR name> # Set which layer you're currently working on.
+# TEXT DRAWING OPTIONS
+draw.text_color,(rgb,0,0,0)<color> # Set text color. This is different from outline and fill color to make it easier to draw text boxes.
+draw.text_size,1<scaleX>,1[scaleY] # Change the size of text from the usual 1:1 ratio. Argument(s) must be positive integers. If 1 argument is given, y-scale and x-scale are assumed to be the same.
+draw.font,smb<fontName> # Set the font used to draw text. Name X should have a corresponding "X.png" in the fonts folder in a 16×16 extended ASCII table. Default is "arcade".
+draw.letter_spacing,0<amount> # Set the amount of extra space between each character (AKA tracking/kerning) when drawing text. Can be positive or negative; default is 0 (no spacing).
+draw.line_spacing,0<amount> # Set the amount of extra space between each line (AKA leading) when drawing text. Can be positive or negative; default is 0 (set solid).
+
+# LAYER COMMANDS
+layer.new,0<depth>,layer0[name] # Create a new layer. Default depth is right in front of currently selected layer. Default name based on the given depth. For depth, higher numbers are at the front. TODO: Better system for layer depth
+layer.select,0<depth OR name> # Set which layer you're currently working on.
 
 # (Lower-priority layer commands)
-layers.show,0[target: depth OR name] # Default to current layer
-layers.hide,0[target: depth OR name]
-layers.delete,0[target: depth OR name]
-layers.merge,0[fromlayer: depth OR name],0[tolayer: depth OR name] # Default to merging current layer down to the layer behind it
-layers.mergevisible # Merge all visible layers
-
-# Clipboard? cut, copy, paste, clear
+layer.show,0[target: depth OR name] # Default to current layer
+layer.hide,0[target: depth OR name]
+layer.delete,0[target: depth OR name]
+layer.merge,0[fromlayer: depth OR name],0[tolayer: depth OR name] # Default to merging current layer down to the layer behind it
+layer.mergevisible # Merge all visible layers
