@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 6.0.0
+Version 6.1.0
 
 Copyright © 2022–2023 clippy#4722
 
@@ -25,7 +25,7 @@ See changelog.txt for version history.
 '''
 
 from glob import glob
-import os, sys, colorsys
+import math, os, sys, colorsys
 import urllib.request
 import webbrowser # for installing assets
 from typing import Union
@@ -34,13 +34,19 @@ from tkinter import *
 import tkinter.font as tkfont
 import tkinter.filedialog as filedialog
 # Non-PSL modules
-import PIL.Image, PIL.ImageOps, PIL.ImageTk
+# This is probably TERRIBLE coding practice, but this is the easiest way to 
+# make the program run "out of the box" for non-developers.
+try:
+    import PIL.Image, PIL.ImageOps, PIL.ImageTk # pillow
+except ModuleNotFoundError:
+    import os
+    os.system('pip3 install pillow')
 
 ###########################################################################
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [6,0,0]
+app_version = [6,1,0]
 
 def app_version_str():
     return str(app_version[0])+'.'+str(app_version[1])+'.'+\
@@ -151,8 +157,8 @@ block_starts_ends = [
     'elseif',
 ]
 block_starts = [
-    'if', 
-    # 'for', 'while', 'foreach' # COMING SOON
+    'if', 'while'
+    # 'for', 'foreach' # COMING SOON
 ] + block_starts_ends
 block_ends = ['end', 'endif'] + block_starts_ends
 
@@ -195,7 +201,7 @@ def set(i):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
@@ -271,7 +277,7 @@ def copy_from(i):
 
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
@@ -322,7 +328,7 @@ def default_from(i):
 
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
@@ -396,7 +402,7 @@ def duplicate(i, base_image):
 def tile(i, open_image, alt_image, base_image):
     min_args = 8
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -435,7 +441,7 @@ def tile(i, open_image, alt_image, base_image):
 def resize(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -459,7 +465,7 @@ def resize(i, base_image):
 def rotate(i, base_image):
     min_args = 3
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -490,7 +496,7 @@ Rotating by a number not divisible by 90 may have unintended effects.')
 def flip(i, base_image):
     min_args = 3
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -586,7 +592,7 @@ def invert(i, base_image):
 def colorfilter(i, base_image):
     min_args = 3
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -626,7 +632,7 @@ def colorfilter(i, base_image):
 def opacity(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -686,7 +692,7 @@ def format_hsla(color):
 def hue(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -726,7 +732,7 @@ def hue(i, base_image):
 def saturation(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -767,7 +773,7 @@ def saturation(i, base_image):
 def lightness(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -806,7 +812,7 @@ def lightness(i, base_image):
 def fill(i, base_image):
     min_args = 3
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -852,7 +858,7 @@ def clip(n, minimum, maximum):
 def contrast(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -912,7 +918,7 @@ def contrast(i, base_image):
 def colorize(i, base_image):
     min_args = 3
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -997,7 +1003,7 @@ def sepia(i, base_image):
 def threshold(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -1116,8 +1122,30 @@ variables are not supported in scripts written for versions older than 6.0.0.'\
         result = sub(cmd)
     elif cmd[0] in ['mul', '*', '×']:
         result = mul(cmd)
-    # elif cmd[0] in ['truediv', '/', '÷']:
-    #     result = truediv(cmd)
+    elif cmd[0] in ['div', 'floordiv']:
+        result = floordiv(cmd)
+    elif cmd[0] in ['truediv', '/', '÷']:
+        result = truediv(cmd)
+    elif cmd[0] in ['mod', 'floordiv']:
+        result = mod(cmd)
+    elif cmd[0] == 'abs':
+        result = abs_(cmd)
+    elif cmd[0] == 'floor':
+        result = floor(cmd)
+    elif cmd[0] in ['ceil', 'ceiling']:
+        result = ceil(cmd)
+
+    elif cmd[0] in ['str_add', 'str+']:
+        result = str_add(cmd)
+    elif cmd[0] in ['str_mul', 'str*']:
+        result = str_mul(cmd)
+
+    elif cmd[0] == 'int':
+        result = int_(cmd)
+    elif cmd[0] == 'float':
+        result = float_(cmd)
+    elif cmd[0] in ['str', 'string']:
+        result = str_(cmd)
 
     elif cmd[0] == 'red':
         result = red(cmd, base_image)
@@ -1180,7 +1208,7 @@ def eq(i):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
@@ -1197,7 +1225,7 @@ def ne(i):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
@@ -1213,7 +1241,7 @@ def lt(i):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
@@ -1221,11 +1249,13 @@ def lt(i):
         try:
             return i[1] < i[2]
         except: # if e.g. invalid type match
+            log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return (i[1] < i[2]) and lt([i[0]] + i[2:])
     except:
+        log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
         return None
 
 def gt(i):
@@ -1235,7 +1265,7 @@ def gt(i):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
@@ -1243,11 +1273,13 @@ def gt(i):
         try:
             return i[1] > i[2]
         except: # if e.g. invalid type match
+            log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return (i[1] > i[2]) and gt([i[0]] + i[2:])
     except:
+        log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
         return None
 
 def le(i):
@@ -1257,7 +1289,7 @@ def le(i):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
@@ -1265,11 +1297,13 @@ def le(i):
         try:
             return i[1] <= i[2]
         except: # if e.g. invalid type match
+            log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return (i[1] <= i[2]) and le([i[0]] + i[2:])
     except:
+        log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
         return None
 
 def ge(i):
@@ -1279,7 +1313,7 @@ def ge(i):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
@@ -1287,11 +1321,13 @@ def ge(i):
         try:
             return i[1] >= i[2]
         except: # if e.g. invalid type match
+            log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return (i[1] >= i[2]) and ge([i[0]] + i[2:])
     except:
+        log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
         return None
     
 # END EQUALITY SUBCOMMANDS
@@ -1305,7 +1341,7 @@ def logic_or(i):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
@@ -1325,7 +1361,7 @@ def logic_and(i):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
@@ -1356,10 +1392,11 @@ def add(i):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
+    # No unary plus, that's stupid
     if len(i) == 3: # If 2 arguments
         try:
             # Make sure arguments are numbers (int or float).
@@ -1370,6 +1407,7 @@ def add(i):
 
             return i[1] + i[2]
         except:
+            log_warning(f'{i[0]}: couldn’t add {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
@@ -1381,6 +1419,7 @@ def add(i):
 
         return (i[1] + i[2]) and add([i[0]] + i[2:])
     except:
+        log_warning(f'{i[0]}: couldn’t add {i[1]} and {i[2]}')
         return None
 
 def sub(i):
@@ -1389,13 +1428,19 @@ def sub(i):
         (sub, - [hyphen], – [endash], − [minus sign])
     '''
 
-    min_args = 2
+    min_args = 1
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
-    if len(i) == 3: # If 2 arguments
+    if len(i) == 2: # If 1 argument, make it a unary minus (opposite)
+        try:
+            return -i[1]
+        except:
+            log_warning(f'{i[0]}: couldn’t negate {i[1]}')
+            return None
+    elif len(i) == 3: # If 2 arguments
         try:
             # Make sure arguments are numbers (int or float).
             # If either argument is a string, function will raise an error
@@ -1405,6 +1450,7 @@ def sub(i):
 
             return i[1] - i[2]
         except:
+            log_warning(f'{i[0]}: couldn’t subtract {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
@@ -1416,6 +1462,7 @@ def sub(i):
 
         return (i[1] - i[2]) and sub([i[0]] + i[2:])
     except:
+        log_warning(f'{i[0]}: couldn’t subtract {i[1]} and {i[2]}')
         return None
 
 def mul(i):
@@ -1426,7 +1473,7 @@ def mul(i):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
     
@@ -1440,6 +1487,7 @@ def mul(i):
 
             return i[1] * i[2]
         except:
+            log_warning(f'{i[0]}: couldn’t multiply {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
@@ -1451,44 +1499,301 @@ def mul(i):
 
         return (i[1] * i[2]) and mul([i[0]] + i[2:])
     except:
+        log_warning(f'{i[0]}: couldn’t multiply {i[1]} and {i[2]}')
         return None
 
-# def truediv(i):
-#     '''
-#     Divide two or more numbers. Do not round the result down.
-#         (truediv, /, ÷)
-#     '''
+def floordiv(i):
+    '''
+    Divide two or more numbers and round the result down so it's an integer.
+        (div, floordiv)
+    '''
 
-#     min_args = 2
-#     if len(i) <= min_args:
-#         log_warning('The command '+i[0]+' requires at least '+\
-#                 min_args+' arguments.')
-#         return
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
     
-#     if len(i) == 3: # If 2 arguments
-#         try:
-#             # Make sure arguments are numbers (int or float).
-#             # If either argument is a string, function will raise an error
-#             # and thus return None.
-#             i[1] / i[1]
-#             i[2] / i[2]
+    if len(i) == 3: # If 2 arguments
+        try:
+            # Make sure arguments are numbers (int or float).
+            # If either argument is a string, function will raise an error
+            # and thus return None.
+            i[1] // 1
+            i[2] // 1
 
-#             return i[1] / i[2]
-#         except:
-#             return None
-#     # But if there are 3 or more arguments (x1, x2, x3)...
-#     try:
-#         # Make sure arguments are numbers (int or float).
-#         # If either argument is a string, function will raise an error
-#         # and thus return None.
-#         i[1] / i[1]
-#         i[2] / i[2]
+            return i[1] // i[2]
+        except:
+            log_warning(f'{i[0]}: couldn’t get integer division of \
+{i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        # Make sure arguments are numbers (int or float).
+        # If either argument is a string, function will raise an error
+        # and thus return None.
+        i[1] // 1
+        i[2] // 1
 
-#         return (i[1] / i[2]) and truediv([i[0]] + i[2:])
-#     except:
-#         return None
+        return (i[1] // i[2]) and floordiv([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t get integer division of \
+{i[1]} and {i[2]}')
+        return None
+    
+def truediv(i):
+    '''
+    Divide two or more numbers. Do not round the result down. The result will
+    be a floating-point number.
+        (truediv, /, ÷)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            # Make sure arguments are numbers (int or float).
+            # If either argument is a string, function will raise an error
+            # and thus return None.
+            i[1] / 1
+            i[2] / 1
+
+            return i[1] / i[2]
+        except:
+            log_warning(f'{i[0]}: couldn’t divide {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        # Make sure arguments are numbers (int or float).
+        # If either argument is a string, function will raise an error
+        # and thus return None.
+        i[1] / 1
+        i[2] / 1
+
+        return (i[1] / i[2]) and truediv([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t divide {i[1]} and {i[2]}')
+        return None
+
+def mod(i):
+    '''
+    Divide two or more numbers and return the remainder.
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            # Make sure arguments are numbers (int or float).
+            # If either argument is a string, function will raise an error
+            # and thus return None.
+            i[1] % 1
+            i[2] % 1
+
+            return i[1] % i[2]
+        except:
+            log_warning(f'{i[0]}: couldn’t get modulo of {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        # Make sure arguments are numbers (int or float).
+        # If either argument is a string, function will raise an error
+        # and thus return None.
+        i[1] % 1
+        i[2] % 1
+
+        return (i[1] % i[2]) and mod([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t get modulo of {i[1]} and {i[2]}')
+        return None
+
+def abs_(i):
+    '''
+    Return the absolute value of a number. (If it's negative, make it positive;
+    if it's positive, do nothing.)
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return abs(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t get absolute value of {i[1]}')
+        return None
+
+def floor(i):
+    '''
+    Return the floor of a number (the closest int that’s less than or equal to 
+    the number).
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return math.floor(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t get floor of {i[1]}')
+        return None
+
+def ceil(i):
+    '''
+    Return the ceiling of a number (the closest int that’s greater than or 
+    equal to the number).
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return math.ceil(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t get ceiling of {i[1]}')
+        return None
 
 # END MATH SUBCOMMANDS
+
+# STRING SUBCOMMANDS
+
+def str_add(i):
+    '''
+    Add two or more strings (str_add, str+)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            return str(i[1]) + str(i[2])
+        except:
+            log_warning(f'{i[0]}: couldn’t concatenate {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        return (str(i[1]) + str(i[2])) and str_add([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t concatenate {i[1]} and {i[2]}')
+        return None
+
+def str_mul(i):
+    '''
+    Add two or more strings (str_mul, str*)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            return str(i[1]) * i[2]
+        except:
+            log_warning(f'{i[0]}: couldn’t repeat {i[1]}, {i[2]} times')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        return (str(i[1]) * i[2]) and str_mul([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t repeat {i[1]}, {i[2]} times')
+        return None
+
+# END STRING SUBCOMMANDS
+
+# TYPE SUBCOMMANDS
+
+def int_(i):
+    '''
+    Convert a value to integer format, if possible.
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return int(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t convert {i[1]} to int type')
+        return None
+
+def float_(i):
+    '''
+    Convert a value to floating-point format, if possible.
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return float(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t convert {i[1]} to float type')
+        return None
+
+def str_(i):
+    '''
+    Convert a value to string format, if possible.
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return str(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t convert {i[1]} to str type')
+        return None
+
+def bool_(i):
+    '''
+    Convert a value to boolean format, if possible.
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return bool(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t convert {i[1]} to bool type')
+        return None
+    
+# END TYPE SUBCOMMANDS
 
 # COLOR SUBCOMMANDS
     
@@ -1503,7 +1808,7 @@ def red(i, base_image):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -1548,7 +1853,7 @@ def green(i, base_image):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -1593,7 +1898,7 @@ def blue(i, base_image):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -1641,7 +1946,7 @@ def alpha(i, base_image):
 
     min_args = 2
     if len(i) <= min_args:
-        log_warning('The command %s requires at least \
+        log_warning('%s: command requires at least \
 %d arguments.' % (i[0], min_args))
         return
 
@@ -2125,9 +2430,12 @@ Syntax error: Line ended before string did. Skipping line: '+line)
                 # Convert data to int if possible
                 output[arg_n] = int(output[arg_n])
             except ValueError:
-                # No real use for floats yet so they're not supported
-                # Just keep it as a string
-                pass
+                try:
+                    # Okay then, how about a float?
+                    output[arg_n] = float(output[arg_n])
+                except ValueError:
+                    # Just keep it as a string
+                    pass
 
     return output
 
@@ -2300,8 +2608,8 @@ sure each block has an associated “end” command.', icon='error')
                 log_warning('Syntax error: Empty description')
 
     # To prevent infinite loops, keep track of how many times each line is run.
-    # When a limit is reached (default 1000 times), halt the program.
-    loop_limit = 1000
+    # When a limit is reached (default 10000 times), halt the program.
+    loop_limit = 10000
     loop_counter = [0] * len(data)
     for i in data:
         if i[0] == 'loop_limit':
@@ -2442,8 +2750,10 @@ def compatibility_check():
                 log_warning('Syntax error: empty label')
 
     # Variables will mostly be user-set but let's predefine the booleans
+    # (and a couple mathematical constants because why not)
     variables = {'$_true': True, '$_t': True,
-                 '$_false': False, '$_f': False}
+                 '$_false': False, '$_f': False,
+                 '$_pi': math.pi, '$_e': math.e}
     
     # Images the converter can access, 
     # including 'old' (open), 'template', 'alt', and 'new' (save/base)
@@ -2869,7 +3179,7 @@ def process(data: list):
         item = process_line(data[index]) # MANUAL ENUMERATE
 
         # Uncomment this to print line-by-line output
-        print(index, item, block_depths[index], block_stacks[index])
+        # p#rint(index, item, block_depths[index], block_stacks[index])
 
         # Increment loop counter for the line
         loop_counter[index] += 1
@@ -2989,9 +3299,8 @@ unknown error.')
                 # there's nothing more to do here. We're in the if block. 
                 # Proceed as normal until we reach an "end" command.
 
-            elif len(block_stacks[index]) > 0 \
-                    and block_stacks[index][-1] in ['if', 'elseif', 'else'] \
-                    and item[0] in block_ends:
+            elif item[0] in block_ends and len(block_stacks[index]) > 0 \
+                    and block_stacks[index][-1] in ['if', 'elseif', 'else']:
                 # If we encounter elseif, else, end, etc. during the normal 
                 # line-reading cycle, then we've finished a block from a 
                 # condition that evaluated as true, so we're done with the 
@@ -3042,8 +3351,8 @@ unknown error.')
                 # there's nothing more to do here. We're inside the loop. 
                 # Proceed as normal until we reach an "end" command.
 
-            elif len(block_stacks[index]) > 0 and \
-                    block_stacks[index][-1] == 'while' and item[0] == 'end':
+            elif item[0] == 'end' and len(block_stacks[index]) > 0 and \
+                    block_stacks[index][-1] == 'while':
                 # If we reach an "end" when we're in a 
                 # while loop (but otherwise reading lines normally), 
                 # then we've reached the end of the loop block,
@@ -3088,7 +3397,7 @@ copyalt: Skipped because no “alt” image was specified.')
                 else:
                     copy(item, images['alt'], images['new'])
             elif item[0] == 'copy_from':
-                # Unlike other copy commands, `copyfrom` uses global image list
+                # Unlike other copy commands, `copy_from` uses global image list
                 # and passes the appropriate images to `copy`
                 copy_from(item)
             elif item[0] == 'default':
@@ -3130,7 +3439,7 @@ default: Skipped because no “template” image was specified.')
                 colorfilter(item, images['new'])
             elif item[0] == 'opacity':
                 opacity(item, images['new'])
-            elif item[0] == 'hue': # TODO: rename and make hue a subcmd?
+            elif item[0] == 'hue': # TODO: rename and make h/s/l subcmds?
                 hue(item, images['new'])
             elif item[0] == 'saturation':
                 saturation(item, images['new'])
@@ -3314,7 +3623,7 @@ because it doesn't match any of the versions specified for the warnings.
 '''
 def motd():
     motd_url = 'https://raw.githubusercontent.com/WaluigiRoyale/\
-Deluxifier/main/motd.txt'
+MR-Converter-GUI/main/motd.txt'
     try:
         # Download and read MOTD
         urllib.request.urlretrieve(motd_url, 'motd.txt')
@@ -3378,7 +3687,7 @@ def exit_app():
 
 try:
     # Comment the next line out to print full crash messages to the console
-    # window.report_callback_exception = crash
+    window.report_callback_exception = crash
     
     # Check if we're running on replit
     if os.path.isdir("/home/runner") == True:
