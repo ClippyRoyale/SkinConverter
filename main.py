@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 5.2.2
+Version 6.1.0
 
 Copyright © 2022–2023 clippy#4722
 
@@ -25,28 +25,37 @@ See changelog.txt for version history.
 '''
 
 from glob import glob
-import os, sys, colorsys
-import urllib.request # for installing assets
-import PIL.Image, PIL.ImageOps, PIL.ImageTk
+import math, os, sys, colorsys
+import urllib.request
+import webbrowser # for installing assets
 from typing import Union
 from time import time
 from tkinter import *
 import tkinter.font as tkfont
 import tkinter.filedialog as filedialog
+# Non-PSL modules
+# This is probably TERRIBLE coding practice, but this is the easiest way to 
+# make the program run "out of the box" for non-developers.
+try:
+    import PIL.Image, PIL.ImageOps, PIL.ImageTk # pillow
+except ModuleNotFoundError:
+    import os
+    os.system('pip3 install pillow')
 
 ###########################################################################
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [5,2,1]
+app_version = [6,1,0]
 
 def app_version_str():
     return str(app_version[0])+'.'+str(app_version[1])+'.'+\
         str(app_version[2])
 
 window = Tk()
-window.wm_title('Clippy’s Skin Converter v' + app_version_str())
-window.geometry('640x320')
+window.wm_title('Clippy’s Skin Converter')
+window.geometry('480x360')
+window.resizable(False, False)
 # Run in fullscreen on Replit only
 if os.path.isdir("/home/runner") == True:
     window.attributes('-fullscreen', True)
@@ -76,35 +85,12 @@ f_bold = tkfont.Font(weight='bold', size=relative_font_size(1))
 f_large = tkfont.Font(size=relative_font_size(1.5))
 f_heading = tkfont.Font(weight='bold', size=relative_font_size(1.5))
 
-side_frame = LabelFrame(window, width=160, height=320, bg=colors['BG'])
-
-'''
-gray = not yet reached
-blue = in progress
-green = completed
-red = failed
-'''
-step_status = ['blue', 'gray', 'gray', 'gray', 'gray', 'gray']
-steps = [
-    Label(side_frame, text='● Select Script', fg=colors[step_status[0]], 
-        justify='left', bg=colors['BG']),
-    Label(side_frame, text='● Load Script', fg=colors[step_status[1]], 
-        justify='left', bg=colors['BG']),
-    Label(side_frame, text='● Compatibility Check', 
-        fg=colors[step_status[2]], 
-        justify='left', bg=colors['BG']),
-    Label(side_frame, text='● Open & Save Paths', fg=colors[step_status[3]], 
-        justify='left', bg=colors['BG']),
-    Label(side_frame, text='● Run Script', fg=colors[step_status[4]], 
-        justify='left', bg=colors['BG']),
-    Label(side_frame, text='● Summary', fg=colors[step_status[5]], 
-        justify='left', bg=colors['BG']),
-]
-
-title = Label(side_frame, text='Skin Converter v'+app_version_str(), 
-        font=f_bold, bg=colors['BG'])
-footer = Label(side_frame, text='a Clippy production', 
+footer_frame = LabelFrame(window, width=480, height=40, bg=colors['BG'])
+footer = Label(footer_frame, 
+        text='Skin Converter v%s — a Clippy production' % app_version_str(), 
         fg=colors['gray'], bg=colors['BG'])
+back_btn = Button(footer_frame, text='Back to Menu', 
+        highlightbackground=colors['BG'])
 
 main_frame = LabelFrame(window, width=480, height=320, bg=colors['BG'])
 main_frame.grid_propagate(False)
@@ -118,8 +104,6 @@ menu_btns_p1 = [
     Button(main_frame, text='Convert a Remake skin to Deluxe',
             font=f_large, highlightbackground=colors['BG']),
     Button(main_frame, text='Convert a Legacy obj mod to Deluxe',
-            highlightbackground=colors['BG']),
-    Button(main_frame, text='Convert a Remake obj mod to Deluxe', 
             highlightbackground=colors['BG']),
     Label(main_frame, bg=colors['BG']), # filler
     Button(main_frame, text='Legacy/Custom...', 
@@ -147,9 +131,6 @@ menu_btns_p2 = [
     Button(main_frame, text='Back', highlightbackground=colors['BG']),
 ]
 
-back_btn = Button(side_frame, text='Back to Menu', 
-                  highlightbackground=colors['BG'])
-
 icons = {
     'info': \
         PIL.ImageTk.PhotoImage(PIL.Image.open('ui/info.png')),
@@ -171,9 +152,22 @@ warnings = []
 multi_open_paths = []
 
 # Lists of commands that start and/or end blocks
-block_starts = ['if', 'for', 'while']
-block_ends = ['end', 'endif']
-block_starts_ends = ['elseif', 'else']
+block_starts_ends = [
+    'else',
+    'elseif',
+]
+block_starts = [
+    'if', 'while'
+    # 'for', 'foreach' # COMING SOON
+] + block_starts_ends
+block_ends = ['end', 'endif'] + block_starts_ends
+
+# List of header commands. These commands are typically located at the start
+# of the file. They aren't run as instructions; they contain metadata about
+# the script that is processed before running it.
+header_commands = ['mrconverter', 'version', 'name', 'description', 
+        'author', 'open', 'save', 'template', 'alt', 'base', 
+        'start', 'stop', 'loop_limit']
 
 ###########################################################################
 #### LOG/EXIT COMMANDS ####################################################
@@ -195,14 +189,63 @@ def warning(i):
 #### BASIC COPYING COMMANDS ###############################################
 ###########################################################################
 
+# DOCUMENTATION: set,$hello<name>,"Hello world"<value> 
+# Set variable "hello" to the string "Hello world". Subcommands in second 
+# argument will be evaluated before setting the variable. Any value in double 
+# quotes will be treated as a string no matter what. If it's not in quotes and 
+# it can be parsed as an integer, the value will be an integer. Anything else 
+# will be treated as a string for legacy reasons, but watch out for special 
+# characters!
+def set(i):
+    global variables
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    # If someone tries to set a number or something
+    if type(i[1]) != str:
+        log_warning('set: Invalid variable name %s. Variable names must start \
+with a dollar sign.' % i[1])
+        return
+
+    # Now that we know i[1] is a string...
+    if not i[1].startswith('$'):
+        log_warning('set: Invalid variable name %s. Variable names must start \
+with a dollar sign.' % i[1])
+        return
+    
+    # Variable names must be at least 1 character long (2 counting $)
+    if len(i[1]) < 2:
+        log_warning('set: Invalid variable name %s. Variable names must be at \
+least 1 character long.' % i[1])
+        return
+    
+    # Cannot set private variables (which start with _)
+    # Unless the variable name is ONLY the underscore
+    if i[1][1] == '_' and len(i[1]) > 2:
+        log_warning('set: Cannot set variable names starting with underscores, \
+like %s, as these are reserved for the converter (except for “$_”).' % i[1])
+        return
+
+    # Variable names can only contain: a-z, A-Z, 0-9, _
+    for char in i[1][1:]: # [1:] to ignore $ at start
+        if not char.isalnum() and char != '_':
+            log_warning('set: Invalid variable name %s. Variable names can \
+only contain ASCII letters, numbers, and underscores.' % i[1])
+            return
+    
+    # If all the checks passed, set the variable
+    variables[i[1]] = i[2]
+
 # DOCUMENTATION: copy,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height]
 # Copy from old image to specified position in new image.
+# Note: copyalt has been folded into this function because there was no
+# difference except in the argument name.
 def copy(i, open_image, base_image):
-    min_args = 4
-    if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
-        return
+    # No minimum number of arguments
 
     # If no x or y specified, apply to whole image
     if len(i) <= 4:
@@ -225,47 +268,38 @@ def copy(i, open_image, base_image):
     region = open_image.crop((oldX, oldY, oldX+width, oldY+height))
     base_image.paste(region, (newX, newY, newX+width, newY+height))
 
-# DOCUMENTATION: copyalt,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height]
-# Copy from alt image to specified position in new image.
-# TODO: Fold this into “copy” and give that command a “source” argument,
-# and allow users to set an arbitrary number of variables with custom paths.
-def copyalt(i, alt_image, base_image):
-    min_args = 4
+# DOCUMENTATION: copy_from,old<imageName>,0[oldX],0[oldY],0[newX],0[newY],
+#   16[width],16[height] 
+# Copy from any image ("old", "alt", "template", or even "new") to specified 
+# position in new image.
+def copy_from(i):
+    global images
+
+    min_args = 1
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
-
-    # If no x or y specified, apply to whole image
-    if len(i) <= 4:
-        i = [i[0], 0, 0, 0, 0, base_image.size[0], base_image.size[1]]
-    oldX = i[1]
-    oldY = i[2]
-    newX = i[3]
-    newY = i[4]
-
-    # If width/height specified, use those values.
-    # If neither is specified, use 16×16.
-    # If only width is specified, use that value for height too.
-    if len(i) == 5:
-        i += [16, 16]
-    width = i[5]
-    if len(i) == 6:
-        i += [width]
-    height = i[6]
-
-    region = alt_image.crop((oldX, oldY, oldX+width, oldY+height))
-    base_image.paste(region, (newX, newY, newX+width, newY+height))
+    
+    if i[1] not in images:
+        log_warning('copy_from: Skipped because %s is not a defined image name'\
+                    % i[1])
+        return
+    
+    copy(['copy_from']+i[2:], images[i[1]], images['new'])
 
 # DOCUMENTATION: default,0[x],0[y],16[width],16[height] 
 # Copy from template image to same position in new image.
 def default(i, template_image, base_image):
-    min_args = 2
-    if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
-        return
-
+    # No minimum number of arguments
+    
+    # COMPATIBILITY: In versions prior to 1.1, "default" took 6 arguments
+    # (with the first 4 being required):
+    # default,0<oldX>,0<oldY>,0<newX>,0<newY>,16[width],16[height]
+    if i[0] == 'default' and len(i) > 4 and (version[0] < 1 or \
+            (version[0] == 1 and version[1] < 1)):
+        del i[3]
+        del i[4]
 
     # If no x or y specified, apply to whole image
     if len(i) <= 2:
@@ -286,15 +320,30 @@ def default(i, template_image, base_image):
     region = template_image.crop((x, y, x+width, y+height))
     base_image.paste(region, (x, y, x+width, y+height))
 
+# DOCUMENTATION: default_from,template<imageName>,0[x],0[y],16[width],16[height]
+# Copy from any image ("old", "alt", "template", or even "new") to same 
+# position in new image.
+def default_from(i):
+    global images
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if i[1] not in images:
+        log_warning('default_from: Skipped because %s is not a defined image name'\
+                    % i[1])
+        return
+    
+    default(['default_from']+i[2:], images[i[1]], images['new'])
+
 # DOCUMENTATION: clear,0[x],0[y],16[width],16[height] 
 # Clear area from new image. 
 # Used to be called “delete” -- this still works for compatiblity reasons.
 def clear(i, base_image):
-    min_args = 2
-    if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
-        return
+    # No minimum number of arguments
 
     # If no x or y specified, apply to whole image
     if len(i) <= 2:
@@ -318,11 +367,7 @@ def clear(i, base_image):
 # DOCUMENTATION: duplicate,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height]
 # Copy an area on the NEW image to another position on the same canvas.
 def duplicate(i, base_image):
-    min_args = 4
-    if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
-        return
+    # No minimum number of arguments
 
     # If no x or y specified, apply to whole image
     if len(i) <= 4:
@@ -351,37 +396,37 @@ def duplicate(i, base_image):
 
 # DOCUMENTATION: tile,0<copyX>,0<copyY>,16<copyWidth>,16<copyHeight>,
 #   0<pasteStartX>,0<pasteStartY>,16<pasteCountHoriz>,16<pasteCountVert>,
-#   open[copySource: open, template, or alt]
+#   open[copySource: old, template, or alt]
 # Create a tile pattern on the new image using a part of the old image. 
-# This command can be very useful but it’s not for the faint of heart.
+# This command can be very useful but it’s not for beginners.
 def tile(i, open_image, alt_image, base_image):
     min_args = 8
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     copyX = i[1]; copyY = i[2]; copyWidth = i[3]; copyHeight = i[4];
     pasteStartX = i[5]; pasteStartY = i[6];
     pasteCountHoriz = i[7]; pasteCountVert = i[8];
 
-    # Default to 'open' as copySource if none specified
+    # Default to 'old' as copySource if none specified
     if len(i) == 9:
-        i.append('open')
+        i.append('old')
     copySource = i[9].lower()
 
     for x in range(pasteCountHoriz):
         for y in range(pasteCountVert):
-            if copySource == 'open':
+            if copySource == 'open' or copySource == 'old':
                 copy(['copy', copyX, copyY, pasteStartX+(copyWidth*x),
                         pasteStartY+(copyHeight*y), copyWidth, copyHeight],
                         open_image, base_image)
             elif copySource == 'alt' and alt_image:
-                copyalt(['copyalt', copyX, copyY, pasteStartX+(copyWidth*x),
+                copy(['copyalt', copyX, copyY, pasteStartX+(copyWidth*x),
                         pasteStartY+(copyHeight*y), copyWidth, copyHeight],
                         alt_image, base_image)
             else:
-                log_warning('tile: Invalid copy source — defaulting to "open"')
+                log_warning('tile: Invalid copy source — defaulting to "old"')
                 copy(['copy', copyX, copyY, pasteStartX+(copyWidth*x),
                         pasteStartY+(copyHeight*y), copyWidth, copyHeight],
                         open_image, base_image)
@@ -396,8 +441,8 @@ def tile(i, open_image, alt_image, base_image):
 def resize(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     newWidth = i[1]
@@ -420,8 +465,8 @@ def resize(i, base_image):
 def rotate(i, base_image):
     min_args = 3
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     degreesClockwise = i[1]
@@ -451,8 +496,8 @@ Rotating by a number not divisible by 90 may have unintended effects.')
 def flip(i, base_image):
     min_args = 3
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     # If no x or y specified, apply to whole image
@@ -547,8 +592,8 @@ def invert(i, base_image):
 def colorfilter(i, base_image):
     min_args = 3
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     redAdjust = i[1]
@@ -587,8 +632,8 @@ def colorfilter(i, base_image):
 def opacity(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     adjust = i[1]
@@ -647,8 +692,8 @@ def format_hsla(color):
 def hue(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     adjust = i[1]
@@ -687,8 +732,8 @@ def hue(i, base_image):
 def saturation(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     adjust = i[1]
@@ -728,8 +773,8 @@ def saturation(i, base_image):
 def lightness(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     adjust = i[1]
@@ -762,18 +807,22 @@ def lightness(i, base_image):
     base_image.paste(region, (x, y, x+width, y+height))
     
 # DOCUMENTATION: fill,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,
-#   255<alpha: 0 to 255>,0[x],0[y],16[width],16[height] 
+#   255[alpha: 0 to 255],0[x],0[y],16[width],16[height] 
 # Fills the area with the selected color.
 def fill(i, base_image):
-    min_args = 4
+    min_args = 3
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     red = i[1]
     green = i[2]
     blue = i[3]
+
+    # If no alpha given, assume 100% opaque
+    if len(i) <= 4:
+        i.append(255)
     alpha = i[4]
     
     # For filters, if no x or y specified, apply filter to whole image
@@ -809,8 +858,8 @@ def clip(n, minimum, maximum):
 def contrast(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     adjust = clip(i[1], -128, 127.99) # Avoid dividing by 0
@@ -869,8 +918,8 @@ def contrast(i, base_image):
 def colorize(i, base_image):
     min_args = 3
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     formatted_hsl = format_hsla([i[1], i[2], i[3]])
@@ -954,8 +1003,8 @@ def sepia(i, base_image):
 def threshold(i, base_image):
     min_args = 1
     if len(i) <= min_args:
-        log_warning('The command '+i[0]+' requires at least '+\
-                min_args+' arguments.')
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
         return
 
     minWhite = i[1]
@@ -993,20 +1042,127 @@ def threshold(i, base_image):
 #### SUBCOMMANDS ##########################################################
 ###########################################################################
 
-# Evaluate a boolean operator command, for example, (empty,0,0,16,16).
-# Return True or False based on how the command evaluates.
-# Invalid commands return False.
-def oper_bool(cmd, base_image, open_image):
-    # TODO: add support for nested conditionals
-    i = parse_line(cmd.lstrip('(').rstrip(')'))
-    if i[0].strip() == '': # Treat empty conditionals as false
-        log_warning('Empty conditional command')
-        return False
-    elif i[0] == 'empty':
-        return empty(i, open_image)
+# Evaluate a subcommand embedded in parentheses, for example, (empty,0,0,16,16).
+# Return the result of the command, in whatever format is appropriate.
+# Invalid or empty commands return None (and will be treated as false).
+def subcmd(cmd_str, open_image, template_image, alt_image, base_image):
+    # No need to access global `labels` because you can't have gotos in subcmds
+    global variables
+
+    # The command will be passed in as a string something like 
+    # "(empty,0,0,16,16)". We want to get rid of the parens at the start & end
+    # (but keep any that are inside).
+    
+    # First strip whitespace
+    cmd_str = cmd_str.strip()
+    # Then check for parens at start and end
+    # removeprefix would be nice here but that's only in Py3.9
+    if len(cmd_str) >= 2 and cmd_str[0] == '(' and cmd_str[-1] == ')':
+        # ...and remove them if they're there
+        cmd_str = cmd_str[1:-1]
     else:
-        log_warning('Invalid conditional command: ' + str(i))
-        return False
+        # Otherwise, there's something wrong with the subcommand
+        log_warning('Invalid subcommand: %s' % cmd_str)
+        return None
+
+    # Parse the line to separate out the arguments
+    cmd = parse_line(cmd_str)
+
+    # Replace variable names with the variable's current value
+    for arg_n in range(len(cmd)):
+        if type(cmd[arg_n]) == dict and cmd[arg_n]['type'] == 'var':
+            if version[0] >= 6:
+                cmd[arg_n] = variables[cmd[arg_n]['content']]
+            else:
+                cmd[arg_n] = cmd[arg_n]['content']
+                log_warning('Variable name %s ignored because \
+variables are not supported in scripts written for versions older than 6.0.0.'\
+                            % cmd[arg_n]['content'])
+
+    # Now that we've broken the command into the normal list format,
+    # we need to check each argument of the command for parentheses and
+    # recursively call this function as needed.
+    for arg_n in range(1, len(cmd)):
+        if type(cmd[arg_n]) == str and \
+                cmd[arg_n].startswith('(') and cmd[arg_n].endswith(')'):
+            # Execute the command INSIDE the parens FIRST
+            cmd[arg_n] = subcmd(cmd[arg_n], open_image, template_image, 
+                                      alt_image, base_image)
+
+    # Main dictionary of all subcommands
+    if cmd[0].strip() == '': # Treat empty conditionals as false
+        log_warning('Empty subcommand — treated as false')
+        result = None
+    elif cmd[0] == 'empty':
+        result = empty(cmd, open_image)
+
+    elif cmd[0] in ['eq', '=', '==']:
+        result = eq(cmd)
+    elif cmd[0] in ['ne', '≠', '!=', '<>']:
+        result = ne(cmd)
+    elif cmd[0] in ['lt', '<']:
+        result = lt(cmd)
+    elif cmd[0] in ['gt', '>']:
+        result = gt(cmd)
+    elif cmd[0] in ['le', '≤', '<=']:
+        result = le(cmd)
+    elif cmd[0] in ['ge', '≥', '>=']:
+        result = ge(cmd)
+
+    elif cmd[0] in ['or', '||']:
+        result = logic_or(cmd)
+    elif cmd[0] in ['and', '&&']:
+        result = logic_and(cmd)
+    elif cmd[0] in ['not', '!']:
+        result = logic_not(cmd)
+    
+    elif cmd[0] in ['add', '+']:
+        result = add(cmd)
+    elif cmd[0] in ['sub', '-', '–', '−']:
+        result = sub(cmd)
+    elif cmd[0] in ['mul', '*', '×']:
+        result = mul(cmd)
+    elif cmd[0] in ['div', 'floordiv']:
+        result = floordiv(cmd)
+    elif cmd[0] in ['truediv', '/', '÷']:
+        result = truediv(cmd)
+    elif cmd[0] in ['mod', 'floordiv']:
+        result = mod(cmd)
+    elif cmd[0] == 'abs':
+        result = abs_(cmd)
+    elif cmd[0] == 'floor':
+        result = floor(cmd)
+    elif cmd[0] in ['ceil', 'ceiling']:
+        result = ceil(cmd)
+
+    elif cmd[0] in ['str_add', 'str+']:
+        result = str_add(cmd)
+    elif cmd[0] in ['str_mul', 'str*']:
+        result = str_mul(cmd)
+
+    elif cmd[0] == 'int':
+        result = int_(cmd)
+    elif cmd[0] == 'float':
+        result = float_(cmd)
+    elif cmd[0] in ['str', 'string']:
+        result = str_(cmd)
+
+    elif cmd[0] == 'red':
+        result = red(cmd, base_image)
+    elif cmd[0] == 'green':
+        result = green(cmd, base_image)
+    elif cmd[0] == 'blue':
+        result = blue(cmd, base_image)
+    elif cmd[0] == 'alpha':
+        result = alpha(cmd, base_image)
+
+    else:
+        log_warning('Invalid subcommand: %s' % cmd_str)
+        return None
+    
+    # Uncomment this line to print command and its result, for debugging
+    #p#rint(cmd, result)
+    return result
     
 # DOCUMENTATION: (empty,0<x>,0<y>,16[width],16[height])
 # True if the area on the old image is completely empty (every pixel is
@@ -1039,20 +1195,792 @@ def empty(i, open_image):
             # If a single pixel isn't transparent, return False
             if rgba[3] != 0:
                 return False
-    # If we make it here, it's empty, return True\
+    # If we make it here, it's empty, return True
     return True
 
-###########################################################################
-#### COMING SOON ##########################################################
-###########################################################################
+# EQUALITY SUBCOMMANDS
 
-def scale(i, base_image):
-    log_warning(i[0]+' is coming soon...')
+def eq(i):
+    '''
+    Equal to (eq, =, ==)
+    Use "set" to set variables, not "=".
+    '''
 
-# Much further down the pipeline (requires completely new syntax)
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
     
-def select(i, base_image):
-    log_warning(i[0]+' is coming soon...')
+    if len(i) == 3: # If 2 arguments
+        return i[1] == i[2]
+    # But if there are 3 or more arguments (x1, x2, x3), treat the command as
+    # "if x1==x2 AND x2==x3 AND..."
+    return (i[1] == i[2]) and eq([i[0]] + i[2:])
+
+def ne(i):
+    '''
+    Not equal to (ne, !=, <>, ≠)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        return i[1] != i[2]
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    return (i[1] != i[2]) and ne([i[0]] + i[2:])
+
+def lt(i):
+    '''
+    Less than (lt, <)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            return i[1] < i[2]
+        except: # if e.g. invalid type match
+            log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        return (i[1] < i[2]) and lt([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
+        return None
+
+def gt(i):
+    '''
+    Greater than (gt, >)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            return i[1] > i[2]
+        except: # if e.g. invalid type match
+            log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        return (i[1] > i[2]) and gt([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
+        return None
+
+def le(i):
+    '''
+    Less than or equal to (le, <=, ≤)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            return i[1] <= i[2]
+        except: # if e.g. invalid type match
+            log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        return (i[1] <= i[2]) and le([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
+        return None
+
+def ge(i):
+    '''
+    Greater than or equal to (ge, >=, ≥)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            return i[1] >= i[2]
+        except: # if e.g. invalid type match
+            log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        return (i[1] >= i[2]) and ge([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
+        return None
+    
+# END EQUALITY SUBCOMMANDS
+
+# LOGICAL SUBCOMMANDS
+
+def logic_or(i):
+    '''
+    Logical OR (or, ||)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    short_circuit = False
+    for x in i[1:]:
+        short_circuit = bool(short_circuit or x)
+        if short_circuit == True:
+            return True
+    # If we make it to the end and none of the arguments were true (so we
+    # didn't short-circuit), result must be False
+    return False
+
+def logic_and(i):
+    '''
+    Logical AND (and, &&)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    short_circuit = True
+    for x in i[1:]:
+        short_circuit = bool(short_circuit and x)
+        if short_circuit == False:
+            return False
+    # If we make it to the end and none of the arguments were true (so we
+    # didn't short-circuit), result must be False
+    return True
+
+def logic_not(i):
+    '''
+    Logical NOT (not, !)
+    '''
+    # No minimum arguments. NOT only takes 1 argument; the rest will be ignored.
+    return not i[1]
+
+# END LOGICAL SUBCOMMANDS
+
+# MATH SUBCOMMANDS
+
+def add(i):
+    '''
+    Add two or more numbers (add, +)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    # No unary plus, that's stupid
+    if len(i) == 3: # If 2 arguments
+        try:
+            # Make sure arguments are numbers (int or float).
+            # If either argument is a string, function will raise an error
+            # and thus return None.
+            i[1] + 0
+            i[2] + 0
+
+            return i[1] + i[2]
+        except:
+            log_warning(f'{i[0]}: couldn’t add {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        # Make sure arguments are numbers (int or float).
+        # If either argument is a string, function will raise an error
+        # and thus return None.
+        i[1] + 0
+        i[2] + 0
+
+        return (i[1] + i[2]) and add([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t add {i[1]} and {i[2]}')
+        return None
+
+def sub(i):
+    '''
+    Subtract two or more numbers 
+        (sub, - [hyphen], – [endash], − [minus sign])
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 2: # If 1 argument, make it a unary minus (opposite)
+        try:
+            return -i[1]
+        except:
+            log_warning(f'{i[0]}: couldn’t negate {i[1]}')
+            return None
+    elif len(i) == 3: # If 2 arguments
+        try:
+            # Make sure arguments are numbers (int or float).
+            # If either argument is a string, function will raise an error
+            # and thus return None.
+            i[1] - 0
+            i[2] - 0
+
+            return i[1] - i[2]
+        except:
+            log_warning(f'{i[0]}: couldn’t subtract {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        # Make sure arguments are numbers (int or float).
+        # If either argument is a string, function will raise an error
+        # and thus return None.
+        i[1] - 0
+        i[2] - 0
+
+        return (i[1] - i[2]) and sub([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t subtract {i[1]} and {i[2]}')
+        return None
+
+def mul(i):
+    '''
+    Multiply two or more numbers 
+        (mul, *, × [multiplication sign, not X])
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            # Make sure arguments are numbers (int or float).
+            # If either argument is a string, function will raise an error
+            # and thus return None.
+            i[1] * i[1]
+            i[2] * i[2]
+
+            return i[1] * i[2]
+        except:
+            log_warning(f'{i[0]}: couldn’t multiply {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        # Make sure arguments are numbers (int or float).
+        # If either argument is a string, function will raise an error
+        # and thus return None.
+        i[1] * i[1]
+        i[2] * i[2]
+
+        return (i[1] * i[2]) and mul([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t multiply {i[1]} and {i[2]}')
+        return None
+
+def floordiv(i):
+    '''
+    Divide two or more numbers and round the result down so it's an integer.
+        (div, floordiv)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            # Make sure arguments are numbers (int or float).
+            # If either argument is a string, function will raise an error
+            # and thus return None.
+            i[1] // 1
+            i[2] // 1
+
+            return i[1] // i[2]
+        except:
+            log_warning(f'{i[0]}: couldn’t get integer division of \
+{i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        # Make sure arguments are numbers (int or float).
+        # If either argument is a string, function will raise an error
+        # and thus return None.
+        i[1] // 1
+        i[2] // 1
+
+        return (i[1] // i[2]) and floordiv([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t get integer division of \
+{i[1]} and {i[2]}')
+        return None
+    
+def truediv(i):
+    '''
+    Divide two or more numbers. Do not round the result down. The result will
+    be a floating-point number.
+        (truediv, /, ÷)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            # Make sure arguments are numbers (int or float).
+            # If either argument is a string, function will raise an error
+            # and thus return None.
+            i[1] / 1
+            i[2] / 1
+
+            return i[1] / i[2]
+        except:
+            log_warning(f'{i[0]}: couldn’t divide {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        # Make sure arguments are numbers (int or float).
+        # If either argument is a string, function will raise an error
+        # and thus return None.
+        i[1] / 1
+        i[2] / 1
+
+        return (i[1] / i[2]) and truediv([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t divide {i[1]} and {i[2]}')
+        return None
+
+def mod(i):
+    '''
+    Divide two or more numbers and return the remainder.
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            # Make sure arguments are numbers (int or float).
+            # If either argument is a string, function will raise an error
+            # and thus return None.
+            i[1] % 1
+            i[2] % 1
+
+            return i[1] % i[2]
+        except:
+            log_warning(f'{i[0]}: couldn’t get modulo of {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        # Make sure arguments are numbers (int or float).
+        # If either argument is a string, function will raise an error
+        # and thus return None.
+        i[1] % 1
+        i[2] % 1
+
+        return (i[1] % i[2]) and mod([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t get modulo of {i[1]} and {i[2]}')
+        return None
+
+def abs_(i):
+    '''
+    Return the absolute value of a number. (If it's negative, make it positive;
+    if it's positive, do nothing.)
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return abs(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t get absolute value of {i[1]}')
+        return None
+
+def floor(i):
+    '''
+    Return the floor of a number (the closest int that’s less than or equal to 
+    the number).
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return math.floor(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t get floor of {i[1]}')
+        return None
+
+def ceil(i):
+    '''
+    Return the ceiling of a number (the closest int that’s greater than or 
+    equal to the number).
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return math.ceil(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t get ceiling of {i[1]}')
+        return None
+
+# END MATH SUBCOMMANDS
+
+# STRING SUBCOMMANDS
+
+def str_add(i):
+    '''
+    Add two or more strings (str_add, str+)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            return str(i[1]) + str(i[2])
+        except:
+            log_warning(f'{i[0]}: couldn’t concatenate {i[1]} and {i[2]}')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        return (str(i[1]) + str(i[2])) and str_add([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t concatenate {i[1]} and {i[2]}')
+        return None
+
+def str_mul(i):
+    '''
+    Add two or more strings (str_mul, str*)
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    if len(i) == 3: # If 2 arguments
+        try:
+            return str(i[1]) * i[2]
+        except:
+            log_warning(f'{i[0]}: couldn’t repeat {i[1]}, {i[2]} times')
+            return None
+    # But if there are 3 or more arguments (x1, x2, x3)...
+    try:
+        return (str(i[1]) * i[2]) and str_mul([i[0]] + i[2:])
+    except:
+        log_warning(f'{i[0]}: couldn’t repeat {i[1]}, {i[2]} times')
+        return None
+
+# END STRING SUBCOMMANDS
+
+# TYPE SUBCOMMANDS
+
+def int_(i):
+    '''
+    Convert a value to integer format, if possible.
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return int(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t convert {i[1]} to int type')
+        return None
+
+def float_(i):
+    '''
+    Convert a value to floating-point format, if possible.
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return float(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t convert {i[1]} to float type')
+        return None
+
+def str_(i):
+    '''
+    Convert a value to string format, if possible.
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return str(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t convert {i[1]} to str type')
+        return None
+
+def bool_(i):
+    '''
+    Convert a value to boolean format, if possible.
+    '''
+
+    min_args = 1
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+    
+    try:
+        return bool(i[1])
+    except:
+        log_warning(f'{i[0]}: couldn’t convert {i[1]} to bool type')
+        return None
+    
+# END TYPE SUBCOMMANDS
+
+# COLOR SUBCOMMANDS
+    
+def red(i, base_image):
+    '''
+    DOCUMENTATION: (red,0<x>,0<y>,1[width],1[height])
+
+    Return the red value (from 0 to 255) of a single pixel. 
+    If width and height are given, take the average red value 
+    over the given rectangle.
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+
+    # For filters, if no x or y specified, apply filter to whole image
+    if len(i) <= 2:
+        i = [i[0], 0, 0, base_image.size[0], base_image.size[1]]
+    x = i[1]
+    y = i[2]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 1×1 (single pixel).
+    # If only width is specified, use that value for height too.
+    if len(i) == 3:
+        i += [1, 1]
+    width = i[3]
+    if len(i) == 4:
+        i += [width]
+    height = i[4]
+
+    if width <= 1 and height <= 1:
+        rgba = base_image.getpixel((x, y))
+        return rgba[0]
+    else:
+        avg = 0 # Average RED value of region
+            
+        for loop_x in range(x, x+width):
+            for loop_y in range(y, y+height):
+                rgba = base_image.getpixel((loop_x, loop_y))
+                avg += rgba[0]
+                
+        avg = int(avg / (width * height))
+        return avg
+    
+def green(i, base_image):
+    '''
+    DOCUMENTATION: (green,0<x>,0<y>,1[width],1[height])
+
+    Return the green value (from 0 to 255) of a single pixel. 
+    If width and height are given, take the average green value 
+    over the given rectangle.
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+
+    # For filters, if no x or y specified, apply filter to whole image
+    if len(i) <= 2:
+        i = [i[0], 0, 0, base_image.size[0], base_image.size[1]]
+    x = i[1]
+    y = i[2]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 1×1 (single pixel).
+    # If only width is specified, use that value for height too.
+    if len(i) == 3:
+        i += [1, 1]
+    width = i[3]
+    if len(i) == 4:
+        i += [width]
+    height = i[4]
+
+    if width <= 1 and height <= 1:
+        rgba = base_image.getpixel((x, y))
+        return rgba[1]
+    else:
+        avg = 0 # Average GREEN value of region
+            
+        for loop_x in range(x, x+width):
+            for loop_y in range(y, y+height):
+                rgba = base_image.getpixel((loop_x, loop_y))
+                avg += rgba[1]
+                
+        avg = int(avg / (width * height))
+        return avg
+    
+def blue(i, base_image):
+    '''
+    DOCUMENTATION: (blue,0<x>,0<y>,1[width],1[height])
+
+    Return the blue value (from 0 to 255) of a single pixel. 
+    If width and height are given, take the average blue value 
+    over the given rectangle.
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+
+    # For filters, if no x or y specified, apply filter to whole image
+    if len(i) <= 2:
+        i = [i[0], 0, 0, base_image.size[0], base_image.size[1]]
+    x = i[1]
+    y = i[2]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 1×1 (single pixel).
+    # If only width is specified, use that value for height too.
+    if len(i) == 3:
+        i += [1, 1]
+    width = i[3]
+    if len(i) == 4:
+        i += [width]
+    height = i[4]
+
+    if width <= 1 and height <= 1:
+        rgba = base_image.getpixel((x, y))
+        return rgba[2]
+    else:
+        avg = 0 # Average BLUE value of region
+            
+        for loop_x in range(x, x+width):
+            for loop_y in range(y, y+height):
+                rgba = base_image.getpixel((loop_x, loop_y))
+                avg += rgba[2]
+                
+        avg = int(avg / (width * height))
+        return avg
+    
+def alpha(i, base_image):
+    '''
+    DOCUMENTATION: (alpha,0<x>,0<y>,1[width],1[height])
+
+    Return the alpha value (from 0 to 255) of a single pixel. 
+    If width and height are given, take the average alpha value 
+    over the given rectangle.
+
+    This is for GETTING the alpha/opacity value (from 0 to 255). 
+    For applying a transparency filter, use "opacity".
+    '''
+
+    min_args = 2
+    if len(i) <= min_args:
+        log_warning('%s: command requires at least \
+%d arguments.' % (i[0], min_args))
+        return
+
+    # For filters, if no x or y specified, apply filter to whole image
+    if len(i) <= 2:
+        i = [i[0], 0, 0, base_image.size[0], base_image.size[1]]
+    x = i[1]
+    y = i[2]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 1×1 (single pixel).
+    # If only width is specified, use that value for height too.
+    if len(i) == 3:
+        i += [1, 1]
+    width = i[3]
+    if len(i) == 4:
+        i += [width]
+    height = i[4]
+
+    if width <= 1 and height <= 1:
+        rgba = base_image.getpixel((x, y))
+        return rgba[3]
+    else:
+        avg = 0 # Average ALPHA value of region
+            
+        for loop_x in range(x, x+width):
+            for loop_y in range(y, y+height):
+                rgba = base_image.getpixel((loop_x, loop_y))
+                avg += rgba[3]
+                
+        avg = int(avg / (width * height))
+        return avg
+
+# END COLOR SUBCOMMANDS
 
 ###########################################################################
 #### HELPER FUNCTIONS #####################################################
@@ -1062,49 +1990,6 @@ def select(i, base_image):
 def cls():
     for child in main_frame.winfo_children():
         child.place_forget()
-
-# Redraw each step in its current color
-def status_refresh():
-    # Update fill color for each step, then draw it
-    for index, item in enumerate(steps):
-        item.config(fg=colors[step_status[index]])
-        item.place(x=0, y=24+24*index)
-
-# Update the status for each step and redraw the steps
-def status_set(newStatus):
-    global step_status
-    step_status = newStatus
-    status_refresh()
-
-# Mark the current step as complete and move to next step
-def status_complete():
-    global step_status
-
-    next_step = 0
-    for i in range(len(step_status)):
-        if step_status[i] == 'gray':
-            next_step = i
-            break
-        else:
-            step_status[i] = 'green'
-
-    step_status[next_step] = 'blue'
-
-    status_refresh()
-
-# Mark the current step as failed
-def status_fail():
-    global step_status
-
-    curr_step = 0
-    for i in range(1, len(step_status)):
-        if step_status[i] == 'blue':
-            curr_step = i
-            break
-
-    step_status[curr_step] = 'red'
-
-    status_refresh()
 
 # Displays a dialog box with one or more buttons to the user. Holds until the
 # user clicks a button. Returns the name of the button clicked.
@@ -1128,18 +2013,21 @@ def button_dialog(title:str, message:Union[str, list],
 
     next_y = 0
     if title:
-        dialog_title = Label(main_frame, text=title, font=f_heading, 
+        dialog_title = Label(main_frame, text=str(title), font=f_heading, 
                 justify='left', bg=colors['BG'])
         dialog_title.place(x=0, y=0)
         # If there’s title text, leave space so msg_text doesn't cover it up
         next_y = 30
 
     dialog_message = []
+    # Failsafe in case message is in an invalid format
+    if not isinstance(message, list) and not isinstance(message, str): 
+        message = str(message)
+    # Convert to list if message is only one line / a string
     if isinstance(message, str): 
-        # Convert to list if message is only one line / a string
         message = [message]
 
-    for index, item in enumerate(message): # TODO: Scroll if not enough space
+    for index, item in enumerate(message):
         dialog_message.append(Label(main_frame, text=item, justify='left', 
                 wraplength=470, bg=colors['BG']))
 
@@ -1265,18 +2153,14 @@ def setup():
     # because we only need to do everything here once
 
     # Place frames
-    side_frame.place(x=0, y=0)
-    main_frame.place(x=160, y=0) 
+    main_frame.place(x=0, y=0) 
+    footer_frame.place(x=0, y=320)
+    # Note that all object positions are RELATIVE to their parent frame
 
-    # Place sidebar items
-    title.place(x=0, y=0)
-    footer.place(x=80, y=315, anchor=S)
-    for index, item in enumerate(steps):
-        item.place(x=0, y=24+24*index)
-    back_btn.place(x=80, y=295, anchor=S)
-    back_btn.bind('<ButtonRelease-1>', lambda _: menu())
-    # Note that the position of anything with main_frame as parent is 
-    # RELATIVE (i.e. 160 will be added to x)
+    # Place footer items
+    footer.place(x=5, y=15, anchor=W)
+    back_btn.place(x=470, y=15, anchor=E)
+    back_btn.bind('<Button-1>', lambda _: menu())
 
     # check message of the day
     motd()
@@ -1303,7 +2187,6 @@ Update Game Images from the main menu.'], icon='warning')
 def menu():
     #### STEP 1: SELECT SCRIPT ####
     cls()
-    status_set(['blue', 'gray', 'gray', 'gray', 'gray', 'gray'])
 
     # PAGE 1
 
@@ -1315,13 +2198,11 @@ def menu():
                     'scripts/skin_R32_to_Dx32.txt'))
     menu_btns_p1[2].bind('<ButtonRelease-1>', 
             lambda _: script_button('scripts/obj_L_to_Dx.txt'))
-    menu_btns_p1[3].bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/obj_R_to_Dx.txt'))
 
-    menu_btns_p1[5].bind('<ButtonRelease-1>', 
+    menu_btns_p1[4].bind('<ButtonRelease-1>', 
             lambda _: menu_p2())
 
-    menu_btns_p1[7].bind('<ButtonRelease-1>', 
+    menu_btns_p1[6].bind('<ButtonRelease-1>', 
             lambda _: exit_app())
     
     # PAGE 2
@@ -1441,20 +2322,14 @@ icon='warning')
                                 break
     # else
     menu()
-# TODO: First select script to run (show script info dialog), 
-# then select a folder (all images in folder will be converted and put in a
-# new subfolder titled "converted"
 
 # Takes 1 script line (in string format) and converts it to a program-readable
 # list. Account for comments, nesting, etc.
 def parse_line(line: str):
+    global version
+    
     # Strip whitespace from start and end of line
     line = line.lstrip().rstrip()
-
-    # Remove comments (like this one)
-    # Note: This applies to filenames too if they're hardcoded into the script,
-    # but I'm not fixing this because it's an edge case.
-    line = line.split('#')[0].rstrip()
 
     # Commands where the parser should NOT treat commas as separators.
     # Note that all commands here have max 1 argument as a result.
@@ -1464,45 +2339,103 @@ def parse_line(line: str):
     # Split line on commas
     output = ['']
     paren_depth = 0 # 0 = not inside parens, 1 = "(", 2 = "((" and so on
-    for char in line:
-        if char == ',' and paren_depth == 0 and \
+    in_string = False # True if inside double quotes
+    for index, char in enumerate(line):
+        if char == ',' and paren_depth == 0 and not in_string and \
                 (len(output) == 1 or output[0] not in no_split_cmds):
-            # Split on commas if not in parens and not in the 
-            # list of no-split commands
+            # Split on commas if not inside parens, not inside a string, 
+            # and command isn't in the list of no-split commands
             output.append('')
-        else:
+        elif char == '#' and not in_string:
+            # When a '#' character is reached, treat the rest of the line as a
+            # comment and don't parse it, except if inside a string.
+            break
+        elif char == '$' and output[-1] == '' and in_string:
+            # Temporary escape for $ at start of strings, so they don't get 
+            # treated as variable names down the line
+            output[-1] += '\\$'
+        elif char == '"' and (index == 0 or line[index-1] != '\\'): 
+            # Ignore double quotes that mark strings (unless they're escaped)
+            pass
+        elif char == '\\' and in_string and \
+                (index == 0 or line[index-1] != '\\'):
+            # Ignore backslashes unless there's two in a row
+            pass
+        else: # All other characters get parsed normally
             output[-1] += char
 
-        # Separately from building the output list, update paren_depth
-        if char == '(':
+        # Separately from building the output list, 
+        # update paren_depth and in_string
+        if char == '(' and not in_string:
             paren_depth += 1
-        elif char == ')':
+        elif char == ')' and not in_string:
             paren_depth -= 1
             # If paren_depth is ever negative, there are too many ")"s
             if paren_depth < 0:
                 log_warning('\
-Parser error: Too many closing parentheses. Skipping line: '+line)
+Syntax error: Too many closing parentheses. Skipping line: '+line)
                 return [''] # Return empty line so converter skips it
+        elif char == '"' and (index == 0 or line[index-1] == '\\'): 
+            # Strings are only double-quotes, in case I want to add char later
+            # Flip it: If we're in a string, get out.
+            # If we're not in a string, get in.
+            in_string = not in_string
 
     # If paren_depth isn't back to 0 after exiting splitter loop, syntax error
     if paren_depth > 0:
         log_warning('\
-Parser error: Not enough closing parentheses. Skipping line: '+line)
+Syntax error: Not enough closing parentheses. Skipping line: '+line)
+        return [''] # Return empty line so converter skips it
+    
+    # If we're still in a string at the end of the line, syntax error
+    if in_string:
+        log_warning('\
+Syntax error: Line ended before string did. Skipping line: '+line)
         return [''] # Return empty line so converter skips it
 
-    for i in range(len(output)):
-        # Descriptions may contain commas, so keep space after those.
-        # Otherwise, remove whitespace from sides of commands. 
-        # Ditto for file paths.
-        if output[0] not in no_split_cmds:
-            output[i] = output[i].strip()
+    for arg_n in range(len(output)):
+        # remove whitespace from sides of commands
+        output[arg_n] = output[arg_n].strip()
 
-        try:
-            # Convert data to int if possible
-            output[i] = int(output[i])
-        except ValueError:
-            # Just keep it as a string
-            pass
+        # First item (i.e. command name) must be a lowercase string
+        if arg_n == 0:
+            # Since this is before type conversion, we can assume output[0]
+            # is a string
+            output[0] = output[0].lower() 
+            # Go to next iteration before we would convert type
+            continue
+
+        is_var = False # whether the given argument's type is "variable name"
+        # Convert variable names to custom dictionary type.
+        # Conversion will NOT happen if:
+        #   - The string is less than 2 characters long
+        #   - It's the first argument for a "set" command
+        #   - It's *any* argument for a header command
+        # In these cases, the $text will be treated as a normal string.
+        # If script was written for a version older than 6.0.0, the variable 
+        # dict will be converted back to a string later.
+        if len(output[arg_n]) >= 2 and not (output[0] == 'set' and arg_n == 1)\
+                and not (output[0] in header_commands):
+            # Remember, everything is still a string at this point.
+            # str-to-int conversion is AFTER this
+            if output[arg_n][0] == '$':
+                output[arg_n] = {'type': 'var', 'content': output[arg_n]}
+                is_var = True
+            # Unescape dollar signs in string literals
+            elif output[arg_n][0:2] == '\\$':
+                output[arg_n] = output[arg_n][1:]
+        
+        if not is_var:
+            try:
+                # Convert data to int if possible
+                output[arg_n] = int(output[arg_n])
+            except ValueError:
+                try:
+                    # Okay then, how about a float?
+                    output[arg_n] = float(output[arg_n])
+                except ValueError:
+                    # Just keep it as a string
+                    pass
 
     return output
 
@@ -1512,6 +2445,8 @@ Parser error: Not enough closing parentheses. Skipping line: '+line)
 # Return False if there was an error or the user declined to run it.
 def open_script(script_file=''):
     global data, version, version_str
+    global loop_limit, loop_counter
+    global block_depths, block_stacks
 
     # Ask user to pick a script if they want to run a custom script
     custom_script = False
@@ -1526,7 +2461,6 @@ def open_script(script_file=''):
 
     #### STEP 2: SCRIPT INFO ####
     cls()
-    status_complete()
 
     try:
         file_obj = open(script_file, 'r')
@@ -1534,14 +2468,12 @@ def open_script(script_file=''):
         file_obj.close()
     except FileNotFoundError: 
         # If user somehow tries to run a nonexistent file
-        status_fail()
         simple_dialog('Error', 
             'Couldn’t find a file with that name. Please try again.', 
             'Back', icon='error')
         return False
     except UnicodeDecodeError: 
         # If user opens a “script” with weird characters
-        status_fail()
         simple_dialog('Error', 
             ['Couldn’t read the file with that name.',
                 'Are you sure it’s a conversion script?'],
@@ -1549,7 +2481,6 @@ def open_script(script_file=''):
         return False
     except IsADirectoryError: 
         # If user opens a folder or Mac app bundle
-        status_fail()
         simple_dialog('Error', 
             '''That file is a folder or application. 
 Please try again.''',
@@ -1558,23 +2489,93 @@ Please try again.''',
 
     lines = raw_content.splitlines()
     data = []
+    # Add empty "line 0" to make goto more consistent
+    data.append(parse_line(''))
+
     for l in lines:
+        # First pass at parsing lines 
+        # (variable values and subcommands are parsed later)
         data.append(parse_line(l))
 
+    # The block stack is how we keep track of nested blocks.
+    # Each item represents one line of code.
+    # We start out empty, then if we enter a block via e.g. an if statement,
+    # then "if" gets added onto the stack. When we reach an "end" command,
+    # the last element is taken off the stack.
+    block_stacks = [] 
+    # Generate list of code lines, with "indentation" for each line
+    block_depths = []
+    current_depth = 0 # start
+    for index, item in enumerate(data):
+        # If it's the first line, start with one None item on the stack
+        # so if e.g. an "if" block increases the depth to 1, "if" is item 1
+        if index == 0:
+            block_stacks.append([None])
+        # Otherwise, copy the stack from the last line
+        else:
+            block_stacks.append(block_stacks[-1].copy())
+
+        # If line is empty, skip the rest
+        if len(item) < 1:
+            continue
+        
+        # Add the current line's depth to block_depths
+        block_depths.append(current_depth)
+
+        # Decrease block depth if command is a block end
+        if item[0] in block_ends:
+            current_depth -= 1
+            block_stacks[-1].pop()
+
+        # If block depth is *ever* negative, that's an error
+        if current_depth < 0:
+            simple_dialog('Syntax error', 
+                'This script’s block depth is imbalanced. Please check to make \
+sure it doesn’t have one too many “end” commands.', icon='error')
+            return False
+
+        # If a header command is inside a block, remove it
+        if current_depth >= 1 and item[0] in header_commands:
+            data[index] = ['']
+            log_warning('Syntax: ignoring header command at line %d as it is \
+inside a block' % index)
+                        
+        # Increase block depth if command is a block start
+        if item[0] in block_starts:
+            current_depth += 1
+            block_stacks[-1].append(item[0])
+
+    # if depth is positive at end of code, error
+    if current_depth < 0:
+        simple_dialog('Syntax error', 
+            'This script’s block depth is imbalanced. Please check to make \
+sure each block has an associated “end” command.', icon='error')
+        return False
+
     version = app_version.copy()
-    version_str = '(UNKNOWN; defaulting to %s)' % app_version_str
+    version_str = '(UNKNOWN; defaulting to %s)' % app_version_str()
     for i in data:
         if i[0] == 'version':
             # If user entered 1 or 2 numbers for the version (e.g. "1" or
             # "4,1", assume the other numbers are 0s
-            if len(i) == 1:
-                version.append(0)
-                version.append(0)
-            if len(i) == 2:
-                version.append(0)
-            elif len(i) >= 3:
+            if len(i) < 2:
+                log_warning('Syntax warning: Empty version')
+            elif len(i) == 2:
+                i.append(0)
+                i.append(0)
+            elif len(i) == 3:
+                i.append(0)
+
+            # Make sure version numbers are positive integers
+            if type(i[1]) == int and type(i[2]) == int \
+                    and type(i[3]) == int and \
+                    i[1] >= 0 and i[2] >= 0 and i[3] >= 0:
                 version = i[1:4]
                 version_str = '.'.join([str(x) for x in version])
+            else:
+                log_warning('Syntax warning: Invalid version')
+                version_str = '(INVALID; defaulting to %s)' % \
+                        app_version_str()
             # If user didn't specify a version, assume it’s for the current
             # converter version (but display the version as unknown)
             break
@@ -1582,20 +2583,45 @@ Please try again.''',
     name = 'Unknown Script'
     for i in data:
         if i[0] == 'name':
-            name = i[1]
-            break
+            if len(i) > 1:
+                name = i[1]
+                break
+            else:
+                log_warning('Syntax error: Empty name')
 
     author = 'Unknown Author'
     for i in data:
         if i[0] == 'author':
-            author = i[1]
-            break
+            if len(i) > 1:
+                author = i[1]
+                break
+            else:
+                log_warning('Syntax error: Empty author')
 
     description = 'No description available.'
     for i in data:
         if i[0] == 'description':
-            description = ','.join(i[1:])
-            break
+            if len(i) > 1:
+                description = ','.join(i[1:])
+                break
+            else:
+                log_warning('Syntax error: Empty description')
+
+    # To prevent infinite loops, keep track of how many times each line is run.
+    # When a limit is reached (default 10000 times), halt the program.
+    loop_limit = 10000
+    loop_counter = [0] * len(data)
+    for i in data:
+        if i[0] == 'loop_limit':
+            if len(i) > 1:
+                if type(i[1]) == int and i[1] > 0:
+                    loop_limit = i[1]
+                    break
+                else:
+                    log_warning('Syntax error: Invalid loop limit \
+(must be a positive integer)')
+            else:
+                log_warning('Syntax error: Empty loop limit')
 
     # Only show script info if it's a custom script, because default script
     # are assumed to work
@@ -1605,9 +2631,7 @@ Please try again.''',
                     'Made for converter version %s'%version_str,
                     'Description: %s'%description,
                     '',
-                    '<b>Do you want to run this script?', '''\
-If you click “Continue”, this program will check for problems with the script.
-If no problems are found, the script will run right away.'''], 
+                    '<b>Do you want to run this script?'], 
                 'Cancel', 'Continue', icon='question')
         if confirm:
             return True
@@ -1619,12 +2643,14 @@ If no problems are found, the script will run right away.'''],
 # Load header data from script, then perform a compatibility check.
 # Return False if the user cancels, and True otherwise.
 def compatibility_check():
-    global data, version, version_str, open_path, save_path, template_path,\
-            alt_path, base_blank, start_num, stop_num, current_num
+    global data, version, version_str
+    global open_path, save_path, template_path, alt_path
+    global base_blank
+    global start_num, stop_num, current_num
+    global labels, variables, images
 
     #### STEP 3: COMPATIBILITY CHECK ####
     cls()
-    status_complete()
 
     # Load header data
     open_path = '.INPUT' # New in v4.0: Default to user input if no path given
@@ -1679,16 +2705,6 @@ def compatibility_check():
             # e.g. if stop is 10, it will convert #10 but not #11
             break
 
-    all_issues = [ 
-        '“default” command had 6 arguments (instead of 4) before v1.1.', #0
-        '''\
-“filter” command is only supported in v1.4. Instead of “filter,grayscale,...”,
-use “grayscale,...”''', #1
-        '“template” no longer supports wildcards in filepath since v2.1', #2
-        '“alt” no longer supports wildcards in filepath since v3.0', #3
-    ]
-    file_issues = []
-
     # Warn if the “version” field is later than the current version
     # (unless it's just a newer release version)
     # The compatibility checks are irrelevant for scripts made for newer 
@@ -1704,69 +2720,47 @@ use “grayscale,...”''', #1
 '',
 'Do you want to continue anyway?'], 
             icon='warning')
-        if conf:
-            return True
-        else:
+        if not conf:
             return False
-    else:
-        try:
-            # Scan file for compatibility issues
-            for i in data:
-                # Version 1.1: “default” no longer takes newX and newY arguments
-                # Automatically fixed by converter
-                if i[0] == 'default' and len(i) > 4 and (version[0] < 1 or \
-                        (version[0] == 1 and version[1] < 1)):
-                    file_issues.append(0)
-                    del i[3]
-                    del i[4]
-                # Version 1.5: “filter” command split into subcommands 
-                # like “grayscale”
-                # Automatically fixed by converter
-                if i[0] == 'filter' and (version[0] < 1 or \
-                        (version[0] == 1 and version[1] < 4)):
-                    file_issues.append(1)
-                    del i[0]
-                # Version 2.1: “template” command no longer supports wildcards 
-                # in path
-                # Cannot be fixed
-                if '*' in template_path and (version[0] < 2 or \
-                        (version[0] == 2 and version[1] < 1)):
-                    file_issues.append(2)
-                # Version 3.0: alt command no longer supports wildcards in path
-                # Cannot be fixed
-                if '*' in alt_path and (version[0] < 3): 
-                    # don't need to check minor version above, 
-                    # as there’s no minor version less than 0
-                    file_issues.append(3)
+    # The compatibility checker used to be here, but I removed it in v6.0
+    # because it caused more problems than it solved.
 
-            # Compatibility warnings
-            if len(file_issues) > 0:
-                main_text = [
-'Your script was designed for version %s of this converter.' % version_str, 
-'It contains the following compatibility issues:', 
-                ]
-                for i in file_issues:  
-                    main_text.append(Label(main_frame, text='- '+all_issues[i]))
-                
-                conf = yn_dialog('Compatibility warning', main_text.extend([
-'',
-'Do you wish to continue anyway, even though things may not work properly?',
-'We are not responsible for any damage to your files this may cause.', 
-                    ]), icon='warning')
-                if conf:
-                    return True
+    # DATABASE RESETS & INITIAL SYNTAX CHECKS
+    
+    # Dictionary of labels and the index of `data` on which they were found.
+    # Example: {'_start': 0}
+    # The user-facing line number will be 1 higher, 
+    # e.g. _start is actually on line 1 in this example.
+    labels = {}
+    for index, item in enumerate(data):
+        if item[0] == 'label':
+            if len(item) > 1:
+                if item[1] in labels:
+                    log_warning(\
+'Syntax error: Duplicate label “%s” on line %d ignored' % (item[1], index))
+                elif type(item[1]) != str:
+                    log_warning(\
+'Syntax error: Label “%s” on line %d ignored because it’s not a string' % \
+(item[1], index))
                 else:
-                    return False
+                    # If the label hasn't already been used, add it to the
+                    # labels dictionary
+                    labels[item[1]] = index
             else:
-                return True
-        except:
-            # If we find an error while compatibility checking, just skip it
-            # and get right to converting
-            simple_dialog('Compatibility checker error', 
-                    ['Skipping compatibility check due to an error.',
-                    'Please tell Clippy how you got here so he can fix it.'],
-                    icon='warning')
-            return True
+                log_warning('Syntax error: empty label')
+
+    # Variables will mostly be user-set but let's predefine the booleans
+    # (and a couple mathematical constants because why not)
+    variables = {'$_true': True, '$_t': True,
+                 '$_false': False, '$_f': False,
+                 '$_pi': math.pi, '$_e': math.e}
+    
+    # Images the converter can access, 
+    # including 'old' (open), 'template', 'alt', and 'new' (save/base)
+    # and any user-defined images
+    images = {}
+
+    return True
 
 # Get the paths for the IMAGES the user wants to open and save to.
 # Return False if there’s an invalid path or the user cancelled.
@@ -1777,7 +2771,6 @@ def get_paths(*, new_multi=False):
 
     #### STEP 4: OPEN & SAVE PATHS ####
     cls()
-    status_complete()
 
     # Determine whether script is converting 1 file (single-file mode)
     # or multiple files (multi-file mode)
@@ -1832,7 +2825,6 @@ converted.',
         except FileNotFoundError:
             # This code will only be reached in legacy single-file mode because
             # the OS file selector shouldn't select a nonexistent file
-            #   Removed status_fail() as this error is now recoverable
             choose_new_path = yn_dialog('File warning', 
 ['The script tried to open the following file, but it does not exist.',
 '<b>'+open_path,
@@ -1849,7 +2841,6 @@ converted.',
                 return False
         except IsADirectoryError: 
             # If user opens a folder or Mac app bundle
-            #   Removed status_fail() as this error is now recoverable
             choose_new_path = yn_dialog('File warning', 
                     '''The path '''+open_path+''' is a folder or application.
 Do you want to select a different file to open?''', 'Yes', 
@@ -1904,7 +2895,6 @@ Do you want to select a different file to open?''', 'Yes',
         # “if parent_dir” => if there’s no parent directory because you’re
         # saving to the current working directory, skip the directory check
         if parent_dir and not os.path.exists(parent_dir):
-            #   Removed status_fail() as this error is now recoverable
             choose_new_path = yn_dialog('Error', 
 ['The script is trying to save to a folder that doesn’t exist.',
 'The path that caused the error was:', 
@@ -1971,10 +2961,11 @@ Running the script will overwrite the file. You can’t undo this action.',
                 # No files to overwrite -- move on
                 return True
 
-        conf = yn_dialog('Warning', main_text.extend([
+        conf = yn_dialog('Warning', main_text + [
                 '', 
                 'Do you want to run this script anyway?'
-            ]), icon='warning')
+            ], icon='warning')
+
         if conf:
             return True
         else:
@@ -1988,7 +2979,6 @@ def run_script(*, new_multi=False):
 
     #### STEP 5: RUN SCRIPT ####
     cls()
-    status_complete()
 
     # Set current_num after start_num is set but before the first 
     # update_subhead call
@@ -2029,14 +3019,14 @@ def run_script(*, new_multi=False):
     conv_count = 0 # Count how many files have been converted
 
     # Load template image only once because it doesn't allow wildcards
-    template_image = None
+    images['template'] = None
     try:
         if template_path != '':
             # template_path doesn't support wildcards because the point is
             # for there to be just 1 template
-            template_image = PIL.Image.open(template_path).convert('RGBA')
+            images['template'] = PIL.Image.open(template_path).convert('RGBA')
         else:
-            template_image = None
+            images['template'] = None
     except FileNotFoundError:
         log_warning('Couldn’t find a template file with the path '+\
             template_path+' — skipping')
@@ -2049,12 +3039,12 @@ def run_script(*, new_multi=False):
         log_warning('The template file path '+template_path+\
             ' is a folder or application.')
 
-    alt_image = None
+    images['alt'] = None
     try:
         if alt_path != '':
-            alt_image = PIL.Image.open(alt_path).convert('RGBA')
+            images['alt'] = PIL.Image.open(alt_path).convert('RGBA')
         else:
-            alt_image = None
+            images['alt'] = None
     except FileNotFoundError:
         log_warning('Couldn’t find an alternate file with the path '+\
             alt_path+' — skipping')
@@ -2088,7 +3078,7 @@ def run_script(*, new_multi=False):
             time_last_refresh = time()
             time_since_refresh = 0
 
-        open_image = None
+        images['old'] = None
         try:
             if new_multi:
                 # New multi-image conversions change open_path and save_path
@@ -2096,12 +3086,12 @@ def run_script(*, new_multi=False):
                 open_path = multi_open_paths[i]
                 save_path = multi_save_paths[i]
                 # Read image based on the new open path
-                open_image = PIL.Image.open(open_path).convert('RGBA')
+                images['old'] = PIL.Image.open(open_path).convert('RGBA')
             elif legacy_multi:
-                open_image = PIL.Image.open(open_path.replace('*', 
+                images['old'] = PIL.Image.open(open_path.replace('*', 
                     str(i))).convert('RGBA')
             else:
-                open_image = PIL.Image.open(open_path).convert('RGBA')
+                images['old'] = PIL.Image.open(open_path).convert('RGBA')
         except FileNotFoundError:
             # Don't need to check for legacy_multi because in single mode,
             # invalid paths will be rejected earlier
@@ -2121,31 +3111,380 @@ def run_script(*, new_multi=False):
 
         if base_blank:
             # Create a blank base if the script starts with that
-            if template_image: 
+            if images['template']: 
                 # If we opened a valid template image, use its size for the
                 # blank base
-                w, h = template_image.size
+                w, h = images['template'].size
             else:
                 # Otherwise, default to the size of the image we opened
-                w, h = open_image.size
-            base_image = PIL.Image.new('RGBA', (w,h))
+                w, h = images['old'].size
+            images['new'] = PIL.Image.new('RGBA', (w,h))
         else:
             # If no base is specified, start new image as copy of old image
-            base_image = open_image.copy()
+            images['new'] = images['old'].copy()
 
-        base_image = process(data, open_image, template_image, 
-                            alt_image, base_image)
-        base_image.save(save_path.replace('*', str(i)))
+        images['new'] = process(data)
+        images['new'].save(save_path.replace('*', str(i)))
         conv_count += 1
 
     t2 = time()
     return pre_summary(t2-t1, conv_count) # Return helper func's result
 
+def process_line(line: list):
+    '''
+    Given a line (in list form), return it in processed form, by substituting
+    variable names for their associated values, then running any subcommands.
+    This function does NOT execute the line's main command.
+    '''
+    global images
+
+    new_line = line.copy() 
+
+    for arg_n in range(1, len(new_line)):
+        # Replace variable names with the variable's current value
+        if type(new_line[arg_n]) == dict and new_line[arg_n]['type'] == 'var':
+            if version[0] >= 6:
+                new_line[arg_n] = variables[new_line[arg_n]['content']]
+            else:
+                new_line[arg_n] = new_line[arg_n]['content']
+                log_warning('Variable name %s ignored because \
+variables are not supported in scripts written for versions older than 6.0.0.'\
+                            % new_line[arg_n]['content'])
+
+        # Now that we've broken the command into the normal list format,
+        # we need to check each argument of the command for parens and
+        # recursively call this function as needed.
+        if type(new_line[arg_n]) == str and \
+                new_line[arg_n].startswith('(') and \
+                new_line[arg_n].endswith(')'):
+            # Execute the command INSIDE the parens FIRST
+            new_line[arg_n] = subcmd(new_line[arg_n], images['old'], 
+                                    images['template'], images['alt'], 
+                                    images['new'])
+
+    return new_line
+
+# Reads lines from one file and executes its instructions
+def process(data: list):
+    global version
+    global labels, variables, images
+    global loop_limit, loop_counter
+
+    # MAIN LINE-PROCESSING LOOP
+    # Remember, each line has been parsed into list format already, 
+    # but the subcommands have NOT been parsed
+    index = 0 # START
+    jumped = False # True if running the current line interrupted normal flow
+    while index < len(data): # STOP
+        item = process_line(data[index]) # MANUAL ENUMERATE
+
+        # Uncomment this to print line-by-line output
+        # p#rint(index, item, block_depths[index], block_stacks[index])
+
+        # Increment loop counter for the line
+        loop_counter[index] += 1
+        # If we hit the loop limit, stop the script to prevent infinite loops
+        if loop_counter[index] >= loop_limit:
+            simple_dialog('Conversion error', 
+                    '''Conversion stopped because the loop limit of %i was \
+reached on line %i.
+Please check your code to make sure there isn’t an infinite loop.
+If you meant to loop this many times, you can increase the loop limit using \
+the “loop_limit” header command.''' % (loop_limit, index), 
+                    'Back to Menu', icon='error')
+            menu()
+
+        try:
+            jumped = False # Reset jumped flag for new line
+
+            if item[0].strip() == '': # Skip blank lines
+                continue
+            elif item[0] == 'exit': 
+                # End the conversion early, but save the target file as is 
+                # and exit properly.
+                break
+            elif item[0] == 'error':
+                # Stop conversion without saving, and optionally display a 
+                # message on the screen
+                if len(item) < 2: # If the script doesn't include error msg
+                    item.append('The conversion script was stopped due to an \
+unknown error.')
+                simple_dialog('Conversion error', item[1], 'Back to Menu',
+                              icon='error')
+                menu()
+            elif item[0] == 'warning':
+                warning(item)
+
+            # Control commands
+            elif item[0] == 'goto': 
+                # Make sure the command has enough arguments
+                if len(item) < 2: 
+                    log_warning('goto: missing line number')
+                    continue
+
+                # OPTION 1: Go to line number
+                # Line numbers start counting from 1, even internally
+                if type(item[1]) == int:
+                    index = item[1]
+                    jumped = True
+                # OPTION 2: Go to label
+                # This will jump to the line on which the label was declared.
+                elif type(item[1]) == str:
+                    if item[1] in labels:
+                        index = labels[item[1]]
+                        jumped = True
+                    else:
+                        log_warning('goto: Unrecognized label')
+                else:
+                    log_warning('goto: Must go to a line number (integer)')
+
+            # One-line variant of if
+            elif item[0] == 'if1':
+                # Make sure the command has enough arguments
+                if len(item) < 2: 
+                    log_warning('if: missing conditional statement')
+                    continue
+
+                # Result of conditional command in the if statement
+                # item[1] will already be processed by the subcmd call above
+                cond_result = bool(item[1])
+
+                # If condition is FALSE, skip the next line
+                if not cond_result:
+                    index += 2
+                    jumped = True
+                # Otherwise, do nothing and the interpreter will process the
+                # next line normally
+
+            elif item[0] == 'if':
+                # Make sure the command has enough arguments
+                if len(item) < 2: 
+                    log_warning('if: missing conditional statement')
+                    continue
+
+                # Save depth of if block so we can check it against the 
+                # elseif/else/end lines we're parsing later
+                start_depth = block_depths[index]
+
+                # Result of conditional command in the if statement
+                # item[1] will already be processed by the subcmd call above
+                cond_result = bool(item[1])
+
+                # IF first conditional is FALSE, skip until we're out of 
+                # the block (either elseif, else, or end)
+                while not cond_result:
+                    index += 1
+                    item = process_line(data[index])
+
+                    # Skip lines that don't match the depth of the original if line
+                    if block_depths[index] != start_depth:
+                        continue
+
+                    if item[0] == 'elseif':
+                        # Try the condition for the elseif line
+                        cond_result = bool(item[1])
+                        # And if this is true, then we'll get out of the loop 
+                        # and run the code inside the elseif
+                    elif item[0] == 'else':
+                        # If we make it down here, the code in here will 
+                        # run no matter what
+                        break
+                        # Note we're breaking out from the inner `while` loop, 
+                        # not the main `for` loop
+                    elif item[0] == 'end':
+                        # And we're done
+                        break
+
+                # IF we get past this point (conditional is True), 
+                # there's nothing more to do here. We're in the if block. 
+                # Proceed as normal until we reach an "end" command.
+
+            elif item[0] in block_ends and len(block_stacks[index]) > 0 \
+                    and block_stacks[index][-1] in ['if', 'elseif', 'else']:
+                # If we encounter elseif, else, end, etc. during the normal 
+                # line-reading cycle, then we've finished a block from a 
+                # condition that evaluated as true, so we're done with the 
+                # whole if statement
+
+                # Go to the if block's associated end command
+                while item[0] not in ['end', 'endif']:
+                    index += 1
+                    item = data[index]
+                    # No need to process arguments because we only need to 
+                    # check arg0 (command name) right now
+
+                # Note that the "current" line is the line that actually has the
+                # elseif/else/end, but this will be incremented in the
+                # "finally" block below this loop so we're past the blocks
+
+            elif item[0] == 'while':
+                # Make sure the command has enough arguments
+                if len(item) < 2: 
+                    log_warning('while: missing conditional statement')
+                    continue
+
+                # Save depth of if block so we can check it against the 
+                # elseif/else/end lines we're parsing later
+                start_depth = block_depths[index]
+
+                # Result of conditional command in the if statement
+                # item[1] will already be processed by the subcmd call above
+                cond_result = bool(item[1])
+
+                # IF first conditional is FALSE, skip until we're out of 
+                # the block (either elseif, else, or end)
+                while not cond_result:
+                    index += 1
+                    item = data[index]
+                    # No need to process arguments because we only need to 
+                    # check arg0 (command name) right now
+
+                    # Skip lines that don't match the depth of the original if line
+                    if block_depths[index] != start_depth:
+                        continue
+
+                    # Search for the "end" so we can skip past the loop
+                    if item[0] == 'end':
+                        break
+
+                # IF we get past this point (conditional is True), 
+                # there's nothing more to do here. We're inside the loop. 
+                # Proceed as normal until we reach an "end" command.
+
+            elif item[0] == 'end' and len(block_stacks[index]) > 0 and \
+                    block_stacks[index][-1] == 'while':
+                # If we reach an "end" when we're in a 
+                # while loop (but otherwise reading lines normally), 
+                # then we've reached the end of the loop block,
+                # so we need to jump back up to continue the loop
+
+                start_depth = block_depths[index]
+                # Move up the lines until we reach a "while" command with
+                # depth 1 less than our current depth. 
+                # That'll be the block we want to jump to.
+                while not cond_result:
+                    index += 1
+                    item = data[index]
+                    # No need to process arguments because we only need to 
+                    # check arg0 (command name) right now
+
+                    if block_depths[index] != start_depth-1:
+                        continue
+
+                    # Search for the "end" so we can skip past the loop
+                    if item[0] == 'while':
+                        # Next line we run will check the while condition again
+                        jumped = True 
+                        break
+
+            # TODO: No continue or break yet -- just use gotos for now
+
+            # Variable commands (ONLY in scripts for v6+)
+            elif item[0] == 'set':
+                if version[0] >= 6:
+                    set(item)
+                else:
+                    log_warning('set: Variables are only supported in scripts \
+written for version 6.0.0 or later')
+            
+            # Basic copying commands
+            elif item[0] == 'copy':
+                copy(item, images['old'], images['new'])
+            elif item[0] == 'copy_alt' or item[0] == 'copyalt':
+                if not images['alt']:
+                    log_warning('\
+copyalt: Skipped because no “alt” image was specified.')
+                else:
+                    copy(item, images['alt'], images['new'])
+            elif item[0] == 'copy_from':
+                # Unlike other copy commands, `copy_from` uses global image list
+                # and passes the appropriate images to `copy`
+                copy_from(item)
+            elif item[0] == 'default':
+                if not images['template']:
+                    log_warning('\
+default: Skipped because no “template” image was specified.')
+                else:
+                    default(item, images['template'], images['new'])
+            elif item[0] == 'default_from':
+                # Similar to copyfrom above but copying to same x/y position
+                default_from(item)
+            elif item[0] == 'clear':
+                clear(item, images['new'])
+            elif item[0] == 'delete':
+                clear(item, images['new'])
+                if version[0] >= 6:
+                    log_warning('delete: Deprecated alias; please use “clear”')
+            elif item[0] == 'duplicate':
+                duplicate(item, images['new'])
+
+            # Advanced copying commands
+            elif item[0] == 'tile':
+                tile(item, images['old'], images['alt'], images['new'])
+
+            # Transformation commands
+            elif item[0] == 'resize':
+                images['new'] = resize(item, images['new'])
+            elif item[0] == 'rotate':
+                rotate(item, images['new'])
+            elif item[0] == 'flip':
+                flip(item, images['new'])
+
+            # Filter commands
+            elif item[0] == 'grayscale':
+                grayscale(item, images['new'])
+            elif item[0] == 'invert':
+                invert(item, images['new'])
+            elif item[0] == 'color_filter' or item[0] == 'colorfilter':
+                colorfilter(item, images['new'])
+            elif item[0] == 'opacity':
+                opacity(item, images['new'])
+            elif item[0] == 'hue': # TODO: rename and make h/s/l subcmds?
+                hue(item, images['new'])
+            elif item[0] == 'saturation':
+                saturation(item, images['new'])
+            elif item[0] == 'lightness':
+                lightness(item, images['new'])
+            elif item[0] == 'fill':
+                fill(item, images['new'])
+            elif item[0] == 'contrast':
+                contrast(item, images['new'])
+            elif item[0] == 'colorize':
+                colorize(item, images['new'])
+            elif item[0] == 'sepia':
+                sepia(item, images['new'])
+            elif item[0] == 'threshold':
+                threshold(item, images['new'])
+
+            # Just so it doesn't think header commands are unknown
+            elif item[0] in header_commands:
+                # I always mess this particular command up so I'll just 
+                # hardcode in a note to self
+                if item[0] == 'template' and len(item) > 2:
+                    log_warning('Clippy, you idiot, the command you’re looking \
+for is “default”, not “template”')
+                # Otherwise, just skip the line since we've presumably already
+                # dealt with it
+            else:
+                log_warning('Unknown command on line %i: %s' % (index, item[0]))
+
+        # except Exception as e: 
+        #     # Handle any errors in the command functions so they don’t bring
+        #     # the whole program to a halt
+        #     log_warning(str(item[0])+' command skipped due to error: '+str(e))
+
+        finally:
+            # Note: This block *will* be reached even if "continue" is called
+            # in the "try" part of the loop.
+            if not jumped:
+                index += 1 # STEP
+
+    return images['new'] 
+
 # Returns number of files successfully converted.
 def pre_summary(conv_time, conv_count):
     #### STEP 6: SUMMARY ####
     cls()
-    status_complete()
 
     # Check if we're running on replit
     if os.path.isdir("/home/runner") == True:
@@ -2174,7 +3513,7 @@ def pre_summary(conv_time, conv_count):
 
 def summary(conv_time, conv_count, warning_page=0):
     # Roll warning page over to 0 if needed
-    warn_per_page = 10 # TODO: turn this into a scrolling thing (maybe popup?)
+    warn_per_page = 10 # TODO: account for multiline warnings
     num_warn_pages = (len(warnings)-1)//warn_per_page + 1
     if warning_page >= num_warn_pages:
         warning_page = 0
@@ -2199,8 +3538,7 @@ def summary(conv_time, conv_count, warning_page=0):
         if num_warn_pages > 1:
             # Display dialog with extra button to go to next warning page
             confirm_exit = button_dialog('Conversion complete!', 
-                    main_text + ['', bottom_text], 
-                    ['More warnings', 'Okay'], icon='warning')
+                    main_text + ['', bottom_text], ['More warnings', 'Okay'], icon='warning')
             if confirm_exit == 'More warnings':
                 summary(conv_time, conv_count, warning_page+1) # next page
             else:
@@ -2214,190 +3552,6 @@ def summary(conv_time, conv_count, warning_page=0):
         simple_dialog('Conversion complete!', main_text,
             'Okay', icon='done')
         return
-
-# Reads lines from one file and executes its instructions
-def process(data: list, open_image, template_image=None, alt_image=None, 
-        base_image=None):
-    header_commands = ['mrconverter', 'version', 'name', 'description', 
-        'author', 'open', 'save', 'template', 'alt', 'base', 
-        'start', 'stop']
-
-    skip_index = -1 # Variable used to skip lines
-    for index, item in enumerate(data):
-        # Skip line if it's in a block
-        if index <= skip_index:
-            continue
-
-        # Uncomment this to print line-by-line output
-        #p#rint(index+1, item) # includes a +1 to get correct line number
-
-        try:
-            if item[0].strip() == '': # Skip blank lines
-                pass
-
-            elif item[0] == 'exit': 
-                # End the conversion early, but save the target file as is 
-                # and exit properly.
-                break
-            elif item[0] == 'error':
-                # Stop conversion without saving, and optionally display a 
-                # message on the screen
-                if len(item) < 2: # If the script doesn't include error msg
-                    item.append('The conversion script was stopped due to an \
-unknown error.')
-                simple_dialog('Conversion error', item[1], 'Back to Menu',
-                              icon='error')
-                menu()
-            elif item[0] == 'warning':
-                warning(item)
-
-            # Control commands
-            elif item[0] == 'if':
-                # Make sure the if statement is properly constructed
-                if len(item) < 2: 
-                    log_warning('if: missing conditional statement')
-                    continue
-
-                # Result of conditional command in the if statement
-                cond_result = oper_bool(item[1], base_image, open_image)
-                
-                # Bundle together the code inside the block
-                block_depth = 1
-                if_block_data = []
-                reached_else = False
-                skip_to_end = False
-                for j in range(index+1, len(data)):
-                                # ^ index+1 means we skip "if" line
-                    # Check if we've reached end of the whole thing
-                    if data[j][0] in ['end', 'endif']: 
-                        # endif retained for compatibility
-                        block_depth -= 1
-                        if block_depth == 0:
-                            break
-
-                    # Skip to end if that's on
-                    if skip_to_end:
-                        continue
-
-                    # Check if we've reached else
-                    if not reached_else and block_depth == 1 and \
-                            data[j][0] in ['else']:
-                        reached_else = True
-                        continue
-                    
-                    # If condition is false and we're not at else yet,
-                    # skip until we are
-                    if block_depth == 1 and \
-                            not cond_result and not reached_else:
-                        continue
-                    # If condition is true and we're at else, start 
-                    # skipping to end so we don't fall through to the else code
-                    elif block_depth == 1 and \
-                            cond_result and reached_else:
-                        skip_to_end = True
-                        continue
-
-                    if data[j][0] in ['if']:
-                        block_depth += 1
-
-                    # If we're still here, add line to block_data
-                    if_block_data.append(data[j])
-
-                # If it still thinks we're in a block when we leave the loop, 
-                # that's an error
-                if block_depth != 0:
-                    log_warning('Reached end of code while still in a block')
-
-                # Recursively call this function on the block.
-                # This *should* work for nested blocks.
-                # This will be given the code in the "if" part OR the "else"
-                # part depending on the conditional and the loop above.
-                base_image = process(if_block_data, open_image, template_image, 
-                        alt_image, base_image)
-
-                # Skip the lines inside the block by setting main loop 
-                # index variable to j
-                skip_index = j
-            
-            # Basic copying commands
-            elif item[0] == 'copy':
-                copy(item, open_image, base_image)
-            elif item[0] == 'copyalt':
-                if not alt_image:
-                    log_warning('\
-    Skipped all “copyalt” commands since no “alt” image was specified.')
-                else:
-                    copyalt(item, alt_image, base_image)
-            elif item[0] == 'default':
-                if not template_image:
-                    log_warning('\
-    Skipped all “default” commands since no “template” image was specified.')
-                else:
-                    default(item, template_image, base_image)
-            elif item[0] == 'clear' or item[0] == 'delete':
-                clear(item, base_image)
-            elif item[0] == 'duplicate':
-                duplicate(item, base_image)
-
-            # Advanced copying commands
-            elif item[0] == 'tile':
-                tile(item, open_image, alt_image, base_image)
-
-            # Transformation commands
-            elif item[0] == 'resize':
-                base_image = resize(item, base_image)
-            elif item[0] == 'rotate':
-                rotate(item, base_image)
-            elif item[0] == 'flip':
-                flip(item, base_image)
-
-            # Filter commands
-            elif item[0] == 'grayscale':
-                grayscale(item, base_image)
-            elif item[0] == 'invert':
-                invert(item, base_image)
-            elif item[0] == 'colorfilter':
-                colorfilter(item, base_image)
-            elif item[0] == 'opacity':
-                opacity(item, base_image)
-            elif item[0] == 'hue':
-                hue(item, base_image)
-            elif item[0] == 'saturation':
-                saturation(item, base_image)
-            elif item[0] == 'lightness':
-                lightness(item, base_image)
-            elif item[0] == 'fill':
-                fill(item, base_image)
-            elif item[0] == 'contrast':
-                contrast(item, base_image)
-            elif item[0] == 'colorize':
-                colorize(item, base_image)
-            elif item[0] == 'sepia':
-                sepia(item, base_image)
-            elif item[0] == 'threshold':
-                threshold(item, base_image)
-
-            # COMING SOON
-            elif item[0] == 'scale':
-                scale(item, base_image)
-            elif item[0] == 'select':
-                select(item, base_image)
-
-            # Just so it doesn't think header commands are unknown
-            elif item[0] in header_commands:
-                # I always mess this particular command up so I'll just 
-                # put in a note to self
-                if item[0] == 'template' and len(item) > 2:
-                    log_warning('Clippy, you idiot, the command you’re looking \
-for is “default”, not “template”')
-            else:
-                log_warning('Unknown command: '+str(item[0]))
-
-        except Exception as e: 
-            # Handle any errors in the command functions so they don’t bring
-            # the whole program to a halt
-            log_warning(str(item[0])+' command skipped due to error: '+str(e))
-    return base_image 
 
 # List of files to install on first run
 # Only download images that a script actually uses
@@ -2457,13 +3611,15 @@ The program displays a maximum of 1 MOTD -- the first that matches its version.
 
 EXAMPLE MOTD FORMAT:
 
-# This line is just a comment and will be ignored.
-5.0.0_5.0.1_5.1.0 WARNING: Please update your program to 5.2.0 or later. \
+# This line is a comment and will be ignored.
+u_2.3.0 Deluxifier v3.0.0 is now available! Click the "View Update" button \
+    to open Github and download the update.
+2.2.1_2.2.2 WARNING: Please update your program to 2.3.0 or later. \
     The version you're currently using has a bug that could damage your files.
 * We will only be adding the W.
 
 This version of the program would display "We will only be adding the W."
-because it doesn't match any of the versions specified for the warning.
+because it doesn't match any of the versions specified for the warnings.
 '''
 def motd():
     motd_url = 'https://raw.githubusercontent.com/WaluigiRoyale/\
@@ -2480,11 +3636,21 @@ MR-Converter-GUI/main/motd.txt'
                     ((app_version_str() in motd_lines[i][0]) or \
                         (motd_lines[i][0] == '*')):
                 motd = motd_lines[i][1]
-                motd_continue = bool_dialog('News!', motd, 'Exit', 'Continue')
-                if motd_continue:
-                    return
-                else:
+                motd_header = 'News!'
+                motd_buttons = ['Exit', 'Continue']
+                # Add update button if MOTD is flagged as an update notice
+                if 'u' in motd_lines[i][0].lower():
+                    motd_buttons.insert(0, 'View Update')
+                    motd_header = 'Update available'
+
+                motd_continue = button_dialog(motd_header, motd, motd_buttons)
+                if motd_continue == 'Exit':
                     exit_app()
+                elif motd_continue == 'View Update':
+                    webbrowser.open('https://github.com/WaluigiRoyale/\
+MR-Converter-GUI/releases/latest')
+                else: # Continue
+                    return
     except:
         # If the internet isn't cooperating or the MOTD file is malformed, 
         # no big deal, just skip it
@@ -2531,9 +3697,8 @@ try:
         screen_width = window.winfo_screenwidth()
         screen_height = window.winfo_screenheight()
 
-        # Check screen size and if it's too small, ask user to enter fullscreen
-        if screen_width < 640 or screen_height < 320:
-            messagebox.showinfo(window, 
+        # Ask user to enter fullscreen
+        messagebox.showinfo(window, 
             message='''\
 Looks like you’re running the online (Replit) version of the skin converter! 
 You may want to enter fullscreen so you can click all the buttons.
@@ -2555,7 +3720,3 @@ into the list of files in the left sidebar.''')
 except Exception as e:
     ei = sys.exc_info()
     crash(None, ei[1])
-
-# TODO: Add "source,NAME,PATH" command to replace alt/copyalt
-#       (or maybe call the command "load"?)
-# TODO: Don't add goto. Seriously, don't.

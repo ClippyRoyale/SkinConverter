@@ -233,6 +233,21 @@ Version 6.0.0 (Jul. 2, 2023):
   + Added the W
   - Removed Herobrine
 
-COMING SOON: Path variables, lists, for?/foreach, switch, layers, 
+Version 6.1.0 (Sep. 4, 2023):
+  + Added float type
+      * Will be automatically detected like ints have been since v1.0
+  + Added math commands: /, div, mod, floor, ceil, abs
+  + Added $_pi and $_e constants
+  * Improved warnings for subcommands
+  * Increased loop limit to 10,000
+  * Fixed "while" so it's included in block starts
+  + PIL (pillow) and requests modules are now automatically installed if they
+  aren't already installed on your computer
+      * If you already have these modules installed, there's no need to update,
+        as the program is otherwise unchanged
+      * The program should now run out of the box without needing to install 
+        those modules manually. Please tell Clippy if you have any issues!
+
+COMING SOON: Path variables, lists, for?/foreach, layers, 
   drawing commands,
   "from" as a subcommand to change the source image (from,template,red,0,0)
