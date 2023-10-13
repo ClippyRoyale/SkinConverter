@@ -1,16 +1,22 @@
-version,4,1,0
+version,7,0,0
 name,Swim & Taunt
 author,clippy
 description,Converts a Remake skin to Legacy format by adding placeholder swim and taunt sprites.
 
 # TEST
-open,smb_skin*.png
-save,dx_skin*.png
-start,0
-stop,2600
+#open,smb_skin*.png
+#save,dx_skin*.png
+#start,0
+#stop,2600
 
-# resize to standard canvas size
-resize,256,256
+# if skin has a large credits area, move it down to make room for swim sprites in its old location
+if,(not,(empty,64,80,192,80))
+    resize,256,336
+    move, 0,80, 0,160, 256,176 
+# otherwise, resize to standard canvas size
+else
+    resize,256,256
+end,if
 
 # delete areas that are now taken by swim and taunt sprites
 delete,0,16,48,32

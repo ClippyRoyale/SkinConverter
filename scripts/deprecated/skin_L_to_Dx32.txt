@@ -1,15 +1,15 @@
-version,5,2,0
-name,Remake to Deluxe32
+version,7,0,0
+name,Legacy to Deluxe32
 author,Clippy
-description,Converts a 16×32 Remake skin to the 32×32 Deluxe format. (If Fire sprites are 32×32, they may be cut off.)
+description,Converts a 16×32 Legacy skin to the 32×32 Deluxe format. (If Fire sprites are 32×32, they may be cut off.)
 alt,assets/deluxe/smb_mario.png
 base,blank
 
-# Made for Deluxe 2.4.0
+# Made for Deluxe 4.4.0
 # Supports Deluxe ≥ 2.3.0
 
 # TEST
-#open,assets/remake/smb_skin0.png
+#open,assets/legacy/smb_skin0.png
 #save,test.png
 
 resize,256,480
@@ -22,12 +22,12 @@ flip,x,	0,0
 # walk/skid/jump/climb
 copy,	96,0,	128,16,	128,16
 # swim
-copy,	128,0,	112,16
-copy,	128,0,	96,16
-copy,	128,0,	80,16
+copy,	240,80,	112,16
+copy,	192,80,	96,16
+copy,	176,80,	80,16
 # taunt
-copy,	208,0,	48,16
-copy,	208,0,	64,16
+copy,	80,0,	48,16
+copy,	80,0,	64,16
 # dead
 copy,	0,0,	32,16
 
@@ -48,13 +48,13 @@ copy,	112,16,	40,32,	16,32
 copy,	96,16,	8,32,	16,32
 copy,	80,16,	232,64,	16,32
 # swim
-copy,	112,16,	104,64,	16,32
-copy,	112,16,	72,64,	16,32
-copy,	112,16,	40,64,	16,32
+copy,	224,96,	104,64,	16,32
+copy,	192,96,	72,64,	16,32
+copy,	160,96,	40,64,	16,32
 # taunt
-copy,	208,16,	200,64,	16,32
-copy,	208,16,	168,64,	16,32
-copy,	208,16,	136,64,	16,32
+copy,	0,16,	200,64,	16,32
+copy,	0,16,	168,64,	16,32
+copy,	0,16,	136,64,	16,32
 # powerdown
 copy,	224,16,	8,64,	16,32
 
@@ -77,13 +77,13 @@ copy,	8,48,	32,128,	24,32
 copy,	64,16,	8,128,	16,32
 copy,	48,16,	232,160,	16,32
 # swim
-copy,	8,48,	96,160,	24,32
-copy,	8,48,	64,160,	24,32
-copy,	8,48,	32,160,	24,32
+copy,	200,128,	96,160,	24,32
+copy,	136,128,	64,160,	24,32
+copy,	72,128,	32,160,	24,32
 # taunt
-copy,	184,48,	192,160,	24,32
-copy,	184,48,	160,160,	24,32
-copy,	184,48,	128,160,	24,32
+copy,	24,16,	192,160,	24,32
+copy,	24,16,	160,160,	24,32
+copy,	24,16,	128,160,	24,32
 # powerdown
 copy,	208,48,	232,192,	16,32
 
@@ -115,29 +115,30 @@ copy,	112,16,	40,224,	16,32
 copy,	96,16,	8,224,	16,32
 copy,	80,16,	232,256,	16,32
 # swim
-copy,	112,16,	104,256,	16,32
-copy,	112,16,	72,256,	16,32
-copy,	112,16,	40,256,	16,32
+copy,	224,96,	104,256,	16,32
+copy,	192,96,	72,256,	16,32
+copy,	160,96,	40,256,	16,32
 # taunt
-copy,	208,16,	200,256,	16,32
-copy,	208,16,	168,256,	16,32
-copy,	208,16,	136,256,	16,32
+copy,	0,16,	200,256,	16,32
+copy,	0,16,	168,256,	16,32
+copy,	0,16,	136,256,	16,32
 # fly (use jump sprites)
 copy,	112,16,	8,256,	16,32
 copy,	112,16,	232,288,	16,32
 copy,	112,16,	200,288,	16,32
 # attack (this part will look the worst)
 copy,	112,16,	168,288,	16,32
-copy,	208,16,	136,288,	16,32
+copy,	0,16,	136,288,	16,32
 copy,	112,16,	104,288,	16,32
 flip,x,	104,288,	16,32
-copy,	208,16,	72,288,	16,32
+copy,	0,16,	72,288,	16,32
 # P-run
 duplicate,	160,224,	0,288,	64,32
 duplicate,	128,224,	224,320,	32,32
 # fly
 duplicate,	32,256,	128,320,	96,32
 
-# HAMMER is just B&W Fire
+# HAMMER is just Fire with a filter
 duplicate,	0,128,	0,384,	256,64
-grayscale,	0,384,	256,64
+#grayscale,	0,384,	256,64
+filter.2color,  40,75,50,   0,384,  256,64

@@ -1,0 +1,25 @@
+Skin Converter Documentation: Compatibility Supplement
+
+For the most part, Skin Converter has been designed to be fully compatible with scripts written for previous versions of the program. This is out of either stubbornness, laziness, or a combination of both.
+
+The only scripts I've ever had to outright remove are the Deluxe Beta ones, but that was more of an image availability problem than a script compatiblity problem, and it didn't make sense to keep that around once Deluxe's stable release used a different template.
+
+But while scripts written for older versions will run as they were originally intended, a small number of features are deprecated or removed in new scripts, and other features are only supported in scripts targeting newer versions. The latter is generally only true for *syntax features*. If a *command* is only available in a newer version, it will normally work fine. I'm only interested in introducing compatibility exceptions if they change (1) the flow of the code, or (2) how a line is parsed. Anything that would only be an issue if someone entered a command that didn't exist yet (e.g. "if" in v3.0) will not be flagged.
+
+One more thing: I'm not in the business of re-creating bugs that made code run incorrectly. For example, while loops were broken in v6.0, but the converter will run them according to the corrected implementation, regardless of what version number is used in the script.
+
+DEPRECATED IN NEWER VERSIONS
+* [>=6.0.0] "delete" alias for "clear": "delete" was the old name but "clear" was added in v1.4.0 because it was, well, clearer.
+
+REMOVED IN NEWER VERSIONS
+* [==1.0.0] 6-argument default command: default used to work like copy except it copied from the template image. This behavior can be replicated in v6.0.0 or later using "copy_from,default,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height]"
+
+ONLY AVAILABLE IN NEWER VERSIONS
+* [>=4.1.0] Code blocks, where code may be skipped if certain conditions are met. In scripts written for earlier versions, every line will be run once.
+* [>=4.1.0] Subcommands (commands inside parentheses that return values). In earlier versions, the opening and closing parentheses will be part of string(s), and the command will almost certainly have more arguments. The interpreter also will not see any problem with imbalanced parentheses.
+* [>=6.0.0] Getting variables' values with $name. This will flag a warning then treat the text as a normal string.
+* [>=6.0.0] Marking string literals with double quotes. In earlier versions, the quotes will be part of the string. The interpreter also will not see any problem with imbalanced quote marks.
+* [>=6.0.0] Escaping characters with backslashes. In earlier versions, the backslashes will be part of the string.
+* [>=6.1.0] float data type. Will be interpreted as string in earlier versions.
+
+TODO: nested subcommands (6.0)
