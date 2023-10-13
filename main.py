@@ -1899,7 +1899,7 @@ def empty(i: list, open_image: PIL.Image.Image):
             log_warning(f'{i[0]}: Unrecognized image name {i[1]}. \
 Defaulting to “old”.')
     else:
-        i.insert(1, 'old')
+        i.insert(1, '')
 
     x = i[2]
     y = i[3]
@@ -4839,22 +4839,22 @@ default: Skipped because no “template” image was specified.')
                 filter_2color(item, images['new'])
             # Deprecated filters
             elif item[0] == 'hue':
-                if version_gte(6,2):
+                if version_gte(7):
                     log_warning('hue: The prefixless version of this command \
 is deprecated. Please use “filter.hue” instead.')
                 filter_hue(item, images['new'])
             elif item[0] == 'saturation':
-                if version_gte(6,2):
+                if version_gte(7):
                     log_warning('saturation: The prefixless version of this \
 command is deprecated. Please use “filter.saturation” instead.')
                 filter_saturation(item, images['new'])
             elif item[0] == 'lightness':
-                if version_gte(6,2):
+                if version_gte(7):
                     log_warning('lightness: The prefixless version of this \
 command is deprecated. Please use “filter.lightness” instead.')
                 filter_lightness(item, images['new'])
             elif item[0] == 'fill':
-                if version_gte(6,2):
+                if version_gte(7):
                     log_warning('fill: The prefixless version of this command \
 is deprecated. Please use “filter.fill” instead.')
                 filter_fill(item, images['new'])
