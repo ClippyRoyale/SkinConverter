@@ -246,8 +246,80 @@ Version 6.1.0 (Sep. 4, 2023):
       * If you already have these modules installed, there's no need to update,
         as the program is otherwise unchanged
       * The program should now run out of the box without needing to install 
-        those modules manually. Please tell Clippy if you have any issues!
+        any modules manually. Please tell Clippy if you have any issues!
 
-COMING SOON: Path variables, lists, for?/foreach, layers, 
-  drawing commands,
-  "from" as a subcommand to change the source image (from,template,red,0,0)
+Version 7.0.0 (Oct. 12, 2023):
+USER-FACING CHANGES:
+  * Converter now automatically determines whether a skin is 16×32 or 32×32 --
+    you no longer have to click a button to tell the app which one your skin is!
+  * Skin and Obj conversions apply better color filters to Hammer Suit,
+    Fire Bros, and Green Cheep Cheeps -- colors should look less weird now
+  * Large credits areas are no longer cut off in Remake->Legacy skin conversions
+      * Remake->Legacy conversion had actually been broken since v5.0 because
+        I left some test code turned on by mistake
+UNDER THE HOOD:
+  + move command to cut-and-paste part of an image
+  + swap command to swap two areas of an image
+  + filter.hsl, filter.2color, and filter.selcolor (selective color) commands
+      * 2color is what makes Fire Bros, Green Cheep Cheeps, and Hammer Mario
+        look less weird
+  + Basic drawing commands
+      * Must include "use,draw" in code to use any command with the
+        "draw." prefix
+      + draw.rect, draw.ellipse, and draw.line draw the respective shapes
+      + draw.fillcolor and draw.linecolor to set the drawing colors
+      + draw.linewidth to set, you guessed it, the width of lines
+      + draw.alphablend sets how transparency is handled
+  + color data type
+      * Represented under the hood as a Python object but it can be defined in
+        scripts in a few ways: hex code string, color name, RGBA, or HSLA
+      * Can get red/green/blue/alpha values with respective subcommands
+      + Also added hue/saturation/lightness for color type and image areas
+  + BASIC-style subroutines
+      + gosub to jump to a line/label, while saving previous location
+      + retsub jumps you back to that location
+  + break and next commands in loops (work they way you'd expect)
+  + change command to add/subtract/multiply/etc a variable's value quickly
+  + const command to define constants
+  + More math subcommands: ^ (pow), min, max
+  + type subcommand for getting a value's data type
+  + int subcommand can now convert strings in different bases
+  + width and height subcommands to get width/height of any image
+  + skip command to stop converting without displaying an error message
+    (intended for batch conversions)
+  + For empty + any color-attribute subcommand, you can now specify the image
+    you want to check (old, new, template, alt) 
+      * red, green, blue, and alpha commands now default to checking the old 
+        image (instead of the new one)
+        * This change only applies to scripts written for v7.0.0 or later
+        * hue, saturation, and lightness didn't exist in previous versions
+          so they will always default to old image regardless of script's
+          target version
+  * Standardized command names to have no underscores
+      * Some had them (loop_limit), some didn't (goto)... now they're consistent
+  * All filter commands now have the prefix "filter."
+      * I tried this back in v1.4.0 but this is a better way of doing it
+  * duplicate command now requires old x/y and new x/y to be specified
+      * Previously, omitting any of them would copy the whole image to the same
+        position it was in before, which didn't make any sense
+  * Bug fixes:
+      * Fixed crash bugs with the "filter.fill" command, and fixed filling at 
+        any position other than x=0, y=0. (This bug has been present in the 
+        since the command was added in v2.2.0!)
+      * Fixed "while" loop logic. These were added in v6.0.0 but were totally
+        busted until now. This time I think I got it right.
+      * Clear warnings when running a new script
+      * Fixed line-jumping so it resets to "jumped=False" before executing each
+        line instead of getting stuck on True
+      * Fixed crash bug whenever there's an error in a subcommand
+      * Fixed potential crash bug re: header commands with too few arguments
+      * Fixed the Invisible Players Bug
+  - Deprecated the 4 old skin-conversion scripts (still included but moved to
+    deprecated folder):
+      * skin_L_to_Dx32.txt
+      * skin_L32_to_Dx32.txt
+      * skin_R_to_Dx32.txt
+      * skin_R32_to_Dx32.txt
+  - Removed Herobrine
+
+COMING SOON: Path variables, lists, for/foreach?, layers, continue line with backslash at end like in Python
