@@ -1,2 +1,3 @@
-# 7.0.0_7.0.1 Thanks for updating to v7.0! The converter will now automatically detect if your skin’s Fire sprites are 16×32 or 32×32. If it guesses wrong, just click the “Run a Custom Script” button and you can find the old skin conversion scripts in the scripts→deprecated folder. As always, please let me know if you find any bugs.
-u_5.2.0_5.2.1_5.2.2_6.0.0_6.1.0 Skin Converter 7.0.0 is out now! The new update features better-looking skin conversions, and you’ll no longer have to tell the converter whether your skin has 16×32 or 32×32 Fire sprites.
+u_6.0.0_6.1.0_7.0.0_7.0.1 Version 7.1.0 of the Skin Converter is now available! After you get the update, you’ll be able to convert Deluxe skins to the Legacy format.
+# "View Update" button was added in 6.0.0 so 5.x needs extra instructions
+u_5.2.0_5.2.1_5.2.2 Version 7.1.0 of the Skin Converter is now available! After you get the update, you’ll be able to convert Deluxe skins to the Legacy format. Visit https://github.com/WaluigiRoyale/SkinConverter/releases to download the update.
