@@ -330,7 +330,7 @@ Version 7.0.1 (Oct. 14, 2023 / ONLINE ONLY):
   * Fixed crash bug by simplifying type hinting on two functions, because 
     Replit is stuck on Python 3.8.12 (which doesn't support the syntax I used)
 
-Version 7.1 (Nov. 26, 2023):
+Version 7.1.0 (Nov. 26, 2023):
   + Added script to convert Deluxe skins to Legacy format
       * Any sprites that don’t fit into Legacy’s smaller boxes will be 
         automatically downscaled
@@ -378,5 +378,8 @@ Version 7.1 (Nov. 26, 2023):
     * Fixed logic errors when nesting another block inside an if block
     * Fixed crash bug involving code that used the legacy "endif" command
   - Deprecated "if1" command because it was a mistake (just like chat)
+  - Removed Replit files from the GitHub
+    * I’ve long since given up on Replit–GitHub integration
+    * The source code is now named “converter.py” instead of “main.py”
   + Added GRAND DAD (accidentally forgot to add in v7.0)
   - Removed Herobrine
