@@ -10,9 +10,14 @@ One more thing: I'm not in the business of re-creating bugs that made code run i
 
 DEPRECATED IN NEWER VERSIONS
 * [>=6.0.0] "delete" alias for "clear": "delete" was the old name but "clear" was added in v1.4.0 because it was, well, clearer.
+* [>=7.0.0] The commands "filter.hue", "filter.saturation", "filter.lightness", and "filter.fill" will raise a warning if called without the "filter." prefix. This was done to avoid confusion with new or future commands.
+* [>=7.1.0] if1 was a mistake, just like chat. It is now deprecated.
 
 REMOVED IN NEWER VERSIONS
 * [==1.0.0] 6-argument default command: default used to work like copy except it copied from the template image. This behavior can be replicated in v6.0.0 or later using "copy_from,default,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height]"
+
+CHANGED BEHAVIOR IN NEWER VERSIONS
+* [< 7.0.0] red, green, blue, and alpha originally checked the "new" image. Since v7.0.0, they check the "old" image by default, but this can be changed. hue, saturation, and lightness always check the "new" image regardless of version, as they were added in v7.0.0
 
 ONLY AVAILABLE IN NEWER VERSIONS
 * [>=4.1.0] Code blocks, where code may be skipped if certain conditions are met. In scripts written for earlier versions, every line will be run once.
@@ -20,6 +25,5 @@ ONLY AVAILABLE IN NEWER VERSIONS
 * [>=6.0.0] Getting variables' values with $name. This will flag a warning then treat the text as a normal string.
 * [>=6.0.0] Marking string literals with double quotes. In earlier versions, the quotes will be part of the string. The interpreter also will not see any problem with imbalanced quote marks.
 * [>=6.0.0] Escaping characters with backslashes. In earlier versions, the backslashes will be part of the string.
+* [>=6.0.0] Nested subcommands. In v4.1, you can only have one level of subcommand, because the only available subcommand was "empty".
 * [>=6.1.0] float data type. Will be interpreted as string in earlier versions.
-
-TODO: nested subcommands (6.0)
