@@ -1,7 +1,7 @@
 version,7,0,0
-name,Legacy Auto to Deluxe32
+name,Legacy to Deluxe32
 author,Clippy
-description,Converts a Legacy skin to the 32×32 Deluxe format. The script will automatically detect whether the original skin uses 16×32 or 32×32 Fire sprites.
+description,Converts a 16×32 Legacy skin to the 32×32 Deluxe format. (If Fire sprites are 32×32, they may be cut off.)
 alt,assets/deluxe/smb_mario.png
 base,blank
 
@@ -58,68 +58,34 @@ copy,	0,16,	136,64,	16,32
 # powerdown
 copy,	224,16,	8,64,	16,32
 
-# Test for fire32 (with swim sprites)
-# If any of the leftmost 8 columns of fire sprites are not empty, assume the skin is 32×32
-set,$fire32,(or, (not,(empty,0,48,8,32)), (not,(empty,32,48,8,32)), (not,(empty,64,48,8,32)), (not,(empty,96,48,8,32)), (not,(empty,128,48,8,32)), (not,(empty,176,48,8,32)), (not,(empty,224,48,8,32)),     (not,(empty,64,128,8,32)), (not,(empty,96,128,8,32)), (not,(empty,128,128,8,32)), (not,(empty,160,128,8,32)), (not,(empty,192,128,8,32)), (not,(empty,224,128,8,32)))
-
 # FIRE
-if,$fire32
-    # throw
-    copy,	224,48,	0,160,	32,32
-    # stand
-    copy,	176,48,	224,128,	32,32
-    # walk
-    copy,	128,48,	192,128,	32,32
-    copy,	96,48,	160,128,	32,32
-    copy,	64,48,	128,128,	32,32
-    # crouch
-    copy,	160,48,	104,128,	16,32
-    # skid
-    copy,	32,48,	64,128,	32,32
-    # jump
-    copy,	0,48,	32,128,	32,32
-    # climb
-    copy,	64,16,	8,128,	16,32
-    copy,	48,16,	232,160,	16,32
-    # swim
-    copy,	192,128,	96,160,	32,32
-    copy,	128,128,	64,160,	32,32
-    copy,	64,128,	32,160,	32,32
-    # taunt
-    copy,	16,16,	192,160,	32,32
-    copy,	16,16,	160,160,	32,32
-    copy,	16,16,	128,160,	32,32
-    # powerdown
-    copy,	208,48,	232,192,	16,32
-else
-    # throw
-    copy,	232,48,	    0,160,      24,32
-    # stand
-    copy,	184,48,	    224,128,    24,32
-    # walk
-    copy,	136,48,	    192,128,    24,32
-    copy,	104,48,	    160,128,    24,32
-    copy,	72,48,	    128,128,    24,32
-    # crouch
-    copy,	160,48,	    104,128,    16,32
-    # skid
-    copy,	40,48,	    64,128,     24,32
-    # jump
-    copy,	8,48,	    32,128,     24,32
-    # climb
-    copy,	64,16,	    8,128,      16,32
-    copy,	48,16,	    232,160,    16,32
-    # swim
-    copy,	200,128,    96,160,     24,32
-    copy,	136,128,    64,160,     24,32
-    copy,	72,128,     32,160,     24,32
-    # taunt
-    copy,	24,16,	    192,160,    24,32
-    copy,	24,16,	    160,160,    24,32
-    copy,	24,16,	    128,160,    24,32
-    # powerdown
-    copy,	208,48,	    232,192,    16,32
-end,if
+# throw
+copy,	232,48,	0,160,	24,32
+# stand
+copy,	184,48,	224,128,	24,32
+# walk
+copy,	136,48,	192,128,	24,32
+copy,	104,48,	160,128,	24,32
+copy,	72,48,	128,128,	24,32
+# crouch
+copy,	160,48,	104,128,	16,32
+# skid
+copy,	40,48,	64,128,	24,32
+# jump
+copy,	8,48,	32,128,	24,32
+# climb
+copy,	64,16,	8,128,	16,32
+copy,	48,16,	232,160,	16,32
+# swim
+copy,	200,128,	96,160,	24,32
+copy,	136,128,	64,160,	24,32
+copy,	72,128,	32,160,	24,32
+# taunt
+copy,	24,16,	192,160,	24,32
+copy,	24,16,	160,160,	24,32
+copy,	24,16,	128,160,	24,32
+# powerdown
+copy,	208,48,	232,192,	16,32
 
 # RACCOON
 # This will look terrible no matter how you do it.

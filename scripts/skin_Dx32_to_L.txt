@@ -1,0 +1,401 @@
+version,7,1,0
+name,Deluxe32 to Legacy
+author,Clippy
+description,Converts a 32×32 Deluxe skin to Legacy format (also works in Remake). Warning: Many skins will not look good once converted, because Legacy has more restrictive sprite size limits.
+
+base,256,256
+
+# For debugging:
+#open,assets/deluxe/smb_mario.png
+#save,testdx.png
+
+alt,assets/deluxe/smb_obj.png
+
+# Add fireballs from Deluxe smb_obj
+copyalt, 0,208,  16,0,  64,16
+copyalt, 64,208, 224,0, 32,16
+copyalt, 96,208, 240,16
+
+# Determine whether the small sprites fit into 16×16
+set,$small,(empty,32,0,224,16)
+
+if,$small
+    # Copy sprites (no scaling)
+    copy, 128,16, 96,0, 128,16
+    copy, 32,16, 0,0        # Dead
+    copy, 48,16, 80,0       # Taunt (1 frame)
+    # Swim:
+    copy, 80,16, 176,80
+    copy, 96,16, 192,80
+    copy, 96,16, 208,80
+    copy, 112,16, 224,80
+    copy, 112,16, 240,80
+else
+    # List of positions to check and copy FROM
+    set,$old_x_list,\
+            (list, 32, 48, 80, 96, 96, 112,112,128,144,160,176,192,208,224,240)
+    set,$old_y_list,\
+            (list, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0  )
+    # If we need to scale, determine the scaling boundaries
+    # These will always be the same for small sprites:
+    set,$new_width,16
+    set,$new_height,16
+    set,$left,0
+    set,$right,15 # INCLUSIVE
+    set,$bottom,31 # INCLUSIVE
+    # This is the one that can vary:
+    for,$top,0,16
+        #warning,(str+,"top ",$top)
+        if,(or,(not,(empty,80,0,176,(+,1,$top))),(not,(empty,32,0,32,(+,1,$top)))) # Includes swim sprites but not the dropped taunt frame
+            break
+        end,if
+    end,for
+
+    # List of positions to copy TO
+    set,$new_x_list,\
+            (list, 0,  80, 176,192,208,224,240,96, 112,128,144,160,176,192,208)
+    set,$new_y_list,\
+            (list, 0,  0,  80, 80, 80, 80, 80, 0,  0,  0,  0,  0,  0,  0,  0  )
+    # Scale and copy
+    gosub,scale_all_vert
+end,if
+
+# Determine whether the super sprites fit into 16×32
+set,$super,(and,(empty,0,32,8,64),(empty,24,32,8,64),(empty,32,32,8,32),(empty,56,32,16,32),(empty,88,32,16,32),(empty,120,32,8,32),(empty,128,32,8,64),(empty,152,32,16,64),(empty,184,32,16,64),(empty,216,32,16,64),(empty,248,32,8,64))
+
+if,$super
+    # Copy sprites (no scaling)
+    # This part is copied from skin_La_to_Dx but with the old and new positions switched.
+    # stand
+    copy,	230,32,	208,16,	16,32
+    # walk
+    copy,	200,32,	176,16,	16,32
+    copy,	168,32,	160,16,	16,32
+    copy,	136,32,	144,16,	16,32
+    # crouch
+    copy,	104,32,	192,16,	16,32
+    # skid
+    copy,	72,32,	128,16,	16,32
+    # jump
+    copy,	40,32,	112,16,	16,32
+    # climb
+    copy,	8,32,	96,16,	16,32
+    copy,	232,64,	80,16,	16,32
+    # taunt
+    copy,	200,64,	0,16,	16,32
+    copy,	168,64,	0,16,	16,32
+    copy,	136,64,	0,16,	16,32
+    # powerdown
+    copy,	8,64,	224,16,	16,32
+else
+    # List of positions to check and copy FROM. For Super, this INCLUDES climb, crouch, and powerdown but NOT swim
+    set,$old_x_list,(list, 0,  32, 64, 96, 128,160,192,224,0,  128,224)
+    set,$old_y_list,(list, 32, 32, 32, 32, 32, 32, 32, 32, 64, 64, 64 )
+    # If we need to scale, determine the scaling boundaries -- make it a subroutine because the code should work the same for everything using lists
+    set,$top,0
+    set,$bottom,31
+    gosub,bounds
+    set,$new_width,16
+    set,$new_height,32
+
+    # List of positions to copy TO. Each position should correspond to the matching sprite at the old position
+    set,$new_x_list,(list, 96, 112,128,192,144,160,176,208,224,0,  80 )
+    set,$new_y_list,(list, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16 )
+    # Scale and copy
+    gosub,scale_all_horiz
+end,if
+
+# Determine whether the super SWIM sprites fit into 16×32
+# These are handled separately because the SMAS swim sprites stretch out to the right a bit
+set,$super_swim,(and,(empty,32,64,8,32),(empty,56,64,16,32),(empty,88,64,16,32),(empty,120,64,8,32))
+
+if,$super_swim
+    # Copy sprites (no scaling)
+    copy, 40,64, 160,96, 16,32
+    copy, 40,64, 176,96, 16,32
+    copy, 72,64, 192,96, 16,32
+    copy, 72,64, 208,96, 16,32
+    copy, 104,64, 224,96, 16,32
+    copy, 104,64, 240,96, 16,32
+else
+    # Swim position list has some duplicates to match Legacy's higher frame count
+    set,$old_x_list,(list, 32, 32, 64, 64, 96, 96)
+    set,$old_y_list,(list, 64, 64, 64, 64, 64, 64)
+    # If we need to scale, determine the scaling boundaries
+    set,$top,0
+    set,$bottom,31
+    gosub,bounds
+    set,$new_width,16
+    set,$new_height,32
+
+    set,$new_x_list,(list, 160,176,192,208,224,240)
+    set,$new_y_list,(list, 96, 96, 96, 96, 96, 96 )
+    # Scale and copy
+    set,$new_width,16
+    set,$new_height,32
+    gosub,scale_all_horiz
+end,if
+
+#exit
+
+# Determine whether the fire sprites fit into 24×32 (the standard 16×32 box + 8 pixels at left)
+set,$fire,(and,(empty,24,160,8,32),(empty,56,128,8,32),(empty,88,128,8,32),(empty,152,128,8,64),(empty,184,128,8,32),(empty,216,128,8,32),(empty,248,128,8,32))
+
+# Copy fire sprites (and scale if appropriate)
+if,$fire
+    # Copy sprites (no scaling)
+    # This part is copied from skin_La_to_Dx but with the old and new positions switched.
+    # throw
+    copy,	0,160,      232,48,	    24,32
+    # stand
+    copy,	224,128,    184,48,	    24,32
+    # walk
+    copy,	192,128,    136,48,	    24,32
+    copy,	160,128,    104,48,	    24,32
+    copy,	128,128,    72,48,	    24,32
+    # skid
+    copy,	64,128,     40,48,	    24,32
+    # jump
+    copy,	32,128,     8,48,	    24,32
+    # taunt
+    copy,	192,160,    24,16,	    24,32
+    copy,	160,160,    24,16,	    24,32
+    copy,	128,160,    24,16,	    24,32
+else
+    # List of positions to check and copy FROM. EXCLUDES climb, crouch, and powerdown, and swim
+    set,$old_x_list,(list, 32, 64, 128,160,192,224,0,  128)
+    set,$old_y_list,(list, 128,128,128,128,128,128,160,160)
+    # If we need to move, determine the boundaries
+    set,$top,0
+    set,$bottom,31
+    gosub,bounds
+
+    # No need to set $new_width / $new_height because we don't call the scale subroutine
+    set,$new_x_list,(list, 0,  32, 64, 96, 128,176,224,16)
+    set,$new_y_list,(list, 48, 48, 48, 48, 48, 48, 48, 16)
+    gosub,fire_shift
+end,if
+
+# Determine whether the fire SWIM sprites fit into 24×32
+# These are handled separately because the SMAS swim sprites stretch out to the right a bit
+set,$fire_swim,(and,(empty,56,160,8,32),(empty,88,160,8,32),(empty,120,160,8,32))
+
+if,$fire_swim
+    # Copy sprites (no scaling)
+    copy, 40,160, 80,128, 16,32
+    copy, 40,160, 112,128, 16,32
+    copy, 72,160, 144,128, 16,32
+    copy, 72,160, 176,128, 16,32
+    copy, 104,160, 208,128, 16,32
+    copy, 104,160, 240,128, 16,32
+else
+    # Swim position list has some duplicates to match Legacy's higher frame count
+    set,$old_x_list,(list, 32, 32, 64, 64, 96, 96 )
+    set,$old_y_list,(list, 160,160,160,160,160,160)
+    # If we need to move, determine the boundaries
+    set,$top,0
+    set,$bottom,31
+    gosub,bounds
+
+    set,$new_x_list,(list, 64, 96, 128,160,192,224)
+    set,$new_y_list,(list, 128,128,128,128,128,128)
+    # No need to set $new_width / $new_height because we don't call the scale subroutine
+    # Move sprite into best position, like with regular fire
+    gosub,fire_shift
+end,if
+
+# FIRE SPECIAL CASES: sprites that only have 16×32 space on Legacy
+
+# Determine whether the fire POWERDOWN sprites fit into 16×32
+set,$fire_powerdown,(and,(empty,224,192,8,32),(empty,248,192,8,32))
+
+if,$fire_powerdown
+    # Copy sprites (no scaling)
+    copy, 232,192, 208,48, 16,32
+else
+    # If we need to scale, determine the scaling boundaries
+    set,$top,0
+    set,$bottom,31
+    for,$left,0,8
+        if,(not,(empty,224,192,(+,1,$left),32))
+            break
+        end,if
+    end,for
+    for,$right,31,23,-1
+        if,(not,(empty,(-,255,$right),192,(+,1,$right),32))
+            break
+        end,if
+    end,for
+
+    # Scale and copy
+    set,$old_x,224
+    set,$old_y,192
+    set,$new_x,208
+    set,$new_y,48
+    set,$new_width,16
+    set,$new_height,32
+    gosub,scale_horiz
+end,if
+
+# Determine whether the fire CROUCH sprites fit into 16×32
+set,$fire_crouch,(and,(empty,96,128,8,32),(empty,120,128,8,32))
+
+if,$fire_crouch
+    # Copy sprites (no scaling)
+    copy, 104,128, 160,48, 16,32
+else
+    # If we need to scale, determine the scaling boundaries
+    set,$top,0
+    set,$bottom,31
+    for,$left,0,8
+        if,(not,(empty,96,128,(+,1,$left),32))
+            break
+        end,if
+    end,for
+    for,$right,31,23,-1
+        if,(not,(empty,(-,127,$right),128,(+,1,$right),32))
+            break
+        end,if
+    end,for
+
+    # Scale and copy
+    set,$old_x,96
+    set,$old_y,128
+    set,$new_x,160
+    set,$new_y,48
+    set,$new_width,16
+    set,$new_height,32
+    gosub,scale_horiz
+end,if
+
+# Determine whether the fire CLIMB sprites fit into 16×32 (both sprites use same bounding box)
+set,$fire_climb,(and,(empty,0,128,8,32),(empty,24,128,8,32),(empty,224,160,8,32),(empty,248,160,8,32))
+
+if,$fire_climb
+    # Copy sprites (no scaling)
+    copy, 8,128, 64,16, 16,32
+    copy, 232,160, 48,16, 16,32
+else
+    # If we need to scale, determine the scaling boundaries -- get the widest bounding box out of both sprites
+    set,$top,0
+    set,$bottom,31
+    set,$left,8
+    set,$right,23
+    for,$i,0,32,16 # i is looping thru the sprites
+        for,$j,0,8 # j is looping thru the pixel columns of each sprite
+            if,(not,(empty,(*,14,$i),(+,128,$i),(+,1,$j),32))
+                set,$left,(min,$j,$left)
+                break
+            end,if
+        end,for
+        for,$j,31,23,-1
+            if,(not,(empty,(-,(+,32,(*,14,$i)),$j),(+,128,i),(+,1,$j),32))
+                set,$right,(max,$j,$right)
+                break
+            end,if
+        end,for
+    end,for
+
+    # Scale and copy
+    set,$new_width,16
+    set,$new_height,32
+
+    # climb sprite 1: hands up
+    set,$old_x,0
+    set,$old_y,128
+    set,$new_x,64
+    set,$new_y,16
+    gosub,scale_horiz
+
+    # climb sprite 2: hands down
+    set,$old_x,224
+    set,$old_y,160
+    set,$new_x,48
+    set,$new_y,16
+    gosub,scale_horiz
+end,if
+
+# Exit script so we don't hit the subroutine during normal execution.
+exit
+
+# Get left/right scaling bounds for a 32×32 area.
+# Arguments: $old_x_list, $old_y_list
+label,bounds
+set,$left,8
+set,$right,23
+for,$i,(len,$old_x_list) # i is looping thru the position lists
+    for,$j,0,8 # j is looping thru the pixel columns of each sprite
+        if,(not,(empty,(+,$j,(get,$old_x_list,$i)),(get,$old_y_list,$i),1,32))
+            set,$left,(min,$j,$left)
+            break
+        end,if
+    end,for
+    #warning,(str+,"left ",(get,$old_x_list,$i)," ",$i," ",$j)
+    for,$j,0,8
+        if,(not,(empty,(+,(get,$old_x_list,$i),(-,31,$j)),(get,$old_y_list,$i),1,32))
+            set,$right,(max,(-,31,$j),$right)
+            #warning,(str+,"break ",$i," ",(-,31,$j))
+            break
+        end,if
+    end,for
+    #warning,(str+,"right ",(get,$old_x_list,$i)," ",$i," ",(-,31,$j))
+    #warning,(str+,"x ",(get,$old_x_list,$i)," left ",$left," right ",$right)
+end,for
+goback
+
+# Scale all of the sprites in a given set.
+# Arguments: $old_x_list, $old_y_list, $new_x_list, $new_y_list
+label,scale_all_horiz
+for,$i,(len,$old_x_list)
+    set,$old_x,(get,$old_x_list,$i)
+    set,$old_y,(get,$old_y_list,$i)
+    set,$new_x,(get,$new_x_list,$i)
+    set,$new_y,(get,$new_y_list,$i)
+    #warning,(str+,$i,_,$old_x,_,$old_y,_,$new_x,_,$new_y)
+    gosub,scale_horiz
+end,for
+goback
+
+# Scale all of the sprites in a given set, vertically
+# Arguments: $old_x_list, $old_y_list, $new_x_list, $new_y_list
+label,scale_all_vert
+for,$i,(len,$old_x_list)
+    set,$old_x,(get,$old_x_list,$i)
+    set,$old_y,(get,$old_y_list,$i)
+    set,$new_x,(get,$new_x_list,$i)
+    set,$new_y,(get,$new_y_list,$i)
+    gosub,scale_vert
+end,for
+goback
+
+# Basic nearest-neighbor-type scaling. I'll replace this with a better algorithm later, but this'll work for now.
+# Arguments: $left, $right, $old_x, $old_y, $new_x, $new_y, $new_width, $new_height
+label,scale_horiz
+for,$ix,$new_width
+    copy, (floor,(+,$old_x,$left,(*,(+,0.5,$ix),(/,(-,(+,$right,1),$left),$new_width)))), $old_y, (+,$new_x,$ix), $new_y, 1, $new_height
+    #warning,(str+,"ix ",$ix," old_x ",$old_x," left ",$left," math ",(+,$old_x,$left,(*,(+,0.5,$ix),(/,(-,(+,$right,1),$left),$new_width))))
+end,for
+goback
+
+# Arguments: $top, $bottom, $old_x, $old_y, $new_x, $new_y, $new_width, $new_height
+label,scale_vert
+for,$iy,$new_height
+    copy, $old_x, (floor,(+,$old_y,$top,(*,(+,0.5,$iy),(/,(-,(+,$bottom,1),$top),$new_height)))), $new_x, (+,$new_y,$iy), $new_width, 1
+end,for
+goback
+
+# Based on the $right value calculated above, get the sprites as far to the right as possible without them jumping from frame to frame. This is how to make the hitboxes work the best
+# $right <= 23 -> place at x=8, shift 0px left from original position
+# $right = 31 -> place at x=0, shift 8px left
+# Arguments: $right, $old_x_list, $old_y_list, $new_x_list, $new_y_list
+label,fire_shift
+if,(<,$right,23)
+    set,$new_x,8
+else
+    set,$new_x,(-,31,$right)
+end,if
+# Copy sprites into full 32×32 space (no scaling)
+for,$i,(len,$old_x_list)
+    copy,(get,$old_x_list,$i),(get,$old_y_list,$i),(+,$new_x,(get,$new_x_list,$i)),(get,$new_y_list,$i),32,32
+end,for
+goback
