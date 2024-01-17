@@ -42,8 +42,8 @@ The online (Replit) version will work on any operating system that can run a mod
   * Windows 10– : Use Firefox or Chrome
   * Windows 7–8.1: User Firefox ESR
 
-If you download the source code from this Github project's Releases, it should run on any operating system that can run Python 3.5 (though I've only tested it as far back as Python 3.7):
-* MacOS 10.5 or later
+If you download the source code from this Github project's Releases, it should run on any operating system that can run Python 3.6 (though I've only tested it as far back as Python 3.7):
+* MacOS 10.6 or later
 * Windows Vista or later
 
 You should also be able to use it on Linux (including Chrome OS) as well, but there are too many variations of that for me to provide any guarantees.
