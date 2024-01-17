@@ -55,5 +55,4 @@ You should also be able to use it on Linux (including Chrome OS) as well, but th
 Try clicking “Stop” then clicking “Run” again. If that doesn’t work, clear your cache ( ͡° ͜ʖ ͡°)
 
 ### I downloaded the code, and when I run the program, it's in fullscreen!
-
-This was a problem back when there were two different Online and Offline versions, but not anymore because there's only one version now. Please download the newest version from the "Releases" section in the sidebar.
+You have a really old version of this app. Please download the newest version from the "Releases" section in the sidebar.
