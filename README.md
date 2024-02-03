@@ -2,7 +2,7 @@
 
 Source code and documentation copyright (C) 2022–2024 ClippyRoyale
 
-# Quick start link: https://replit.com/@WaluigiRoyale/MR-Converter-3
+# Quick start link: https://replit.com/@WaluigiRoyale/MR-Converter-GUI
 
 ## What is this?
 
@@ -39,7 +39,7 @@ The online (Replit) version will work on any operating system that can run a mod
   * MacOS 10.7–10.14: Use Chromium Legacy
 * Windows 7 or later
   * Windows 10– : Use Firefox or Chrome
-  * Windows 7–8.1: User Firefox ESR
+  * Windows 7–8.1: Use Firefox ESR
 
 If you download the source code from this Github project's Releases, it should run on any operating system that can run Python 3.6 (though I've only tested it as far back as Python 3.7):
 * MacOS 10.6 or later
@@ -54,4 +54,5 @@ You should also be able to use it on Linux (including Chrome OS) as well, but th
 Try clicking “Stop” then clicking “Run” again. If that doesn’t work, clear your cache ( ͡° ͜ʖ ͡°)
 
 ### I downloaded the code, and when I run the program, it's in fullscreen!
+
 You have a really old version of this app. Please download the newest version from the "Releases" section in the sidebar.
