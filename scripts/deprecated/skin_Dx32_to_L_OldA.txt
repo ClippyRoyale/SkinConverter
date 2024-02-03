@@ -1,7 +1,7 @@
-version,7,2,0
-name,Deluxe32 to Legacy (Old version B)
+version,7,1,0
+name,Deluxe32 to Legacy (Old version A)
 author,Clippy
-description,Converts a 32×32 Deluxe skin to Legacy format (also works in Remake). Warning: Many skins will not look good once converted, because Legacy has more restrictive sprite size limits.
+description,Converts a 32×32 Deluxe skin to Legacy format (also works in Remake). Warning: Many skins will not look good once converted, because Legacy has more restrictive sprite size limits. (This is the old version that uses nearest-neighbor interpolation to scale down sprites that are too big. One code error was fixed.)
 
 base,256,256
 
@@ -323,19 +323,23 @@ exit
 label,bounds
 set,$left,8
 set,$right,23
-foreach,$i,$old_x_list # i is looping thru the position lists
+for,$i,(len,$old_x_list) # i is looping thru the position lists
     for,$j,0,8 # j is looping thru the pixel columns of each sprite
-        if,(not,(empty,(+,$j,$i),$i,1,32))
+        if,(not,(empty,(+,$j,(get,$old_x_list,$i)),(get,$old_y_list,$i),1,32))
             set,$left,(min,$j,$left)
             break
         end,if
     end,for
+    #warning,(str+,"left ",(get,$old_x_list,$i)," ",$i," ",$j)
     for,$j,0,8
-        if,(not,(empty,(+,$i,(-,31,$j)),$i,1,32))
+        if,(not,(empty,(+,(get,$old_x_list,$i),(-,31,$j)),(get,$old_y_list,$i),1,32))
             set,$right,(max,(-,31,$j),$right)
+            #warning,(str+,"break ",$i," ",(-,31,$j))
             break
         end,if
     end,for
+    #warning,(str+,"right ",(get,$old_x_list,$i)," ",$i," ",(-,31,$j))
+    #warning,(str+,"x ",(get,$old_x_list,$i)," left ",$left," right ",$right)
 end,for
 goback
 
@@ -364,27 +368,19 @@ for,$i,(len,$old_x_list)
 end,for
 goback
 
-# Supersampling-based downscaling
-# Arguments: $left, $right, $top, $bottom, $old_x, $old_y, $new_x, $new_y, $new_width, $new_height
-label,scale_sprite
-copyscale,  (+,$old_x,$left), \
-            (+,$old_y,$top), \
-            (+,1,(-,$right,$left)), \
-            (+,1,(-,$bottom,$top)), \
-            $new_x, $new_y, $new_width, $new_height
-goback
-
-# These used to be the main subroutine for scaling, but now they just set a couple arguments and then jump to the new scaling subroutine, scale_sprite
+# Basic nearest-neighbor-type scaling. I'll replace this with a better algorithm later, but this'll work for now.
+# Arguments: $left, $right, $old_x, $old_y, $new_x, $new_y, $new_width, $new_height
 label,scale_horiz
-set,$top,0
-set,$bottom,(-,$new_height,1) # subtract 1 because bottom is inclusive
-gosub,scale_sprite
+for,$ix,$new_width
+    copy, (floor,(+,$old_x,$left,(*,(+,0.5,$ix),(/,(-,(+,$right,1),$left),$new_width)))), $old_y, (+,$new_x,$ix), $new_y, 1, $new_height
+end,for
 goback
 
+# Arguments: $top, $bottom, $old_x, $old_y, $new_x, $new_y, $new_width, $new_height
 label,scale_vert
-set,$left,0
-set,$right,(-,$new_width,1) # subtract 1 because right is inclusive
-gosub,scale_sprite
+for,$iy,$new_height
+    copy, $old_x, (floor,(+,$old_y,$top,(*,(+,0.5,$iy),(/,(-,(+,$bottom,1),$top),$new_height)))), $new_x, (+,$new_y,$iy), $new_width, 1
+end,for
 goback
 
 # Based on the $right value calculated above, get the sprites as far to the right as possible without them jumping from frame to frame. This is how to make the hitboxes work the best

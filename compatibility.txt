@@ -12,6 +12,8 @@ DEPRECATED IN NEWER VERSIONS
 * [>=6.0.0] "delete" alias for "clear": "delete" was the old name but "clear" was added in v1.4.0 because it was, well, clearer.
 * [>=7.0.0] The commands "filter.hue", "filter.saturation", "filter.lightness", and "filter.fill" will raise a warning if called without the "filter." prefix. This was done to avoid confusion with new or future commands.
 * [>=7.1.0] if1 was a mistake, just like chat. It is now deprecated.
+* [>=7.2.0] filter.fill deprecated in favor of the faster draw.rect
+* [>=7.2.0] str+ and str* deprecated, since regular + and * now support strings
 
 REMOVED IN NEWER VERSIONS
 * [==1.0.0] 6-argument default command: default used to work like copy except it copied from the template image. This behavior can be replicated in v6.0.0 or later using "copy_from,default,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height]"

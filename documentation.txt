@@ -1,13 +1,21 @@
-version,7,1,0 # The version of the Converter app that this script is made for.
+version,7,2,0 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
 author,clippy
 description,The documentation for the skin converter.
 
-open,smb_skin*.png # Main image to open and copy from. Skip this line entirely if you want the user to enter their own path. If you want to convert multiple images at once, enter a * in the place where you want the converter to insert a number; see "start"/"stop" below for more on this.
+open,smb_skin*.png # Path of the main image to open and copy from. 
+# Special options:
+    # Skip the "open" line entirely if you want the user to select which image to open for conversion. If you want to be more explicit when writing your code, you can also enter the number 1 as the path. (For backwards compatibility, you can also trigger this behavior by entering ".INPUT" instead of a path. If for some reason you want to open a file with the name ".INPUT", entering the path as "./.INPUT" should work.)
+    # If you don't want to open any existing image (for example, if you want to create an image completely from scratch), enter the number 0 as the path.
+    # If you want to convert multiple images at once, enter a * in the place where you want the converter to insert a number; see "start"/"stop" below for more on this.
 
-save,smb_edit*.png # Filename to save to. (WARNING: Any existing file with this name will be overwritten!) Skip this line entirely if you want the user to enter their own path. If you want to convert multiple images at once, enter a * in the place where you want the converter to insert a number; see "start"/"stop" below for more on this.
+save,smb_edit*.png # File path to save to. (If there's already a file on your computer with this path, the converter will ask if you want to overwrite the file.)
+# Special options:
+    # Skip the "save" line entirely if you want the user to select where to save the converted image. (As with "open", entering ".INPUT" or `1` as the save path will do the same thing.)
+    # If you don't want to save an image (for example, if you just want the app to display some text on screen), enter the number 0 as the path.
+    # If you want to convert multiple images at once, enter a * in the place where you want the converter to insert a number; see "start"/"stop" below for more on this.
 
 # If you want to convert a collection of sequentially-numbered images, use these commands. For example, the commands below mean that image #0 will be the first image converted, and image #42 will be the last image.
 start,0
@@ -20,13 +28,15 @@ alt,smb_skin1.png # Alternate image to copy from.
 base,blank # Add this code to use a blank template-sized image as the base; otherwise, the "open" image will be the base.
 base,256,256 # Start with a blank image with the given size (instead of using the old image's size)
 
-flag,loop_limit,10000 # To prevent infinite loops (or gotos) from freezing the converter, a script will crash if any single line of code runs 10,000 times. If you need to run a loop more (or fewer) times than that, you can manually change the loop limit. (Alias: loop_limit)
-flag,index_from,1 # By default, loops start counting from 0. Setting this flag to 1 makes them start from 1 instead.
-flag,closed_range,1 # By default, loops use closed ranges. For example "for,$i,0,10" runs for 0≤x<10. Enabling this flag makes it work like 0≤x≤10 instead.
+# FLAGS: These change the basic rules regarding how the converter interprets scripts files.
+flag,loop_limit,10000 # To prevent infinite loops (or gotos, etc.) from freezing the converter, a script will crash if any single line of code runs 10,000 times. If you need to run a loop more (or fewer) times than that, you can manually change the loop limit. (Alias: command "looplimit,<NUMBER>")
+flag,index_from,0 # By default, loops start counting from 0. Setting this flag to 1 makes them start from 1 instead.
+flag,closed_ranges,0 # By default, loops use open ranges. For example "for,$i,0,10" runs for 0≤x<10. Enabling this flag makes it work like 0≤x≤10 instead. For backwards compatibility, the start/stop header commands will always use closed ranges.
 
 # Everything above this line is a header command.
-# Each one can only appear once. If you use the same header command more than once,
-# only the first instance will be used.
+# Each one can only appear once. 
+# If you use the same header command more than once,
+# only the first instance will be used; the rest will be ignored.
 # Header commands cannot contain subcommands or references to variables.
 # Header commands will be ignored if they are placed inside a block (e.g. an if statement or a while loop).
 
@@ -47,7 +57,7 @@ exit # End the conversion early, but save the target file as is and exit properl
 
 skip # End the conversion early without saving or displaying an error message. Intended for use in batch conversion where you want to flag only files that meet specific criteria.
 
-noop # Does nothing.
+noop # Does nothing. Can also be a subcommand.
 
 # Comment: The hash (#) and everything after it will be ignored by the interpreter.
 # You may also want to "comment out" lines that aren't working in your scripts.
@@ -70,7 +80,7 @@ default,0[x],0[y],16[width],16[height] # Copy from template image to same positi
 
 defaultfrom,template<imageName>,0[x],0[y],16[width],16[height] # Copy from any image ("old", "alt", "template", or even "new") to same position in new image. (Alias: default_from)
 
-clear,0[x],0[y],16[width],16[height] # Clear area from new image. (Alias: delete -- deprecated in v6.0.0 and later)
+clear,0[x],0[y],16[width],16[height] # Clear area from new image.
 
 duplicate,0<oldX>,0<oldY>,0<newX>,0<newY>,16[width],16[height] # Copy an area on the NEW image to another position on the same canvas.
 
@@ -80,11 +90,25 @@ swap,0<x1>,0<y1>,16<x2>,0<y2>,16[width],16[height] # Swap the pixels contained i
 
 
 
+# ADVANCED COPYING COMMANDS
+# These commands build on the basic copying commands but allow you to do complicated tasks with fewer commands. They can be very powerful, but they have more complex syntax.
+
+tile,0<copyX>,0<copyY>,16<copyWidth>,16<copyHeight>,0<pasteStartX>,0<pasteStartY>,16<pasteCountHoriz>,16<pasteCountVert>,open[copySource: old, template, or alt] # Create a tile pattern on the new image using a part of the old image.
+
+copyscale,0<oldX>,0<oldY>,32<oldWidth>,32<oldHeight>,0<newX>,0<newY>,16<newWidth>,16<newHeight>,1[algo],old[source] # Copy from the old (or alternative source) image to the new image, while scaling the copied area to a new width/height. 
+# The following scaling algorithms are available in order of complexity:
+# 0 / nearest: Nearest-neighbor scaling, no interpolation. My implementation differs from PIL's in that it attempts to preserve symmetry in the original image/area. (When scaling from even to odd pixel sizes on a given axis, this is not possible, so I get as close as I can -- the middle will be off.)
+# 1 / default / super: Supersampling. This is more commonly used for rendering video game graphics, but it's pretty good for scaling pixel art too. When the scale factor is an integer, it'll look the same as nearest-neighbor.
+# 2 / bilinear / linear: Bilinear interpolation, the way many operating systems and web browsers scale images for preview purposes. Direct from PIL's implementation.
+# 3 / bicubic / cubic: Bicubic interpolation, the default interpolation in many image-editing programs' scaling commands. Direct from PIL's implementation.
+
+
+
 # TRANSFORMATION COMMANDS
 
-resize,256<newWidth>,256[newHeight] # Resize the new image's canvas. Does not perform any scaling. Anchor top left. If no height given, create a square canvas.
+resize,256<newWidth>,256[newHeight],0[xOffset],0[yOffset] # Resize the new image's canvas. Does not perform any scaling. If no height given, create a square canvas. Anchor at top left by default, or move original image right by `offsetX` pixels and down by `offsetY` pixels.
 
-rotate,90<degreesClockwise: multiple of 90>,0<x>,0<y>,16[size] # Rotate the area in place on the new image. Unlike copy commands, only one size argument is used, as the rotated area must be square.
+rotate,90<degreesClockwise: multiple of 90>,0<x>,0<y>,16[size] # Rotate the area in place on the new image. Unlike copy commands, only one size argument is used, as the rotated area must be square. TODO: add arbitrary rotation w/ interpolation
 
 flip,x<direction: x or y>,0[x],0[y],16[width],16[height]
 # Flip the area in place on the new image. Unlike rotation, width and height can be different here.
@@ -103,17 +127,15 @@ flip,x<direction: x or y>,0[x],0[y],16[width],16[height]
 # If you give x and y but not width or height: width=16, height=16
 # If you give x, y, and width, but not height: height=width 
 
-# Before v6.1, these commands didn't have the "filter." prefix.
+grayscale,0[x],0[y],16[width],16[height] # Converts the area to grayscale (AKA black-and-white). For the command that literally makes the area only black and white (1-bit), use "threshold".
 
-filter.grayscale,0[x],0[y],16[width],16[height] # Converts the area to grayscale (AKA black-and-white). For the command that literally makes the area only black and white (1-bit), use "threshold".
+invert,0[x],0[y],16[width],16[height] # Inverts the area. For example, black becomes white, and red becomes cyan.
 
-filter.invert,0[x],0[y],16[width],16[height] # Inverts the area. For example, black becomes white, and red becomes cyan.
+rgbfilter,0<redAdjust: -255 to +255>,0<greenAdjust>,0<blueAdjust>,0[x],0[y],16[width],16[height] # Adjusts the R/G/B color balance. You can use all three adjust arguments at the same time to adjust brightness. (Aliases: colorfilter, color_filter)
 
-filter.rgb,0<redAdjust: -255 to +255>,0<greenAdjust>,0<blueAdjust>,0[x],0[y],16[width],16[height] # Adjusts the R/G/B color balance. You can use all three adjust arguments at the same time to adjust brightness. (Alias: colorfilter, color_filter)
+opacity,0<adjust: -255 to +255>,0[x],0[y],16[width],16[height] # Adjusts the opacity (alpha) levels. Negative = more transparent, positive = more opaque.
 
-filter.opacity,0<adjust: -255 to +255>,0[x],0[y],16[width],16[height] # Adjusts the opacity (alpha) levels. Negative = more transparent, positive = more opaque.
-
-filter.hsl,0<hueAdjust: -180 to +180>,0<saturationAdjust: -100 to 100>,0<lightnessAdjust: -100 to 100>,0[x],0[y],16[width],16[height] # Adjusts hue, saturation, and lightness at the same time.
+hslfilter,0<hueAdjust: -180 to +180>,0<saturationAdjust: -100 to 100>,0<lightnessAdjust: -100 to 100>,0[x],0[y],16[width],16[height] # Adjusts hue, saturation, and lightness at the same time.
 
 filter.hue,0<adjust: -180 to +180>,0[x],0[y],16[width],16[height] # Adjusts the hue.
 
@@ -123,25 +145,35 @@ filter.lightness,0<adjust: -100 to +100>,0[x],0[y],16[width],16[height] # Adjust
 
 filter.fill,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255[alpha: 0 to 255],0[x],0[y],16[width],16[height] # Fills the area with the selected color.
 
-filter.contrast,0<adjust: -128 to 128>,0[x],0[y],16[width],16[height] # Adjusts the contrast. -128 will make all non-transparent pixels medium gray; +127 will make all RGB values either 0 or 255 (8 colors).
+contrast,0<adjust: -128 to 128>,0[x],0[y],16[width],16[height] # Adjusts the contrast. -128 will make all non-transparent pixels medium gray; +127 will make all RGB values either 0 or 255 (8 colors).
 
-filter.colorize,180<hue: 0 to 359>,50<saturation: 0 to 100>,50<lightness: 0 to 100>,0[x],0[y],16[width],16[height] # Colorizes specified area in place. Converts area to B&W, treats L=127.5 as the specified HSL color, and interpolates the rest from there. Ex.: if the base color was coral [hsl(0,100,75)], it'll turn black->gray50->white to red->coral->white.
+colorize,180<hue: 0 to 359>,50<saturation: 0 to 100>,50<lightness: 0 to 100>,0[x],0[y],16[width],16[height] # Colorizes specified area in place. Converts area to B&W, treats L=127.5 as the specified HSL color, and interpolates the rest from there. Ex.: if the base color was coral [hsl(0,100,75)], it'll turn black->gray50->white to red->coral->white.
 
-filter.sepia,0[x],0[y],16[width],16[height] # Simplified colorize syntax for creating sepia-toned images. Based on hex code #a08060 or HSL(30,25,50)
+sepia,0[x],0[y],16[width],16[height] # Simplified colorize syntax for creating sepia-toned images. Based on hex code #a08060 or HSL(30,25,50)
 
-filter.threshold,128<minWhite: 0 to 256>,0[x],0[y],16[width],16[height]
+threshold,128<minWhite: 0 to 256>,0[x],0[y],16[width],16[height]
 # Converts the image to 1-bit black & white based on a numeric lightness threshold, determined by grayscale (luma) value. Any number LESS THAN minWhite is black, any number GREATER or EQUAL is white. Set minWhite to 0 to make everything white. Set minWhite to 256 to make everything black.
 
-filter.selcolor,red<color>,0<hueAdjust: -180 to +180>,0<saturationAdjust: -100 to 100>,0<lightnessAdjust: -100 to 100>,0<x>,0<y>,16<width>,16<height> # Selective color: selects all pixels that have hues within a given sixth of the HSL color wheel (red, yellow, green, cyan, blue, magenta), and applies the HSL shift filter to each of those pixels.
+selcolor,red<color>,0<hueAdjust: -180 to +180>,0<saturationAdjust: -100 to 100>,0<lightnessAdjust: -100 to 100>,0<x>,0<y>,16<width>,16<height> # Selective color: selects all pixels that have hues within a given sixth of the HSL color wheel (red, yellow, green, cyan, blue, magenta), and applies the HSL shift filter to each of those pixels.
 
-filter.2color,0<hue>,100<saturation>,50<lightness>,0[x],0[y],16[width],16[height] # Simulates the effect of a two-color print job, where one of the colors is black. The hue/saturation/lightness arguments are for the second color. Unlike colorize, this is not recommended for use with black-and-white images, as the filter uses saturation data to determine how much color each pixel should have.
+2color,0<hue>,100<saturation>,50<lightness>,0[x],0[y],16[width],16[height] # Simulates the effect of a two-color print job, where one of the colors is black. The hue/saturation/lightness arguments are for the second color. Unlike colorize, this is not recommended for use with black-and-white images, as the filter uses saturation data to determine how much color each pixel should have. (Alias: twocolor)
 
 
 
-# ADVANCED COMMANDS
-# These commands build on the basic commands but allow you to do complicated tasks with fewer commands.
+# LIST COMMANDS
+# For manipulating lists. See also "list subcommands" for how to create lists.
 
-tile,0<copyX>,0<copyY>,16<copyWidth>,16<copyHeight>,0<pasteStartX>,0<pasteStartY>,16<pasteCountHoriz>,16<pasteCountVert>,open[copySource: old, template, or alt] # Create a tile pattern on the new image using a part of the old image. This command can be very useful but it’s not for beginners.
+list.add,$l<listVar>,"thing"<item> # Add an item to the end of an existing list (in place).
+
+list.addall,$l1<list1>,(list,a,b)<list2> # Add all items in list2 to the end of list1. (Using these arguments with list.add would add list1 as a single element on the end of list1.)
+
+list.clear,$l<listVar> # Removes all items from the list.
+
+list.insert,$l<listVar>,0<index>,"thing"<item> # Insert new item into listVar, BEFORE the item currently at the given index.
+
+list.remove,$l<listVar>,0<index> # Remove the item at the given index from the list; shift the items after it to the left. Note that this is different from the Python method `l.remove()` that removes based on value rather than index.
+
+list.replace,$l<listVar>,0<index>,"thing"<item> # Replace the contents of the given `index` of `listVar` with `item`.
 
 
 
@@ -151,7 +183,7 @@ use,draw # Initializes extra code needed for drawing. Required if you want to us
 
 # DRAW: SHAPES
 
-draw.rect,0<x>,0<y>,16<width>,16<height>,0[outline: 0 for fill, 1 for outline, 2 for both] # Draw a rectangle with the top left corner at the given x and y.
+draw.rect,0<x>,0<y>,16<width>,16<height>,0[outline: 0 for fill, 1 for outline, 2 for both] # Draw a rectangle with the top left corner at the given x and y. (Alias: draw.rectangle)
 
 draw.ellipse,0<x>,0<y>,16<width>,16<height>,0[outline: 0 for fill, 1 for outline, 2 for both] # Draw an ellipse with the top left "corner" at the given x and y.
 
@@ -192,7 +224,7 @@ goto,10 # Jump to the start of line number 10. The first line of your program is
 gosub,hello<label> # Go to the label, and put the current line number onto the subroutine stack so you can come back to it later.
 goback # Return from the subroutine to the last line number on the subroutine stack. (alias: retsub)
 
-while,(...) # Keep repeating as long as the condition in argument 1 is true. TODO: Argument 2 will be "min_repeat" for minimum number of times loop must repeat, like a do-while loop
+while,(...),0[do] # Keep repeating as long as the condition in argument 1 is true. If `do` is nonzero, the loop always runs at least once (like a do-while loop in C).
 
 for,$i<loopVar>,0[start],10<stop>,1[step] # Create a loop based around incrementing a value by some amount. (BASIC-style for loop)
 
@@ -200,15 +232,17 @@ break,1<numLoops> # Break out of the current loop. If numLoops >= 1, break out o
 
 next # "continue" in C/Java/Python, but "next" is a better name because we're skipping to the next iteration of the loop.
 
+foreach,$x[indexVar],$i<itemVar>,$l<seq> # Create a loop based around iterating through a list (Python-style for loop). If 2 arguments, the first one is for the current item and the last one is for the list you're iterating through. If 3 arguments, the first one is the current item, the second one is the current index, and the last one is the list.
+
 
 
 # DATA COMMANDS
 
-set,$hello<name>,"Hello world"<value> # Set variable "hello" to the string "Hello world". Subcommands in second argument will be evaluated before setting the variable. Any value in double quotes will be treated as a string no matter what. If it's not in quotes and it can be parsed as an integer, the value will be an integer. Anything else will be treated as a string for legacy reasons, but watch out for special characters!
+set,$hello<name>,"Hello world"<value> # Set variable "hello" to the string "Hello world". Subcommands in second argument will be evaluated before setting the variable. Any value in double quotes will be treated as a string no matter what. If it's not in quotes and it can be parsed as an integer, the value will be an integer. Anything else will be treated as a string for legacy reasons, but watch out for special characters! (Alias `:=`)
 
 change,$x<varName>,+<subcmdName>,10[arg2],... # Change the value of varName by applying the given subcommand to it. The variable will be the first argument to the command, and any argument after `subcmdName` will be passed as the subcommand's second, third, (etc.) arguments. Example A: `change,$x,+,10,$y` will add (10 plus the value of $y) to $x; this is equivalent to `set,$x,(+,$x,10,$y)`. Example B: `change,$x,*,2` will multiply $x's value by 2; this is equivalent to `set,$x,(*,$x,2)`. Basically, it's nothing you can't already do with set; it just makes code more readable.
 
-const,$TAU,6.283 # Set a constant value so you can refer back to it by a recognizable name later. Works the same as "set" but you can't go back and change the value the name refers to.
+const,$TAU<name>,6.283<value> # Set a constant value so you can refer back to it by a recognizable name later. Works the same as "set" but you can't go back and change the value the name refers to.
 
 
 
@@ -217,7 +251,7 @@ const,$TAU,6.283 # Set a constant value so you can refer back to it by a recogni
 
 (empty,old[image],0<x>,0<y>,16[width],16[height]) # True if the area on the given image is completely empty (every pixel is transparent), False otherwise.
 
-(len,"thing"<data>) # Length of any variable or literal. Most useful for strings and lists. Calls the python function of the same name.
+(len,"thing"<data>) # Length of any variable or literal. Most useful for strings and lists. Calls the python function of the same name. (Alias: length)
 
 
 
@@ -232,48 +266,95 @@ const,$TAU,6.283 # Set a constant value so you can refer back to it by a recogni
 (<=,x1,x2,...)	# or ≤, le
 (>=,x1,x2,...)	# or ≥, ge
 
+(<=>,x1,x2) # Three-way comparison ("spaceship") operator. If x1<x2, return -1. If x1=x2, return 0. If x1>x2, return 1. To check the sign of a number, use: (<=>,x,0) (Alias: cmp)
+
 
 
 # LOGICAL SUBCOMMANDS
 # These also work exactly the way you'd expect.
-# Can be called with Python keywords (and) or C operators (&&).
 
-(and,<subcmd1>,<subcmd2>,[subcmd3],...)
-(or,<subcmd1>,<subcmd2>,[subcmd3],...)
-(not,<subcmd1>)
+(and,<subcmd1>,<subcmd2>,[subcmd3],...) # Alias: &&
+(or,<subcmd1>,<subcmd2>,[subcmd3],...)  # Alias: ||
+(not,<subcmd1>)                         # Alias: !
 
 
 
 # MATH SUBCOMMANDS
-# These mostly work exactly the way you'd expect, except unlike in Python they can't be used on strings.
+# These mostly work exactly the way you'd expect.
 
-(+,x1,x2,...)	# or add
-(-,x1,x2,...)	# or sub, − [minus sign], or – [en dash]
-(-,x)           # unary minus, negates x
-(*,x1,x2,...)	# or mul, ×
-(/,x1,x2,...)	# or truediv, ÷
-(div,x1,x2,...)	# integer division (or floordiv). May use // as future alias but I'll wait for now
-(mod,x1,x2,...) # modulo. May use % as future alias but I'll wait for now
-(^,x1,x2,...) # x1 to the x2-th power, and so on. Technically you *can* add x3, x4, etc but it'll make the program crash VERY quickly. (Alias: pow)
+(+,x1,x2,...)	# Add two or more numbers. (Alias: add)
+(+,"Hello"<s1>,"World"<s2>,...) # Concatenate two or more strings. (The result of the example is "HelloWorld".)
+(+, (list,0,1)<l1>, (list,"a","b")<l2>, ...) # Return a combination of two or more lists. The arguments themselves will not be changed.
 
-(floor,x1) # Floor: returns the nearest int <= x1
-(ceil,x1) # Ceiling: returns the nearest int >= x1 (alias: ceiling)
+(-,x1,x2,...)	# Subtract two or more numbers. (Aliases: sub, − [minus sign], or – [en dash]. The symbol in the example is an ASCII hyphen.)
+(-,x)           # Unary minus sign, negates x. Equivalent to (*, x, -1)
+
+(*,x1,x2,...)	# Multiply two or more numbers. (Aliases: mul, × [multiplication sign, not letter X])
+(*,"Hello"<s>,3<n>) # Repeat a string n times. (Result of example: "HelloHelloHello")
+(*, (list,0,1)<l>, 2<n>) # Repeat a list n times. The original list will not be changed.
+
+(/,x1,x2,...)	# Divide two or more numbers. Do not round the result. The result will always be a floating-point number. (Aliases: truediv, ÷)
+
+(//,x1,x2,...)	# Integer division: divide two or more numbers, then round the result down to the nearest integer. (Aliases: floordiv, div)
+
+(%,x1,x2,...) # Modulo: divide two or more numbers and return the remainder. (Alias: mod)
+
+(^,x1,x2,...) # Raise one number to the power of another. Technically you *can* add x3, x4, etc but it'll make the program crash/freeze VERY quickly. (Aliases: pow, **)
+
 (abs,x1) # Absolute value: makes x1 positive if it isn't already
 
+(floor,x1) # Floor: returns the nearest int <= x1
+
+(ceil,x1) # Ceiling: returns the nearest int >= x1 (alias: ceiling)
+
 (min,x1,x2...) # Returns the minimum value out of the arguments passed in.
+(min,(list,x1,x2,...)) # Returns min value out of the list
+
 (max,x1,x2...) # Returns the maximum value out of the arguments passed in.
+(max,(list,x1,x2,...)) # Returns max value out of the list
+
+(round,1.2<x>,$_false[decPlaces]) # Round using standard mathematical rules. This is a wrapper around Python's built-in function of the same name, so there may be some weird edge cases. If an int is given for decPlaces, return a float rounded to that many decimal places. (Negative integers allow you to round to higher place values; e.g. -1 = round to tens place). If decPlaces is not given or is set to a non-integer value, return an int.
 
 
 
 # SEQUENCE SUBCOMMANDS
 # For working with the data sequence types, strings and lists.
 
-(get,$x<var>,0<index>) # Gets the item at index 0 of the given list/string. The first item of the list/string has index 0, unless you change the index_from flag. In addition, index -1 is the last item, -2 is the second-to-last item, etc. Name taken from Python's <dict>.get() method, because "sub" (subscript) was already taken by subtraction.
+(get,$x<seq>,0<index>) # Returns the item at index 0 of the given list/string. The first item has index 0, second item has index 1, etc., unless you change the index_from flag. In addition, index -1 is the last item, -2 is the second-to-last item, etc. Name taken from Python's <dict>.get() method, because "sub" (subscript) was already taken by subtraction.
 
-(str+,"Hello"<s1>,"World"<s2>,...) # (or str_add) Concatenate two or more values. The inputs don't have to be strings, but the output will always be a string. The output in the preceding example is "HelloWorld" (with no space in between because neither string had a space in it).
-(str*,"Hello"<s>,3<n>) # (or str_mul) Repeat s, n times. s doesn't have to be a string, but the output will always be a string. n must be an integer.
+(slice,$s<seq>,0<start>,2[stop],1[step]) # Returns a sublist of the given list. Omitting the stop value means slice the entire rest of the list. Entering a step value greater than 1 means only include every Xth item of the list.
+
+(in,"Hello"<seq>,"l"<sub>) # Return $_true if `sub` is a member of `seq`, and $_false otherwise.
+
+(find,"Hello"<seq>,"l"<item>,0[start],()[stop]) # Return the index of the first occurrence of item/substring `item` in the list/string `seq`. Return -1 if `item` couldn't be found anywhere in `seq`. Use `start` and `stop` arguments to only search a subset of the sequence.
+
+(count,"Hello"<seq>,"l"<sub>) # Counts the number of times the item/substring `sub` appears in the list/string `seq`.
+
+(sort,$s<seq>) # Returns a sorted version of list l, in ascending order according to Python's built-in Timsort algorithm. The value of the variable you pass in is not changed. Unlike Python, I only have one command for reversing and one command for sorting, because two felt like overkill, and I thought it was better to keep the one that also worked with strings.
+
+(reverse,$s<seq>) # Returns a reversed version of the list/string, so that the first item/char and the last item/char are swapped, the second and second-to-last are swapped, and so on. The contents of the variable you pass in is not changed.
+
+
+
+# LIST SUBCOMMANDS
 
 (list,x1,x2,x3,...) # Creates an editable, variable-length list with the given items.
+
+(range,0[start],10<stop>,1[step]) # Returns a list consisting of a sequence of numbers counting from `start` to `stop`, and counting up by `step` every time. Unlike Python's range function, any of the arguments can be floats too.
+
+
+
+# STRING SUBCOMMANDS
+
+(upper,"Hello"<str>) # Convert string to all caps. (Alias: uppercase)
+(lower,"Hello"<str>) # Convert string to all lowercase. (Alias: lowercase)
+
+(startswith,"Hello"<str>,"He"<substr>) # Returns true if str starts with substr; false otherwise.
+(endswith,"Hello"<str>,"lo"<substr>) # Returns true if str ends with substr; false otherwise.
+
+(join,(list,"Hello","World")<strList>,""[sep]) # Combine the contents of `strList` into one string, with each item separated by `sep` (or nothing, if no separator is given, as in the example).
+
+(split,"Hello World"<str>,""[sep],-1[maxSplit]) # Split the string `str` into a list of substrings. By default (or if `sep` is any empty string), the interpreter will split at every sequence of whitespace; otherwise, it will split every time the substring `sep` is reached. `maxSplit` is the maximum number of splits that will be done (i.e. the length of the resulting list will always be ≤ (maxSplit+1)); the default value -1 means no limit.
 
 
 
@@ -282,11 +363,15 @@ const,$TAU,6.283 # Set a constant value so you can refer back to it by a recogni
 
 (int,1.5) # Convert a value to integer format, if possible.
 (int,"0f"<value>,16[base]) # Only for string values: you can specify the base the string is in (from 2-36), and it'll convert it correctly.
+
 (float,1)
-(str,1) # alias: string
+
+(str,1)
+(str,"Hello"<x1>,"World"[x2],1[x3],...) # Convert the argument(s) to a string. If more than one argument is passed in, they will each be converted to strings, then concatenated together. The result of the example will be "HelloWorld1" (with no spaces in between because neither string had a space in it). (aliases: string, str+, str_add)
+
 (bool,1) # alias: boolean
 
-(type,$x<data>) # Returns the data type of the given variable (or literal), as a string. Possible types: "int", "float", "str", "bool", "color"
+(type,$x<data>) # Returns the data type of the given variable (or literal), as a string. Possible types: "int", "float", "str", "bool", "list", "color", "null"
 
 
 
@@ -319,6 +404,7 @@ const,$TAU,6.283 # Set a constant value so you can refer back to it by a recogni
     gray: #808080
     silver: #c0c0c0
     white: #ffffff
+(color,n00) # Define a color from the NES palette (Nestopia's 15° Canonical palette to be exact). Colors are numbered in hexadecimal from n00 to n3f.
 
 (rgba,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255[alpha: 0 to 255]) # Alias: rgb
 
@@ -357,6 +443,8 @@ const,$TAU,6.283 # Set a constant value so you can refer back to it by a recogni
 (height,open<imageName>) # Returns the height of the image with the specified name.
 
 
+###############################################################################
+###############################################################################
 
 # COMING SOON:
 # Anything here is subject to change, and syntax should not be treated as final.
@@ -367,51 +455,30 @@ from,old<image>,<cmd> # Set the source image for the following command. Can be c
 
 to,new<image>,<cmd> # Set the target image for the following command. Target image must be writeable.
 
-scale,256<newWidth>,256<newHeight> # Scale the image to the new width and height, using nearest-neighbor scaling (add other algorithms? add percentages? scale specific areas as part of copying?)
-
-copyscale,0<oldX>,0<oldY>,32<oldWidth>,32<oldHeight>,0<newX>,0<newY>,16<newWidth>,16<newHeight>,1[algo] # Copy from the old image to the new image, while 
-# ^ TODO: Don't include an "image" argument because "from" will be used to set the source image from now on.
+scale,256<newWidth>,256<newHeight>,1[algo] # Scale the image to the new width and height, using nearest-neighbor scaling (add other algorithms? add percentages? scale specific areas as part of copying?)
 
 # SUBCOMMANDS
 
-# Color subcommands:
-(luma,0<x>,0<y>,1[width],1[height]) # The value that would be used if the image were converted to grayscale
-
-# Math subcommands:
-(min,(list,x1,x2,...)) # min/max for LISTS -- already added for loose arguments
-(max,(list,x1,x2,...))
-(round,1.2<x>,$_false[decPlaces]) # Round using standard mathematical rules. If an int is given for decPlaces, return a float rounded to that many decimal places. (Negative integers allow you to round to higher place values; e.g. -1 = round to tens place). If decPlaces is not given or is set to a non-integer value, return an int.
-# No trigonometry, calculus, bitwise operators, logarithms, factorial, etc. -- all of those seem like overkill for what's supposed to be an image-editing program
+# No trigonometry, calculus, bitwise operators, logarithms, factorial, etc. -- all of those seem like overkill for what's supposed to be an image-editing program (unless I can figure out a one-line way to map to Python functions)
 
 # LOOPS
-foreach,$i<loopVar>,$l<list> # Create a loop based around iterating through a list. (Python-style for loop)
-(range,0[start],10<stop>,1[step]) # Generates a list of integers from start to stop (not including stop), stepping by 1 each time. For example, the sample code generates the list [0,1,2,3,4,5,6,7,8,9]
 # Ruby's "redo" and "retry" are probably too rare to be worth implementing. They can easily be replicated with gotos
 
 # VARIABLES
 load,alt2<name>,smb_skin2580.png<path> # Load the image at the given path and store it associated with the given string identifier. This is a header command, so it will always be called once at the start of the program and it can't be used with variables. The image cannot be retrieved like a variable, but it does block its name from being used for variables. TODO: Maybe call this "setpath"? Or "source"? Reserve "read" for a possible future non-header version
-# TODO: +=, -=, *=, /=, ++, -- for common variable changes? Or does this not make sense if the standard keyword is "set"?
+# TODO: +=, -=, *=, /=, //=, %=, ^=, ++, -- for common variable changes? Or does this not make sense if the standard keyword is "set"?
 
 # STRINGS
-# TODO: Get rid of prefix? Seems like it adds complexity that isn't in Python in terms of distinguishing between string and list operations.
-(str.upper,$s) # Convert string to all caps
-(str.lower,$s) # Convert string to all lowercase
+(titlecase,"hello world"<str>) # Convert string to title case (first letter of each word capitalized; rest of word lowercase). Python has a similar function but it's buggy so I'm not using it.
+(sentencecase,"hello"<str>) # Capitalize first letter of string, make the rest lowercase.
 
 # LISTS
-$l1[0] # Returns the item at index 0 of the given list. The first item of the list has index 0, unless you change the index_from flag. Index -1 is the last item, -2 is the second-to-last item, etc. There are two ways to do this, because you can only use the former if you're getting an item from a list returned by a subcommand, and you can only set list items with the latter.
-(list.slice,$l<listVar>,0[start],2<stop>,1[step]) # Returns a sublist of the given list. Entering "_" for stop means slice the entire rest of the list.
-list.append,$l<listVar>,"thing"<item>,0[index] # Add an item to an existing list (in place). If an index argument is given, insert the item BEFORE the given index. Otherwise, add the item to the end
-list.remove,$l<listVar>,0<index> # Remove the item at the given index from the list; shift the items after it to the left.
-list.sort,$l<listVar> # Sorts the list in place, in ascending numerical order according to Python's built-in Timsort algorithm.
-(list.sorted,$l<listVar>) # Returns a sorted version of list l, but does not change the original list.
-list.reverse,$l<listVar> # Reverses the list in place, so that the first item and the last item are swapped, the second and second-to-last are swapped, and so on.
-(list.reversed,$l<listVar>) # Returns a reversed version of list l, but does not change the original list.
-# TODO: list concatenation and repetition -- do I need an operator that's used for both lists and strings?
-# TODO: find -- returns index of first matching item
+# Rule of thumb: anything with prefix "list." changes the list in place.
+$x[0] # Returns the item at index 0 of the given list/string. The first item has index 0, second item has index 1, etc., unless you change the index_from flag. In addition, index -1 is the last item, -2 is the second-to-last item, etc. There are two ways to do this, because you can only use the former if you're getting an item from a list returned by a subcommand, and you can only set list items with the latter.
 
-# COLOR DEFINITIONS
-(gray,50<luma>) # Define a grayscale color based on [HSL lightness or luma?]
-(nes,"0f"<hex>) # Defines a color from the NES palette. More specifically, the colors are from Nestopia's Canonical palette (AKA YUV-V1). I know some people have strong feelings about what the "best" NES palette is, but Canonical has the best mathematical basis for its colors.
+# COLORS
+(gray,50<luma: 0 to 100>,255[alpha: 0 to 255]) # Define a grayscale color based on luma, with optional alpha. TODO: allow luma arg to be a float?
+(luma,0<x>,0<y>,1[width],1[height]) # The value that would be used if the image were converted to grayscale (from 0 to 100)
 
 # TEXT DRAWING
 draw.text,"Hello world"<textContent>,0<x>,0<y>,80[width],24[height],-1<outline: -1 for no box, 0 for fill, 1 for outline, 2 for both> # Draw a text box with the given text. x and y are the position of the top left corner. Width and height are in pixels -- NOT characters/lines. Any text past the maximum width will be wrapped to the next line. Any text past the maximum height will be cut off, with ellipsis in the bottom right corner. If outline is set to 0, 1, or 2: a rectangle with the given width and height will be drawn under the text. 
@@ -420,15 +487,18 @@ draw.text,"Hello world"<textContent>,0<x>,0<y>,80[width],24[height],-1<outline: 
 # TEXT DRAWING OPTIONS
 draw.textcolor,(rgb,0,0,0)<color> # Set text color. This is different from outline and fill color to make it easier to draw text boxes.
 draw.textsize,1<scaleX>,1[scaleY] # Change the size of text from the usual 1:1 ratio. Argument(s) must be positive integers. If 1 argument is given, y-scale and x-scale are assumed to be the same.
+draw.textalign,left<alignment> # Set the alignment of the text to left/l, center/c, right/r, or justify/j.
 draw.font,smb<fontName> # Set the font used to draw text. Name X should have a corresponding "X.png" in the fonts folder in a 16×16 extended ASCII table. Default is "arcade".
 draw.letterspacing,0<amount> # Set the amount of extra space between each character (AKA tracking/kerning) when drawing text. Can be positive or negative; default is 0 (no spacing).
-draw.linespacing,0<amount> # Set the amount of extra space between each line (AKA leading) when drawing text. Can be positive or negative; default is 0 (set solid).
+draw.linespacing,0<amount> # Set the amount of extra space between each line (AKA leading) when drawing text. Can be positive or negative; default is 0 (set solid). TODO: setting for space before vs after
 
 # LAYERS
-layer.new,0<depth>,layer0[name] # Create a new layer. Default depth is right in front of currently selected layer. Default name based on the given depth. For depth, higher numbers are at the front. TODO: Better system for layer depth
+layer.new,0<depth>,layer0[name],0[x],0[y],256[width],256[height] # Create a new layer. Default depth is right in front of currently selected layer. Default name based on the given depth. Default x/y is (0,0) and default width and height are the current width and height of the base image. For depth, higher numbers are at the front, just like in the MR level editor. TODO: Better system for layer depth
 layer.select,0<depth OR name> # Set which layer you're currently working on.
 
 # (Lower-priority layer commands)
+layer.newobject,(text,...)<cmd>,0<depth>,layer0[name] # Create a new layer consisting of the given command's output, with x/y/w/h determined by the x/y/w/h values associated with the given command.
+layer.crop,0<x>,0<y>,16<width>,16<height>
 layer.show,0[target: depth OR name] # Default to current layer
 layer.hide,0[target: depth OR name]
 layer.delete,0[target: depth OR name]
@@ -437,4 +507,4 @@ layer.mergevisible # Merge all visible layers
 
 # FUNCTIONS
 func,(sqrt,@x:int,@y=2),int # Local variables use @ at start instead of $
-return # Return from function. Not to be confused with retsub (for subroutines)
+return,()[result] # Exit the current function and return a value (defaulting to null)

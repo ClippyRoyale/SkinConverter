@@ -251,6 +251,7 @@ Version 6.1.0 (Sep. 4, 2023):
         as the program is otherwise unchanged
       * The program should now run out of the box without needing to install 
         any modules manually. Please tell Clippy if you have any issues!
+  * Requires Python 3.6 or later (f-strings)
 
 Version 7.0.0 (Oct. 13, 2023):
 USER-FACING CHANGES:
@@ -345,12 +346,12 @@ Version 7.1.0 (Nov. 26, 2023):
       * To include 10 in counting, add "flag,closed_range,1" to top of program
       * loop_limit is a flag now too
   + Added basic list functionality
-    * Right now all you can do is get individual items and a list's length
-    * Use "get" to get an individual item, and "len" for length
-    * Both functions can also be used on strings
-    * I needed to add them for the Deluxe->Legacy skin script but I wasn't
-      originally planning on adding them in this update, so more list commands
-      will be added later
+      * Right now all you can do is get individual items and a list's length
+      * Use "get" to get an individual item, and "len" for length
+      * Both functions can also be used on strings
+      * I needed to add them for the Deluxe->Legacy skin script but I wasn't
+        originally planning on adding them in this update, so more list commands
+        will be added later
   + Added option to create a blank image of any size
       * This also means you can create images from scratch without needing to
         have an "open" or "template" image
@@ -369,17 +370,62 @@ Version 7.1.0 (Nov. 26, 2023):
     as magenta
   * App icon is now less blurry
   * Tweaked the yellow "!" warning icon
+      * The other icons look the same but they've been losslessly compressed so 
+        they take up less space
   * Bug fixes:
-    * Fixed parser so it no longer reads "0" (in quotes) as an int or "(+,1,1)" 
-      as a subcommand
-      * Both are now read as strings, as intended
-    * Fixed "change" to no longer put extra arguments into a single list
-    * Fixed math commands to work properly with 3 or more arguments
-    * Fixed logic errors when nesting another block inside an if block
-    * Fixed crash bug involving code that used the legacy "endif" command
+      * Fixed parser so it no longer reads "0" (in quotes) as an int or
+        "(+,1,1)" as a subcommand
+          * Both are now read as strings, as intended
+      * Fixed "change" to no longer put extra arguments into a single list
+      * Fixed math commands to work properly with 3 or more arguments
+      * Fixed logic errors when nesting another block inside an if block
+      * Fixed crash bug involving code that used the legacy "endif" command
   - Deprecated "if1" command because it was a mistake (just like chat)
   - Removed Replit files from the GitHub
-    * I’ve long since given up on Replit–GitHub integration
-    * The source code is now named “converter.py” instead of “main.py”
+      * I’ve long since given up on Replit–GitHub integration
+      * The source code is now named “converter.py” instead of “main.py”
   + Added GRAND DAD (accidentally forgot to add in v7.0)
+  - Removed Herobrine
+
+Version 7.2.0 (Feb. 3, 2024):
+  + Revised the Deluxe->Legacy skin conversion script to use smoother
+    downscaling when sprites are too big
+      * On the one hand, no more disappearing eyes. On the other hand,
+        the results may be blurrier.
+      * Since it's a subjective judgement call, I've left the old version of
+        the script in the deprecated folder in case you like its sharper look.
+  + Added copyscale command to scale portions of an image
+      * Includes a variety of scaling algorithms (nearest-neighbor, 
+        supersampling, bilinear, bicubic)
+  + Lots of new commands for general programming:
+      * For lists: range, list.add, list.addall, list.clear, list.insert,
+        list.remove, list.replace
+      * For strings: upper, lower, startswith, endswith, join, split
+      * For both: slice, in, find, count, sort, reverse
+      * Other: round, <=> (cmp)
+  + Set `open` to the integer 0 if you don't want to open any existing images
+      * Creates an empty 256×256 image by default
+      * Set `save` to 0 if you don't want to save an image in your script
+  + Added offset arguments to `resize` so it can now be used to crop images
+  * Script files now loaded line-by-line instead of reading it all in at once
+  * Added \n and \t escape characters in strings
+  * Simplified error-checking for + and * so they can be used on strings & lists
+  * Bug fixes:
+      * FIXED MENU RENDERING BUG ON MAC DATING BACK TO V3.0 (the one where 
+        there would be empty boxes where buttons should be)
+      * Fixed crash bug when open/save/template/alt have a non-string argument
+      * Fixed index_from and closed_ranges flags, which crashed scripts in 7.1
+      * flag is now in the header commands list
+      * Color info commands can now be called on color values (as opposed to
+        coordinates), as was intended since 7.0
+      * Constants now work properly, i.e. their values can't be changed after
+        they're set once
+      * warning command now accepts any data, not just strings
+  * General code cleanup
+      * Got the number of linter warnings below 100. I'm calling that progress
+  - Deprecated str+ and str*
+  - Removed code that disabled header commands with depth > 1
+      * It wouldn't have fully worked as intended anyway
+  - Removed last remnants of the compatibility checker & script variant picker
+  + Added "AI" command
   - Removed Herobrine
