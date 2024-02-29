@@ -423,9 +423,32 @@ Version 7.2.0 (Feb. 3, 2024):
       * warning command now accepts any data, not just strings
   * General code cleanup
       * Got the number of linter warnings below 100. I'm calling that progress
-  - Deprecated str+ and str*
+  - Deprecated filter.fill, str+, and str*
   - Removed code that disabled header commands with depth > 1
       * It wouldn't have fully worked as intended anyway
   - Removed last remnants of the compatibility checker & script variant picker
   + Added "AI" command
   - Removed Herobrine
+
+Version 7.2.1 (Feb. 29, 2024):
+  + Augmented assignment operators (+=, -=, *=, /=, //=, %=, ^=)
+  + Increment/decrement operators (++, --)
+  + Logical "xor", because why not
+  + Multiline /* comments */
+  + Inline if subcommand (iif)
+  + Assertions: display a warning if a condition is false
+  + System variables $_linenumber and $_linecount (total # of lines in script)
+      * Warnings now include line number
+  * Convert command aliases once, instead of interpreting in real time
+  * Fixed threshold, which has probably been broken since it was added in 5.1.0
+  * Performance improvements:
+      * Transparent pixels are now skipped for most filters
+          * Except "opacity" because that would mess with its behavior
+            (though it'll be changed in the next major version)
+      * "and" & "or" commands now short-circuit properly
+      * subcommand "content" attribute stores a list instead of a string, 
+        so the content doesn't have to be parsed repeatedly
+      * STATS - Converting all Legacy skins to Deluxe: 30s before, 15s after
+  * More code cleanup
+  * This will probably be the last version to include Deluxe conversions on the 
+    title screen. The scripts will be deprecated or removed in future versions.

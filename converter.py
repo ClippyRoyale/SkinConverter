@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 7.2.0
+Version 7.2.1
 
 Copyright © 2022–2024 clippy#4722
 
@@ -30,15 +30,15 @@ import sys
 import colorsys
 import urllib.request
 import webbrowser # for installing assets
-import collections.abc as abc
+from collections import abc
 from copy import deepcopy
 from glob import glob
 from time import time
 from typing import *
 from tkinter import *
 import tkinter.font as tkfont
-import tkinter.filedialog as filedialog
-import tkinter.messagebox as messagebox
+from tkinter import filedialog # not imported with tkinter by default
+from tkinter import messagebox # not imported with tkinter by default
 # Non-PSL modules
 # This is probably TERRIBLE coding practice, but this is the easiest way to
 # make the program run "out of the box" for non-developers.
@@ -54,11 +54,11 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,2,0]
+app_version = [7,2,1]
 
-# Why does Python not have this built in???
+# Why does Python not have this built in anymore???
 def cmp(x, y):
-    '''cmp operator, not to be confused with cmp_command()'''
+    '''three-way comparison operator'''
     return -1 if x < y else (1 if x > y else 0)
 def sign(x): 
     '''returns -1 for negative, 1 for positive, 0 for everything else
@@ -302,8 +302,46 @@ icons = {
         PhotoImage(file='ui/accepted.png'),
 }
 
-# OTHER GLOBAL LISTS & DICTIONARIES
+# OTHER GLOBAL VARIABLES
 
+data : List[list] # script's lines in parsed form
+
+version : List[int] # SCRIPT version, not app version
+version_str: str    # ditto
+
+flags : Dict[str, any]
+
+# Multi-file conversion
+legacy_multi : bool # Enabled within a script, with start and stop headers
+    # new_multi is an argument, not a global var
+# Only for legacy multi:
+start_num : int 
+stop_num : int 
+current_num : int
+# Only for new multi:
+multi_open_paths : List[str]
+multi_save_paths : List[str]
+
+# Image file paths
+open_path : str
+save_path : str
+alt_path : str
+template_path : str
+
+# For calculating block depths while parsing scripts
+block_depths : List[int]
+block_stacks : List[List[str]]
+# Like above but only for breakable blocks (loops)
+break_depths : List[int]
+break_stacks : List[List[str]]
+loop_data : Dict[str, any]
+
+base_blank : bool
+space_sep : bool # COMING IN 8.0
+
+draw_obj : PIL.ImageDraw = None # only used if draw commands are in script
+
+# databases accessible by scripts while running them:
 images : Dict[str, PIL.Image.Image]
 variables : Dict[str, Any]
 labels : Dict[str, int]
@@ -350,7 +388,23 @@ header_commands = ['mrconverter', 'version', 'flag', 'name', 'description',
 # the variable will be kept as a Var class (instead of being substituted).
 set_commands = ['set', 'change', 'const', 'for', 'foreach',
                 'list.add', 'list.addall', 'list.clear', 'list.insert',
-                'list.remove', 'list.replace']
+                'list.remove', 'list.replace',
+                # Augmented assignment
+                'iadd', 'isub', 'imul', 'itruediv', 
+                'ifloordiv', 'imod', 'ipow',
+                # Augmented assignment aliases (needed because set_commands
+                # may be checked before alias() is called)
+                '-=', # hyphen
+                '–=', # en dash
+                '−=', # minus sign
+                '+=',    '*=', '×=',    '/=', '÷=',    '//=', '÷÷=',
+                '%=',    '^=', '**=', '××=',
+                # inc/dec and aliases
+                'inc', '++', 
+                'dec', '--', # hyphen
+                '––', # en dash
+                '−−', # minus sign
+                ]
 
 ###########################################################################
 #### CUSTOM DATA TYPES ####################################################
@@ -358,11 +412,17 @@ set_commands = ['set', 'change', 'const', 'for', 'foreach',
 
 class Color:
     def __init__(self, red:int, green:int, blue:int, alpha=255):
-        self.red = red
-        self.green = green
-        self.blue = blue
+        self.alpha = 0 if alpha<0 else (255 if alpha>255 else alpha)
 
-        self.alpha = alpha
+        # If fully transparent, don't store color data
+        if alpha == 0:
+            self.red = 0
+            self.green = 0
+            self.blue = 0
+        else:
+            self.red = 0 if red<0 else (255 if red>255 else red)
+            self.green = 0 if green<0 else (255 if green>255 else green)
+            self.blue = 0 if blue<0 else (255 if blue>255 else blue)
 
         hsla = rgba_to_hsla([self.red, self.green, self.blue, self.alpha])
         self.hue = hsla[0]
@@ -397,11 +457,14 @@ class SetVar(Var):
         return f'<SetVar: {self.name}>'
 
 class Subcommand:
-    def __init__(self, content:str):
+    def __init__(self, content:list):
         self.content = content
     
-    def __repr__(self):
+    def __repr__(self): # displayed in e.g. debug printouts
         return f'<Subcommand: {self.content}>'
+    
+    def __str__(self): # displayed in e.g. assertion error messages
+        return '(' + ','.join([str(i) for i in self.content]) + ')'
 
 ###########################################################################
 #### LOG/EXIT COMMANDS ####################################################
@@ -421,7 +484,7 @@ def warning(i: list):
 ###########################################################################
 
 def var_check(v: Union[Var, SetVar], cmd_name='Variable error', *, 
-              exists:Union[bool, None]=None, internal=False):
+              exists:Optional[bool]=None, internal=False):
     '''
     Variable name validity check for all commands that set or change variables.
     
@@ -541,6 +604,10 @@ Variable names must start with a dollar sign.')
 
     # If the checks passed, set the variable
     variables[name] = i[2]
+
+def set_ln(index:int):
+    set_(['set', '$_ln', index], internal=True)
+    set_(['set', '$_linenumber', index], internal=True)
 
 def const(i: list):
     '''
@@ -1196,9 +1263,13 @@ def grayscale(i, base_image):
     region = base_image.crop((x, y, x+width, y+height)).convert('LA')
     base_image.paste(region, (x, y, x+width, y+height))
 
-# invert,0[x],0[y],16[width],16[height] 
-# Inverts the area. For example, black becomes white, and red becomes cyan.
 def invert(i, base_image):
+    '''
+    invert,0[x],0[y],16[width],16[height]
+    
+    Inverts the area. For example, black becomes white, and red becomes cyan. 
+    Alpha levels will be unchanged.
+    '''
     # For filters, if no x or y specified, apply filter to whole image
     if len(i) <= 2: # number on the right should be equal to the index of y
         i = [i[0], 0, 0, base_image.size[0], base_image.size[1]]
@@ -1219,6 +1290,10 @@ def invert(i, base_image):
     for loop_x in range(width):
         for loop_y in range(height):
             rgba = region.getpixel((loop_x, loop_y))
+            # Skip fully transparent pixels
+            if rgba[3] == 0:
+                continue
+
             region.putpixel((loop_x, loop_y), 
                     (255-rgba[0], 255-rgba[1], 255-rgba[2], rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
@@ -1257,6 +1332,10 @@ def rgbfilter(i, base_image):
     for loop_x in range(width):
         for loop_y in range(height):
             rgba = region.getpixel((loop_x, loop_y))
+            # Skip fully transparent pixels
+            if rgba[3] == 0:
+                continue
+
             region.putpixel((loop_x, loop_y), 
                     (rgba[0]+redAdjust, rgba[1]+greenAdjust, 
                     rgba[2]+blueAdjust, rgba[3]))
@@ -1358,112 +1437,15 @@ def hslfilter(i: list, base_image: PIL.Image.Image):
     region = base_image.crop((x, y, x+width, y+height))
     for loop_x in range(width):
         for loop_y in range(height):
-            hsla = rgba_to_hsla(region.getpixel((loop_x, loop_y)))
+            rgba = region.getpixel((loop_x, loop_y))
+            # Skip fully transparent pixels
+            if rgba[3] == 0:
+                continue
+
+            hsla = rgba_to_hsla(rgba)
             hsla[0] += hueAdjust
             hsla[1] += saturationAdjust
             hsla[2] += lightnessAdjust
-            format_hsla(hsla)
-            rgba = hsla_to_rgba(hsla)
-            region.putpixel((loop_x, loop_y), 
-                    (rgba[0], rgba[1], rgba[2], rgba[3]))
-    base_image.paste(region, (x, y, x+width, y+height))
-
-# filter.hue,0<adjust: -180 to +180>,0[x],0[y],16[width],
-#   16[height] 
-# Adjusts the hue.
-def filter_hue(i, base_image):
-    adjust = i[1]
-
-    # For filters, if no x or y specified, apply filter to whole image
-    if len(i) <= 3: # number on the right should be equal to the index of y
-        i = [i[0], i[1], 0, 0, base_image.size[0], base_image.size[1]]
-    x = i[2]
-    y = i[3]
-
-    # If width/height specified, use those values.
-    # If neither is specified, use 16×16.
-    # If only width is specified, use that value for height too.
-    if len(i) == 4:
-        i += [16, 16]
-    width = i[4]
-    if len(i) == 5:
-        i += [width]
-    height = i[5]
-
-    region = base_image.crop((x, y, x+width, y+height))
-    for loop_x in range(width):
-        for loop_y in range(height):
-            hsla = rgba_to_hsla(region.getpixel((loop_x, loop_y)))
-            hsla[0] += adjust
-            format_hsla(hsla)
-            rgba = hsla_to_rgba(hsla)
-            region.putpixel((loop_x, loop_y), 
-                    (rgba[0], rgba[1], rgba[2], rgba[3]))
-    base_image.paste(region, (x, y, x+width, y+height))
-
-# filter.saturation,0<adjust: -100 to +100>,0[x],0[y],16[width],
-#   16[height] 
-# Adjusts the saturation (in HSLA color space). Positive adjust means 
-# more colorful. Negative adjust means less colorful. -100 means grayscale.
-def filter_saturation(i, base_image):
-    adjust = i[1]
-
-    # For filters, if no x or y specified, apply filter to whole image
-    if len(i) <= 3: # number on the right should be equal to the index of y
-        i = [i[0], i[1], 0, 0, base_image.size[0], base_image.size[1]]
-    x = i[2]
-    y = i[3]
-
-    # If width/height specified, use those values.
-    # If neither is specified, use 16×16.
-    # If only width is specified, use that value for height too.
-    if len(i) == 4:
-        i += [16, 16]
-    width = i[4]
-    if len(i) == 5:
-        i += [width]
-    height = i[5]
-
-    region = base_image.crop((x, y, x+width, y+height))
-    for loop_x in range(width):
-        for loop_y in range(height):
-            hsla = rgba_to_hsla(region.getpixel((loop_x, loop_y)))
-            hsla[1] += adjust
-            format_hsla(hsla)
-            rgba = hsla_to_rgba(hsla)
-            region.putpixel((loop_x, loop_y), 
-                    (rgba[0], rgba[1], rgba[2], rgba[3]))
-    base_image.paste(region, (x, y, x+width, y+height))
-
-# filter.lightness,0<adjust: -100 to +100>,0[x],0[y],16[width],
-#   16[height] 
-# Adjusts the lightness (in HSLA color space). Positive adjust means 
-# lighter. Negative adjust means darker. -100 means all black, 
-# +100 means all white.
-def filter_lightness(i, base_image):
-    adjust = i[1]
-
-    # For filters, if no x or y specified, apply filter to whole image
-    if len(i) <= 3: # number on the right should be equal to the index of y
-        i = [i[0], i[1], 0, 0, base_image.size[0], base_image.size[1]]
-    x = i[2]
-    y = i[3]
-
-    # If width/height specified, use those values.
-    # If neither is specified, use 16×16.
-    # If only width is specified, use that value for height too.
-    if len(i) == 4:
-        i += [16, 16]
-    width = i[4]
-    if len(i) == 5:
-        i += [width]
-    height = i[5]
-
-    region = base_image.crop((x, y, x+width, y+height))
-    for loop_x in range(width):
-        for loop_y in range(height):
-            hsla = rgba_to_hsla(region.getpixel((loop_x, loop_y)))
-            hsla[2] += adjust
             format_hsla(hsla)
             rgba = hsla_to_rgba(hsla)
             region.putpixel((loop_x, loop_y), 
@@ -1536,6 +1518,9 @@ def contrast(i, base_image):
     for loop_x in range(width):
         for loop_y in range(height):
             rgba = region.getpixel((loop_x, loop_y))
+            # Skip fully transparent pixels
+            if rgba[3] == 0:
+                continue
 
             # Temporarily convert r/g/b
             new_r = (rgba[0] - 127.5)
@@ -1611,7 +1596,12 @@ def colorize(i: list, base_image: PIL.Image.Image):
     region = base_image.crop((x, y, x+width, y+height))
     for loop_x in range(width):
         for loop_y in range(height):
-            hsla = rgba_to_hsla(region.getpixel((loop_x, loop_y)))
+            rgba = region.getpixel((loop_x, loop_y))
+            # Skip fully transparent pixels
+            if rgba[3] == 0:
+                continue
+
+            hsla = rgba_to_hsla(rgba)
             # Set hue and saturation to the values given in the user’s command
             # (leave alpha alone)
             hsla[0] = h
@@ -1649,6 +1639,15 @@ def sepia(i, base_image):
     colorize(['colorize', 30, 25, 50, x, y, width, height], base_image)
 
 def threshold(i, base_image):
+    '''
+    threshold,128<minWhite: 0 to 256>,0[x],0[y],16[width],16[height]
+
+    Converts the image to 1-bit black & white based on a numeric lightness 
+    threshold, determined by grayscale (luma) value. Any number LESS THAN 
+    minWhite is black, any number GREATER or EQUAL is white. Set minWhite to 0 
+    to make everything white. Set minWhite to 256 to make everything black. 
+    Alpha levels for each pixel will be unchanged.
+    '''
     minWhite = i[1]
 
     # For filters, if no x or y specified, apply filter to whole image
@@ -1673,11 +1672,19 @@ def threshold(i, base_image):
     region = base_image.crop((x, y, x+width, y+height))
     for loop_x in range(width):
         for loop_y in range(height):
-            luma = region.getpixel((loop_x, loop_y)) # returns int (luma value)
+            rgba = region.getpixel((loop_x, loop_y))
+            # Skip fully transparent pixels
+            if rgba[3] == 0:
+                continue
+            # Otherwise, alpha will be preserved when filtering
+            # r/g/b will be the same because we converted the region to 
+            # grayscale earlier
+            luma = rgba[0]
+
             if luma < minWhite: # black
-                region.putpixel((loop_x, loop_y), 0)
+                region.putpixel((loop_x, loop_y), (0, 0, 0, rgba[3]))
             else: # white
-                region.putpixel((loop_x, loop_y), 255)
+                region.putpixel((loop_x, loop_y), (255, 255, 255, rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
 
 def selcolor(i: list, base_image: PIL.Image.Image):
@@ -1715,10 +1722,14 @@ def selcolor(i: list, base_image: PIL.Image.Image):
     height = i[8]
 
     region = base_image.crop((x, y, x+width, y+height))
-    new_data = [] # This is a **1-D** list because that's what putdata wants
-    for loop_y in range(height):
-        for loop_x in range(width):
-            hsla = rgba_to_hsla(region.getpixel((loop_x, loop_y)))
+    for loop_x in range(width):
+        for loop_y in range(height):
+            rgba = region.getpixel((loop_x, loop_y))
+            # Skip fully transparent pixels
+            if rgba[3] == 0:
+                continue
+            hsla = rgba_to_hsla(rgba)
+
             if (color == 'r' and (hsla[0] >= 330 or hsla < 30)) \
                     or (color == 'y' and (hsla[0] >= 30 and hsla[0] < 90)) \
                     or (color == 'g' and (hsla[0] >= 90 and hsla[0] < 150)) \
@@ -1728,10 +1739,12 @@ def selcolor(i: list, base_image: PIL.Image.Image):
                 hsla[0] += hueAdjust
                 hsla[1] += saturationAdjust
                 hsla[2] += lightnessAdjust
+
             format_hsla(hsla)
             rgba = hsla_to_rgba(hsla)
-            new_data.append((rgba[0], rgba[1], rgba[2], rgba[3]))
-    region.putdata(new_data)
+
+            region.putpixel((loop_x, loop_y), 
+                            (rgba[0], rgba[1], rgba[2], rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
 
 # Note: This command seems to be pretty slow. Any suggestions for improving
@@ -1787,10 +1800,12 @@ def twocolor(i: list, base_image: PIL.Image.Image):
         max_l = 2*l
 
     region = old_region.copy()
-    new_data = [] # This is a **1-D** list because that's what putdata wants
-    for loop_y in range(height):
-        for loop_x in range(width):
+    for loop_x in range(width):
+        for loop_y in range(height):
             rgba_gray = region.getpixel((loop_x, loop_y))
+            # Skip fully transparent pixels
+            if rgba_gray[3] == 0:
+                continue
 
             hsla = rgba_to_hsla(rgba_gray)
             # Set hue and saturation to the values given in the user’s command
@@ -1817,8 +1832,8 @@ def twocolor(i: list, base_image: PIL.Image.Image):
                 rgba_color[3]
             ]
 
-            new_data.append((rgba[0], rgba[1], rgba[2], rgba[3]))
-    region.putdata(new_data)
+            region.putpixel((loop_x, loop_y), 
+                            (rgba[0], rgba[1], rgba[2], rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
 
 ###########################################################################
@@ -1910,10 +1925,8 @@ def draw_rect(i: list):
     Draw a rectangle with the top left corner at the given x and y.
     (Alias: draw.rectangle)
     '''
-    try:
-        global draw_obj
-        draw_obj # Dummy call to force error if draw_obj doesn't exist
-    except:
+    global draw_obj
+    if draw_obj is None:
         # Initialize draw object if it doesn't exist yet
         draw_obj = PIL.ImageDraw.Draw(images['new'], 'RGBA')
 
@@ -1954,10 +1967,8 @@ def draw_ellipse(i: list):
 
     Draw an ellipse with the top left "corner" at the given x and y.
     '''
-    try:
-        global draw_obj
-        draw_obj # Dummy call to force error if draw_obj doesn't exist
-    except:
+    global draw_obj
+    if draw_obj is None:
         # Initialize draw object if it doesn't exist yet
         draw_obj = PIL.ImageDraw.Draw(images['new'], 'RGBA')
 
@@ -1999,10 +2010,8 @@ def draw_line(i: list):
     width/height system used for everything else. The example coordinates 
     would have a width and height of 17 pixels.
     '''
-    try:
-        global draw_obj
-        draw_obj # Dummy call to force error if draw_obj doesn't exist
-    except:
+    global draw_obj
+    if draw_obj is None:
         # Initialize draw object if it doesn't exist yet
         draw_obj = PIL.ImageDraw.Draw(images['new'], 'RGBA')
 
@@ -2120,22 +2129,22 @@ def arg_check(cmd: list, is_subcmd: bool):
     '''Check that a (sub)command has the right number of arguments.
     If it doesn't, log a warning and neutralize the command.'''
 
+    # This database no longer includes aliases! Those are listed separately.
     v7_cmd_min_args = {
         # blanks, headers, end, noop, and label are excluded from this database
         'exit': 0,
         'skip': 0,
-        # error excluded to display custom "unknown error" message
+        'error': 0,
         'warning': 1,
-        'use': 1,
+        'assert': 1,
+        # 'use': 1, # unnecessary in v7.2
 
         'goto': 1,
         'gosub': 1,
         'goback': 0,
-            'retsub': 0,
         'if1': 1,
         'if': 1,
         'elseif': 1,
-            'else_if': 1,
         'else': 0,
         'while': 1,
         'next': 0,
@@ -2144,20 +2153,25 @@ def arg_check(cmd: list, is_subcmd: bool):
         'foreach': 2,
 
         'set': 2,
-            ':=': 2,
         'const': 2,
         'change': 2,
 
+        'iadd': 2,
+        'isub': 2,
+        'imul': 2,
+        'itruediv': 2,
+        'ifloordiv': 2,
+        'imod': 2,
+        'ipow': 2,
+        'inc': 1,
+        'dec': 1,
+
         'copy': 0,
         'copyalt': 0, # this just calls copy now
-            'copy_alt': 0,
         'copyfrom': 1,
-            'copy_from': 1,
         'default': 0,
         'defaultfrom': 1,
-            'default_from': 1,
         'clear': 0,
-            'delete': 0, # deprecated in v6.0
         'duplicate': 4,
         'move': 4,
         'swap': 4,
@@ -2170,39 +2184,20 @@ def arg_check(cmd: list, is_subcmd: bool):
         'flip': 1,
 
         'grayscale': 0,
-            'filter.grayscale': 0,
         'invert': 0,
-            'filter.invert': 0,
         'rgbfilter': 3,
-            'colorfilter': 3,
-            'color_filter': 3,
-            'filter.rgb': 3,
         'opacity': 1,
-            'filter.opacity': 1,
         'filter.hue': 1,
-            'hue': 1, # deprecated in v7.0
         'filter.saturation': 1,
-            'saturation': 1, # deprecated in v7.0
         'filter.lightness': 1,
-            'lightness': 1, # deprecated in v7.0
         'filter.fill': 3, # deprecated in v7.2
-            'fill': 3, # deprecated in v7.0
         'contrast': 1,
-            'filter.contrast': 1,
         'colorize': 3,
-            'filter.colorize': 3,
         'sepia': 0,
-            'filter.sepia': 0,
         'threshold': 1,
-            'filter.threshold': 1,
         'hslfilter': 3,
-            'filter.hsl': 3,
         'selcolor': 4,
-            'filter.selcolor': 4,
         'twocolor': 3,
-            '2color': 3,
-            'filter.twocolor': 3,
-            'filter.2color': 3,
 
         'list.add': 2,
         'list.addall': 2,
@@ -2212,7 +2207,6 @@ def arg_check(cmd: list, is_subcmd: bool):
         'list.replace': 3,
 
         'draw.rect': 4,
-            'draw.rectangle': 4,
         'draw.ellipse': 4,
         'draw.line': 4,
         'draw.fillcolor': 1,
@@ -2223,60 +2217,31 @@ def arg_check(cmd: list, is_subcmd: bool):
     v7_subcmd_min_args = {
         'empty': 2,
         'len': 1,
-            'length': 1,
 
         'eq': 2,
-            '=': 2,
-            '==': 2,
         'ne': 2,
-            '≠': 2,
-            '!=': 2,
-            '<>': 2,
         'lt': 2,
-            '<': 2,
         'gt': 2,
-            '>': 2,
         'le': 2,
-            '≤': 2,
-            '<=': 2,
         'ge': 2,
-            '≥': 2,
-            '>=': 2,
         'cmp': 2,
-            '<=>': 2,
 
         'or': 2,
-            '||': 2,
         'and': 2,
-            '&&': 2,
         'not': 1,
-            '!': 1,
+        'xor': 2,
 
         'add': 2,
-            '+': 2,
         'sub': 1, # different from other math operators because of unary syntax
-            '-': 1, # hyphen
-            '–': 1, # en dash
-            '−': 1, # minus sign
         'mul': 2,
-            '*': 2,
-            '×': 2,
         'truediv': 2,
-            '/': 2,
-            '÷': 2,
         'floordiv': 2,
-            'div': 2,
-            '//': 2,
         'mod': 2,
-            '%': 2,
         'pow': 2,
-            '^': 2,
-            '**': 2,
 
         'abs': 1,
         'floor': 1,
         'ceil': 1,
-            'ceiling': 1,
         'min': 1,
         'max': 1,
         'round': 1,
@@ -2289,12 +2254,9 @@ def arg_check(cmd: list, is_subcmd: bool):
         'sort': 1,
         'reverse': 1,
 
-        'str_mul': 2,
-            'str*': 2,
+        'str_mul': 2, # DEPRECATED since 7.2
         'upper': 1,
-            'uppercase': 1,
         'lower': 1,
-            'lowercase': 1,
         'startswith': 2,
         'endswith': 2,
         'join': 1,
@@ -2306,18 +2268,12 @@ def arg_check(cmd: list, is_subcmd: bool):
         'int': 1,
         'float': 1,
         'str': 1,
-            'string': 1,
-            'str_add': 1,
-            'str+': 1,
         'bool': 1,
-            'boolean': 1,
         'type': 1,
 
         'color': 1,
-        'rgb': 3,
-            'rgba': 3,
-        'hsl': 3,
-            'hsla': 3,
+        'rgba': 3,
+        'hsla': 3,
 
         'red': 1,
         'green': 1,
@@ -2354,6 +2310,28 @@ def arg_check(cmd: list, is_subcmd: bool):
         return
     # If we make it down here, the command passed the check.
 
+def parse_subcmd(raw_cmd: str):
+    '''Strip whitespace and opening/closing parentheses from a subcommand.'''
+
+    # COPY raw_cmd to prevent issues caused by overwriting data
+    # First strip whitespace
+    cmd_str = raw_cmd.strip()
+    # Then check for parens at start and end
+    # removeprefix would be nice here but that's only in Py3.9
+    if len(cmd_str) >= 2 and cmd_str[0] == '(' and cmd_str[-1] == ')':
+        # ...and remove them if they're there
+        cmd_str = cmd_str[1:-1]
+    else:
+        # Otherwise, there's something wrong with the input
+        return None
+    
+    # Parse the line to separate out the arguments
+    cmd = parse_line(cmd_str)
+    # Replace command aliases (in place)
+    alias(cmd, is_subcmd=True)
+
+    return cmd
+
 def subcmd(raw_cmd: abc.Sequence):
     '''
     Evaluate a subcommand embedded in parentheses, e.g. (empty,0,0,16,16).
@@ -2364,27 +2342,20 @@ def subcmd(raw_cmd: abc.Sequence):
         # If we're here, the command is passed in as a string something like 
         # "(empty,0,0,16,16)". We want to get rid of the parens at the
         # start and end (but keep any that are inside).
-
-        # First strip whitespace
-        raw_cmd = raw_cmd.strip()
-        # Then check for parens at start and end
-        # removeprefix would be nice here but that's only in Py3.9
-        if len(raw_cmd) >= 2 and raw_cmd[0] == '(' and raw_cmd[-1] == ')':
-            # ...and remove them if they're there
-            raw_cmd = raw_cmd[1:-1]
-        else:
-            # Otherwise, there's something wrong with the subcommand
+        cmd = parse_subcmd(raw_cmd)
+        if cmd is None:
+            # If None is returned, raw_cmd must be invalid
+            # This *shouldn't* happen, but I'll plan for it just in case
             log_warning('Invalid subcommand: %s' % raw_cmd)
             return None
-
-        # Parse the line to separate out the arguments
-        cmd = parse_line(raw_cmd)
     elif type(raw_cmd) == list:
         # This doesn't happen in normal parsing, but some advanced commands
         # (like change) build a subcommand in list form,
         # then pass it directly to this function. In this case,
         # our job is easy.
-        cmd = raw_cmd
+        cmd = raw_cmd.copy()
+        # Replace command aliases (in place)
+        alias(cmd, is_subcmd=True)
     else:
         # If we don't get a list or str... we have no idea what to do.
         return None
@@ -2402,9 +2373,20 @@ def subcmd(raw_cmd: abc.Sequence):
     subst_all_vars(cmd)
 
     # Now that we've broken the command into the normal list format,
-    # we need to check each argument of the command for parentheses and
+    # we need to check each argument of the command for subcommands and
     # recursively call this function as needed.
     if version_gte(6):
+        # Call short-circuiting commands BEFORE recursively calling subcmd().
+        # These commands will call subcmd() from within their own functions.
+        if cmd[0] == 'or':
+            result = logic_or(cmd)
+        elif cmd[0] == 'and':
+            result = logic_and(cmd)
+        elif cmd[0] == 'iif':
+            result = iif(cmd)
+
+        # For all other subcommands, loop thru arguments, and if there are
+        # any unevaluated subcommands, call subcmd() on them.
         for arg_n in range(1, len(cmd)):
             if type(cmd[arg_n]) == Subcommand:
                 # Execute the command INSIDE the parens FIRST
@@ -2414,53 +2396,56 @@ def subcmd(raw_cmd: abc.Sequence):
         log_warning('Nested subcommands are only supported in v6.0.0 and later')
 
     # Main dictionary of subcommands (except noops)
+    # No aliases included because those are already accounted for above
     if cmd[0] == 'empty':
         result = empty(cmd, images['old'])
-    elif cmd[0] in ('len', 'length'):
-        result = len_(cmd)
+    elif cmd[0] == 'len':
+        result = len(cmd[1])
 
-    elif cmd[0] in ('eq', '=', '=='):
+    elif cmd[0] == 'eq':
         result = eq(cmd)
-    elif cmd[0] in ('ne', '≠', '!=', '<>'):
+    elif cmd[0] == 'ne':
         result = ne(cmd)
-    elif cmd[0] in ('lt', '<'):
+    elif cmd[0] == 'lt':
         result = lt(cmd)
-    elif cmd[0] in ('gt', '>'):
+    elif cmd[0] == 'gt':
         result = gt(cmd)
-    elif cmd[0] in ('le', '≤', '<='):
+    elif cmd[0] == 'le':
         result = le(cmd)
-    elif cmd[0] in ('ge', '≥', '>='):
+    elif cmd[0] == 'ge':
         result = ge(cmd)
-    elif cmd[0] in ('cmp', '<=>'):
-        result = cmp_command(cmd)
+    elif cmd[0] == 'cmp':
+        result = cmp(cmd[0], cmd[1])
 
-    elif cmd[0] in ('or', '||'):
-        result = logic_or(cmd)
-    elif cmd[0] in ('and', '&&'):
-        result = logic_and(cmd)
-    elif cmd[0] in ('not', '!'):
-        result = logic_not(cmd)
+    elif cmd[0] in ['or', 'and']:
+        # These commands are already handled above but we need to check for 
+        # them here too so we don't get false invalid-command errors
+        pass
+    elif cmd[0] == 'not':
+        result = not cmd[1]
+    elif cmd[0] == 'xor':
+        result = (bool(cmd[1]) != bool(cmd[2]))
 
-    elif cmd[0] in ('add', '+'):
+    elif cmd[0] == 'add':
         result = add(cmd)
-    elif cmd[0] in ('sub', '-', '–', '−'):
+    elif cmd[0] == 'sub':
         result = sub(cmd)
-    elif cmd[0] in ('mul', '*', '×'):
+    elif cmd[0] == 'mul':
         result = mul(cmd)
-    elif cmd[0] in ('div', 'floordiv', '//'):
+    elif cmd[0] == 'floordiv':
         result = floordiv(cmd)
-    elif cmd[0] in ('truediv', '/', '÷'):
+    elif cmd[0] == 'truediv':
         result = truediv(cmd)
-    elif cmd[0] in ('mod', '%'):
+    elif cmd[0] == 'mod':
         result = mod(cmd)
-    elif cmd[0] in ('pow', '^', '**'):
+    elif cmd[0] == 'pow':
         result = pow_(cmd)
     elif cmd[0] == 'abs':
-        result = abs_(cmd)
+        result = abs(cmd[1])
     elif cmd[0] == 'floor':
-        result = floor(cmd)
-    elif cmd[0] in ('ceil', 'ceiling'):
-        result = ceil(cmd)
+        result = math.floor(cmd[1])
+    elif cmd[0] in 'ceil':
+        result = math.ceil(cmd[1])
     elif cmd[0] == 'min':
         result = min_(cmd)
     elif cmd[0] == 'max':
@@ -2473,24 +2458,24 @@ def subcmd(raw_cmd: abc.Sequence):
     elif cmd[0] == 'slice':
         result = slice_(cmd)
     elif cmd[0] == 'in':
-        result = in_(cmd)
+        result = cmd[2] in cmd[1]
     elif cmd[0] == 'find':
         result = find(cmd)
     elif cmd[0] == 'count':
         result = py_method(cmd[0:3], 'count') # args: var + 1 extra
     elif cmd[0] == 'sort':
-        result = sort(cmd)
+        result = sorted(cmd[1])
     elif cmd[0] == 'reverse':
-        result = reverse(cmd)
+        result = reversed(cmd[1])
 
-    elif cmd[0] in ('str_mul', 'str*'):
+    elif cmd[0] == 'str_mul':
         if version_gte(7,2):
             log_warning(f'{cmd[0]} is a deprecated command; please use * for \
 string repetition instead')
-        result = str_mul(cmd)
-    elif cmd[0] in ('upper', 'uppercase'):
+        result = str(cmd[1]) * cmd[2]
+    elif cmd[0] == 'upper':
         result = py_method(cmd[0:2], 'upper') # args: var + 0 extra
-    elif cmd[0] in ('lower', 'lowercase'):
+    elif cmd[0] == 'lower':
         result = py_method(cmd[0:2], 'lower') # args: var + 0 extra
     elif cmd[0] == 'startswith':
         result = py_method(cmd[0:3], 'startswith') # args: var + 1 extra
@@ -2502,7 +2487,7 @@ string repetition instead')
         result = split(cmd)
 
     elif cmd[0] == 'list':
-        result = list_(cmd)
+        result = cmd[1:]
     elif cmd[0] == 'range':
         result = range_(cmd)
 
@@ -2510,23 +2495,18 @@ string repetition instead')
         result = int_(cmd)
     elif cmd[0] == 'float':
         result = float_(cmd)
-    elif cmd[0] in ('str', 'string'):
+    elif cmd[0] == 'str':
         result = str_(cmd)
-    elif cmd[0] in ('str_add', 'str+'):
-        if version_gte(7,2):
-            log_warning(f'{cmd[0]} is a deprecated alias; \
-please use “str” instead')
-        result = str_(cmd)
-    elif cmd[0] in ('bool', 'boolean'):
+    elif cmd[0] == 'bool':
         result = bool_(cmd)
     elif cmd[0] == 'type':
         result = type_(cmd)
 
-    elif cmd[0] in 'color':
+    elif cmd[0] == 'color':
         result = color_(cmd)
-    elif cmd[0] in ('rgb', 'rgba'):
+    elif cmd[0] == 'rgba':
         result = rgb(cmd)
-    elif cmd[0] in ('hsl', 'hsla'):
+    elif cmd[0] == 'hsla':
         result = hsl(cmd)
 
     # Before version 7, red/green/blue/alpha checked the new image.
@@ -2620,16 +2600,33 @@ Defaulting to “old”.')
     # If we make it here, it's empty, return True
     return True
 
-def len_(i: list):
+def iif(i: list):
     '''
-    (len,"thing"<data>)
+    (iif,<cond>,<ifTrue>,<ifFalse>) 
     
-    Length of any variable or literal. Most useful for strings and lists. 
-    Calls the python function of the same name. (Alias: length)
+    Inline if, as found in functional programming. Returns `ifTrue` if 
+    `cond` evaluates to true, and `ifFalse` if `cond` evaluates to false. 
+    Uses short-circuiting so only one of the value branches will be evaluated.
     '''
-    
-    # len only takes 1 argument; the rest will be ignored.
-    return len(i[1])
+
+    cond = i[1]
+    ifTrue = i[2]
+    ifFalse = i[3]
+
+    if isinstance(cond, Subcommand):
+        cond = subcmd(cond.content)
+    cond_result = bool(cond)
+
+    if cond_result:
+        if isinstance(ifTrue, Subcommand):
+            return subcmd(ifTrue.content)
+        else:
+            return ifTrue
+    else:
+        if isinstance(ifFalse, Subcommand):
+            return subcmd(ifFalse.content)
+        else:
+            return ifFalse
 
 # EQUALITY SUBCOMMANDS
 
@@ -2663,13 +2660,13 @@ def lt(i: list):
     if len(i) == 3: # If 2 arguments
         try:
             return i[1] < i[2]
-        except: # if e.g. invalid type match
+        except Exception: # if e.g. invalid type match
             log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return (i[1] < i[2]) and lt([i[0]] + i[2:])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
         return None
 
@@ -2681,13 +2678,13 @@ def gt(i: list):
     if len(i) == 3: # If 2 arguments
         try:
             return i[1] > i[2]
-        except: # if e.g. invalid type match
+        except Exception: # if e.g. invalid type match
             log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return (i[1] > i[2]) and gt([i[0]] + i[2:])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
         return None
 
@@ -2699,13 +2696,13 @@ def le(i: list):
     if len(i) == 3: # If 2 arguments
         try:
             return i[1] <= i[2]
-        except: # if e.g. invalid type match
+        except Exception: # if e.g. invalid type match
             log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return (i[1] <= i[2]) and le([i[0]] + i[2:])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
         return None
 
@@ -2717,25 +2714,15 @@ def ge(i: list):
     if len(i) == 3: # If 2 arguments
         try:
             return i[1] >= i[2]
-        except: # if e.g. invalid type match
+        except Exception: # if e.g. invalid type match
             log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return (i[1] >= i[2]) and ge([i[0]] + i[2:])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t compare {i[1]} and {i[2]}')
         return None
-    
-def cmp_command(i: list):
-    '''
-    (<=>,x1,x2)
-    
-    Three-way comparison ("spaceship") operator. 
-    If x1<x2, return -1. If x1=x2, return 0. If x1>x2, return 1. 
-    To check the sign of a number, use: (<=>,x,0) (Alias: cmp)
-    '''
-    return cmp(i[0], i[1])
 
 # END EQUALITY SUBCOMMANDS
 
@@ -2746,9 +2733,13 @@ def logic_or(i: list):
     Logical OR (or, ||)
     '''
 
-    short_circuit = False
-    for x in i[1:]:
-        short_circuit = bool(short_circuit or x)
+    short_circuit : bool = False
+    for arg in i[1:]:
+        if type(arg) == Subcommand:
+            # Execute subcommands one at a time, then check short-circuiting
+            arg_result = subcmd(arg.content)
+
+        short_circuit = bool(short_circuit or arg_result)
         if short_circuit == True:
             return True
     # If we make it to the end and none of the arguments were true (so we
@@ -2760,22 +2751,18 @@ def logic_and(i: list):
     Logical AND (and, &&)
     '''
 
-    short_circuit = True
-    for x in i[1:]:
-        short_circuit = bool(short_circuit and x)
+    short_circuit : bool = True
+    for arg in i[1:]:
+        if type(arg) == Subcommand:
+            # Execute subcommands one at a time, then check short-circuiting
+            arg_result = subcmd(arg.content)
+
+        short_circuit = bool(short_circuit and arg_result)
         if short_circuit == False:
             return False
-    # If we make it to the end and none of the arguments were true (so we
-    # didn't short-circuit), result must be False
+    # If we make it to the end and all of the arguments were true (so we
+    # didn't short-circuit), result must be True
     return True
-
-def logic_not(i: list):
-    '''
-    Logical NOT (not, !)
-    '''
-    
-    # NOT only takes 1 argument; the rest will be ignored.
-    return not i[1]
 
 # END LOGICAL SUBCOMMANDS
 
@@ -2794,13 +2781,13 @@ def add(i: list):
     if len(i) == 3: # If 2 arguments
         try:
             return i[1] + i[2]
-        except:
+        except Exception:
             log_warning(f'{i[0]}: couldn’t add {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return i[1] + add([i[0]] + i[2:])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t add {i[1]} and {i[2]}')
         return None
 
@@ -2823,19 +2810,19 @@ def sub(i: list):
     if len(i) == 2: # If 1 argument, make it a unary minus (opposite)
         try:
             return -i[1]
-        except:
+        except Exception:
             log_warning(f'{i[0]}: couldn’t negate {i[1]}')
             return None
     elif len(i) == 3: # If 2 arguments
         try:
             return i[1] - i[2]
-        except:
+        except Exception:
             log_warning(f'{i[0]}: couldn’t subtract {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return i[1] - sub([i[0]] + i[2:])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t subtract {i[1]} and {i[2]}')
         return None
 
@@ -2850,13 +2837,13 @@ def mul(i: list):
     if len(i) == 3: # If 2 arguments
         try:
             return i[1] * i[2]
-        except:
+        except Exception:
             log_warning(f'{i[0]}: couldn’t multiply {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return i[1] * mul([i[0]] + i[2:])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t multiply {i[1]} and {i[2]}')
         return None
 
@@ -2873,13 +2860,13 @@ def truediv(i: list):
     if len(i) == 3: # If 2 arguments
         try:
             return i[1] / i[2]
-        except:
+        except Exception:
             log_warning(f'{i[0]}: couldn’t divide {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return i[1] / truediv([i[0]] + i[2:])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t divide {i[1]} and {i[2]}')
         return None
 
@@ -2896,14 +2883,14 @@ def floordiv(i: list):
     if len(i) == 3: # If 2 arguments
         try:
             return i[1] // i[2]
-        except:
+        except Exception:
             log_warning(f'{i[0]}: couldn’t get integer division of \
 {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return i[1] // floordiv([i[0]] + i[2:])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t get integer division of \
 {i[1]} and {i[2]}')
         return None
@@ -2920,13 +2907,13 @@ def mod(i: list):
     if len(i) == 3: # If 2 arguments
         try:
             return i[1] % i[2]
-        except:
+        except Exception:
             log_warning(f'{i[0]}: couldn’t get modulo of {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return i[1] % mod([i[0]] + i[2:])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t get modulo of {i[1]} and {i[2]}')
         return None
 
@@ -2943,36 +2930,15 @@ def pow_(i: list):
     if len(i) == 3: # If 2 arguments
         try:
             return i[1] ** i[2]
-        except:
+        except Exception:
             log_warning(f'{i[0]}: couldn’t exponentiate {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return i[1] ** pow_([i[0]] + i[2:])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t exponentiate {i[1]} and {i[2]}')
         return None
-
-def abs_(i: list):
-    '''
-    Return the absolute value of a number. (If it's negative, make it positive;
-    if it's positive, do nothing.)
-    '''
-    return abs(i[1])
-
-def floor(i: list):
-    '''
-    Return the floor of a number (the closest int that’s less than or equal to 
-    the number).
-    '''
-    return math.floor(i[1])
-
-def ceil(i: list):
-    '''
-    Return the ceiling of a number (the closest int that’s greater than or 
-    equal to the number).
-    '''
-    return math.ceil(i[1])
 
 def min_(i: list):
     '''
@@ -3067,7 +3033,7 @@ def slice_(i: list):
 
     if len(i) == 2:
         seq.append(None)
-    stop : Union[int, None] = i[2]
+    stop : Optional[int] = i[2]
     if not isinstance(stop, int):
         stop = None
 
@@ -3094,14 +3060,6 @@ def slice_(i: list):
     else:
         return seq[start:stop:step]
 
-def in_(i: list):
-    '''
-    (in,"Hello"<seq>,"l"<sub>)
-    
-    Return $_true if `sub` is a member of `seq`, and $_false otherwise.
-    '''
-    return i[2] in i[1]
-
 def find(i: list):
     '''
     (find,"Hello"<seq>,"l"<item>,0[start],()[stop])
@@ -3110,7 +3068,7 @@ def find(i: list):
     list/string `seq`. Return -1 if `item` couldn't be found anywhere in `seq`.
     Use `start` and `stop` arguments to only search a subset of the sequence.
     '''
-    seq : Union(list, str) = i[1]
+    seq : abc.Sequence = i[1]
     item : any = i[2]
     start : int = i[3]
     stop : int = i[4]
@@ -3121,43 +3079,10 @@ def find(i: list):
         return seq.find(item, start)
     else: # minimum 2 args (len==3)
         return seq.find(item)
-    
-def sort(i: list):
-    '''
-    (sort,$s<seq>)
-    
-    Returns a sorted version of list l, in ascending order according to 
-    Python's built-in Timsort algorithm. The value of the variable you pass in 
-    is not changed.
-
-    Unlike Python, I only have one command for reversing and one command for 
-    sorting, because two felt like overkill, and I thought it was better to 
-    keep the one that also worked with strings.
-    '''
-    return sorted(i[1])
-
-def reverse(i: list):
-    '''
-    (reverse,$s<seq>)
-    
-    Returns a reversed version of the list/string, so that the first item/char 
-    and the last item/char are swapped, the second and second-to-last are 
-    swapped, and so on. The contents of the variable you pass in is not changed.
-    '''
-    return reversed(i[1])
 
 # END SEQUENCE SUBCOMMANDS
 
 # LIST SUBCOMMANDS
-
-def list_(i: list):
-    '''
-    (list,x1,x2,x3,...) 
-    
-    Creates an editable, variable-length list with the given items.
-    '''
-    # No minimum number of arguments. No arguments = empty list
-    return i[1:]
 
 def range_(i: list):
     '''
@@ -3212,18 +3137,6 @@ def range_(i: list):
 
 # STRING SUBCOMMANDS
 
-def str_mul(i: list):
-    '''
-    DEPRECATED: Add two or more strings (str_mul, str*)
-    '''
-
-    # Max 2 arguments, unlike str_add — unclear what the add'l args would be
-    try:
-        return str(i[1]) * i[2]
-    except:
-        log_warning(f'{i[0]}: couldn’t repeat {i[1]}, {i[2]} times')
-        return None
-
 def join(i: list):
     '''
     (join,(list,"Hello","World")<strList>,""[sep]) 
@@ -3248,14 +3161,14 @@ def split(i: list):
     (i.e. the length of the resulting list will always be ≤ (maxSplit+1)); 
     the default value -1 means no limit.
     '''
-    str_ : str = i[1]
+    string : str = i[1]
     if len(i) == 2:
         i.append('')
     sep : str = i[2]
     if len(i) == 3:
         i.append(-1)
     maxSplit : int = i[3]
-    return str_.split(sep, maxSplit)
+    return string.split(sep, maxSplit)
 
 # END STRING SUBCOMMANDS
 
@@ -3281,7 +3194,7 @@ def int_(i: list):
             return int(i[1], i[2])
         else:
             return int(i[1])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t convert {i[1]} to int type')
         return 0
 
@@ -3294,7 +3207,7 @@ def float_(i: list):
 
     try:
         return float(i[1])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t convert {i[1]} to float type')
         return 0.0
 
@@ -3318,20 +3231,20 @@ def str_(i: list):
     if len(i) == 2: # If 1 argument
         try:
             return str(i[1])
-        except:
+        except Exception:
             log_warning(f'{i[0]}: couldn’t convert {i[1]} to str type')
             return ''
     # Everything below this line was previously part of str+
     elif len(i) == 3: # If 2 arguments
         try:
             return str(i[1]) + str(i[2])
-        except:
+        except Exception:
             log_warning(f'{i[0]}: couldn’t concatenate {i[1]} and {i[2]}')
             return None
     # But if there are 3 or more arguments (x1, x2, x3)...
     try:
         return str(i[1]) + str_([i[0]] + i[2:])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t concatenate {i[1]} and {i[2]}')
         return None
 
@@ -3344,7 +3257,7 @@ def bool_(i: list):
 
     try:
         return bool(i[1])
-    except:
+    except Exception:
         log_warning(f'{i[0]}: couldn’t convert {i[1]} to bool type')
         return False
 
@@ -3940,8 +3853,9 @@ def cls():
 # Displays a dialog box with one or more buttons to the user. Holds until the
 # user clicks a button. Returns the name of the button clicked.
 # icon is one of: info, question, warning, error, done, bomb
-def button_dialog(title:str, message:abc.Sequence,
-                  buttons=['Cancel', 'Okay'], *, icon:str=None):
+def button_dialog(title:str, message:Union[str, list],
+                  buttons:Tuple[str]=('Cancel', 'Okay'), *, 
+                  icon:Optional[str]=None):
     cls()
 
     button_clicked = None
@@ -4020,7 +3934,7 @@ def button_dialog(title:str, message:abc.Sequence,
 # Otherwise, if the user clicks the left/Cancel button, return False.
 def bool_dialog(title:str, message:abc.Sequence,
                   button1='Cancel', button2='Okay', *, 
-                  icon:Union[str, None]=None):
+                  icon:Optional[str]=None):
     button_name = button_dialog(title, message, [button1, button2], icon=icon)
     if button_name == button2:
         return True
@@ -4030,7 +3944,7 @@ def bool_dialog(title:str, message:abc.Sequence,
 # yn_dialog is like bool_dialog but the buttons' return values are reversed.
 # The left/Yes button returns True, and the right/No button returns false.
 def yn_dialog(title:str, message:abc.Sequence,
-                  button1='Yes', button2='No', *, icon:Union[str, None]=None):
+                  button1='Yes', button2='No', *, icon:Optional[str]=None):
     button_name = button_dialog(title, message, [button1, button2], icon=icon)
     if button_name == button1:
         return True
@@ -4039,7 +3953,7 @@ def yn_dialog(title:str, message:abc.Sequence,
 
 # Single-button dialog. Returns None.
 def simple_dialog(title:str, message:abc.Sequence, 
-                  button='Okay', *, icon:Union[str, None]=None):
+                  button='Okay', *, icon:Optional[str]=None):
     button_dialog(title, message, [button], icon=icon)
 
 def the_W():
@@ -4048,9 +3962,11 @@ def the_W():
                   'Clear cache', icon='info')
     menu()
 
-def log_warning(w):
-    if w not in warnings:
-        warnings.append(w)
+def log_warning(warn:str):
+    ln = variables['$_linenumber']
+    warn_with_ln = f'[Line {ln}] {warn}'
+    if warn_with_ln not in warnings:
+        warnings.append(warn_with_ln)
 
 def menu_p1():
     cls()
@@ -4164,7 +4080,7 @@ def menu():
     menu_btns_p2[4].bind('<ButtonRelease-1>', 
             lambda _: the_W())
     menu_btns_p2[5].bind('<ButtonRelease-1>', 
-            lambda _: new_multi())
+            lambda _: new_multi_event())
     menu_btns_p2[6].bind('<ButtonRelease-1>', 
             lambda _: install_assets())
 
@@ -4205,9 +4121,9 @@ icon='warning')
     # Go back to the menu at the end
     menu()
 
-# SPECIAL EVENT HANDLER for new multi-file conversion
-def new_multi():
-    confirm1 = bool_dialog('Multi-File Conversion - Step 1: Select Script', 
+# SPECIAL EVENT HANDLER for new batch conversion
+def new_multi_event():
+    confirm1 = bool_dialog('Batch Conversion - Step 1: Select Script', 
 ['Want to convert an entire folder of images? You’ve come to the right place!',
  'First, you’ll need to select the script file you want to run.'], 
             'Cancel', 'Continue', icon='info')
@@ -4215,7 +4131,7 @@ def new_multi():
         open_result = open_script()
         if open_result:
             confirm2 = bool_dialog(\
-'Multi-File Conversion - Step 2: Select Folder',
+'Batch Conversion - Step 2: Select Folder',
 ['Next, you’ll need to select your source folder.',
 'All images in this folder will be converted.',
 'The converted images will be saved in a subfolder of the folder you select.'],
@@ -4245,9 +4161,156 @@ icon='warning')
     # else
     menu()
 
+def alias(cmd: list, is_subcmd: bool):
+    ''' 
+    Takes in a command (in list form). If the command name is in the alias
+    database, change it to the standard name (e.g. else_if to elseif, 
+    ceiling to ceil, < to lt)
+
+    Changes the command in place and returns nothing.
+
+    This only covers pure command aliases, i.e. where the only difference
+    is the name. It doesn't cover e.g. copyAlt now being equivalent to 
+    copyFrom,alt under the hood.
+    ''' 
+
+    # So we only have to check length once
+    if len(cmd) < 1:
+        return
+
+    v7_cmd_aliases = {
+            'retsub': 'goback',
+            'else_if': 'elseif',
+            ':=': 'set',
+
+            '+=': 'iadd',
+            '-=': 'isub', # hyphen
+            '–=': 'isub', # en dash
+            '−=': 'isub', # minus sign
+            '*=': 'imul',
+            '×=': 'imul',
+            '/=': 'itruediv',
+            '÷=': 'itruediv',
+            '//=': 'ifloordiv',
+            '÷÷=': 'ifloordiv',
+            '%=': 'imod',
+            '^=': 'ipow',
+            '**=': 'ipow',
+            '××=': 'ipow',
+
+            '++': 'inc',
+            '--': 'dec', # hyphen
+            '––': 'dec', # en dash
+            '−−': 'dec', # minus sign
+
+            'copy_alt': 'copyalt',
+            'copy_from': 'copyfrom',
+            'default_from': 'defaultfrom',
+            'delete': 'clear', # deprecated in v6.0
+            
+            'filter.grayscale': 'grayscale',
+            'filter.invert': 'invert',
+            'colorfilter': 'rgbfilter',
+            'color_filter': 'rgbfilter',
+            'filter.rgb': 'rgbfilter',
+            'filter.opacity': 'opacity',
+            'filter.contrast': 'contrast',
+            'filter.colorize': 'colorize',
+            'filter.sepia': 'sepia',
+            'filter.threshold': 'threshold',
+            'filter.hsl': 'hslfilter',
+            'filter.selcolor': 'selcolor',
+            '2color': 'twocolor',
+            'filter.twocolor': 'twocolor',
+            'filter.2color': 'twocolor',
+
+            'hue': 'filter.hue', # deprecated in v7.0
+            'saturation': 'filter.saturation', # deprecated in v7.0
+            'lightness': 'filter.lightness', # deprecated in v7.0
+            'fill': 'filter.fill', # deprecated in v7.0
+
+            'draw.rectangle': 'draw.rect',
+    }
+
+    v7_subcmd_aliases = {
+            'length': 'len',
+
+            '=': 'eq',
+            '==': 'eq',
+            '≠': 'ne',
+            '!=': 'ne',
+            '<>': 'ne',
+            '<': 'lt',
+            '>': 'gt',
+            '≤': 'le',
+            '<=': 'le',
+            '≥': 'ge',
+            '>=': 'ge',
+            '<=>': 'cmp',
+
+            '||': 'or',
+            '&&': 'and',
+            '!': 'not',
+
+            '+': 'add',
+            '-': 'sub', # hyphen
+            '–': 'sub', # en dash
+            '−': 'sub', # minus sign
+            '*': 'mul',
+            '×': 'mul',
+            '/': 'truediv',
+            '÷': 'truediv',
+            'div': 'floordiv',
+            '//': 'floordiv',
+            '÷÷': 'floordiv',
+            '%': 'mod',
+            '^': 'pow',
+            '**': 'pow',
+            '××': 'pow',
+
+            'ceiling': 'ceil',
+
+            'str*': 'str_mul',
+            'uppercase': 'upper',
+            'lowercase': 'lower',
+            
+            'string': 'str',
+            'str_add': 'str',
+            'str+': 'str',
+            'boolean': 'bool',
+            
+            'rgb': 'rgba',
+            'hsl': 'hsla',
+    }
+
+    if is_subcmd and cmd[0] in v7_subcmd_aliases:
+        new_name = v7_subcmd_aliases[cmd[0]]
+
+        # Warn about deprecated aliases
+        if version_gte(7,2) and cmd[0] in ('str_add', 'str+'):
+            log_warning(\
+                f'{cmd[0]}: Deprecated alias; please use {new_name} instead')
+            
+        cmd[0] = new_name
+    elif (not is_subcmd) and cmd[0] in v7_cmd_aliases:
+        new_name = v7_cmd_aliases[cmd[0]]
+
+        # Warn about deprecated aliases
+        if version_gte(6) and cmd[0] == 'delete':
+            log_warning(\
+                f'{cmd[0]}: Deprecated alias; please use {new_name} instead')
+        if version_gte(7) and cmd[0] in ('hue', 'saturation', 
+                                         'lightness', 'fill'):
+            log_warning(\
+                f'{cmd[0]}: Deprecated alias; please use {new_name} instead')
+
+        cmd[0] = new_name
+    # Not an alias -> no change
+    # Command is changed in place — no list return needed
+
 # Takes 1 script line (in string format) and converts it to a program-readable
 # list. Account for comments, nesting, etc.
-def parse_line(line: str):
+def parse_line(line: str) -> list:
     # Strip whitespace from start and end of line
     line = line.lstrip().rstrip()
 
@@ -4262,10 +4325,19 @@ def parse_line(line: str):
     # quoted, so there's no need for the concept.
 
     # Split line on commas
-    output = ['']
+    output : list = ['']
     paren_depth = 0 # 0 = not inside parens, 1 = "(", 2 = "((" and so on
     in_string = False # True if inside double quotes
+    in_comment = False # True if inside /* multiline comment */
     for index, char in enumerate(line):
+        if in_comment:
+            if char == '/' and index >= 1 and line[index-1] == '*':
+                # End of multiline comment -- Syntax: */
+                in_comment = False
+            # Else, still in comment, continue ignoring everything
+            # Even if we're leaving the comment, don't want to read last "/"
+            continue
+
         if not space_sep and char == ',' and paren_depth == 0 \
                 and not in_string and \
                 (len(output) == 1 or output[0] not in no_split_cmds):
@@ -4284,15 +4356,21 @@ def parse_line(line: str):
             # When a '#' character is reached, treat the rest of the line as a
             # comment and don't parse it, except if inside a string.
             break
+        elif char == '/' and index+1 < len(line) and \
+                line[index+1] == '*' and not in_string and version_gte(7,2,1):
+            # Start of multiline comment -- Syntax: /*
+            continue
         elif char == '\\' and in_string and \
                 (index == 0 or line[index-1] != '\\') and version_gte(6):
             # Version 6.0.0 and later only:
             # Ignore backslashes unless there's two in a row
             pass
-        elif char == 'n' and index >= 1 and line[index-1] == '\\': 
+        elif char == 'n' and in_string and \
+                index >= 1 and line[index-1] == '\\': 
             # \n -> newline
             output[-1] += '\n'
-        elif char == 't' and index >= 1 and line[index-1] == '\\': 
+        elif char == 't' and in_string and \
+                index >= 1 and line[index-1] == '\\': 
             # \t -> tab
             output[-1] += '\t'
         else: # All other characters get parsed normally
@@ -4354,7 +4432,12 @@ Syntax error: Line ended before string did. Skipping line: {line}')
         # Separate out subcommands
         elif version_gte(4,1) and output[arg_n].startswith('(') \
                 and output[arg_n].endswith(')'):
-            output[arg_n] = Subcommand(output[arg_n])
+            cmd = parse_subcmd(output[arg_n])
+            if cmd is None:
+                log_warning(f'Invalid subcommand: {output[arg_n]}')
+                output[arg_n] = None
+            else:
+                output[arg_n] = Subcommand(cmd)
         # In certain positions, variable strings should be turned into
         # SetVar instead of Var, so they won't be substituted before
         # running a line.
@@ -4431,7 +4514,7 @@ Syntax error: Line ended before string did. Skipping line: {line}')
 # Return False if there was an error or the user declined to run it.
 def open_script(script_file=''):
     global data, version, version_str
-    global flags, loop_counter, space_sep
+    global flags, space_sep
 
     cls()
 
@@ -4506,7 +4589,7 @@ Please try again.''',
     # very early versions, because the version command follows a simple,
     # predictable format.
 
-    version = app_version.copy()
+    version = app_version.copy() # default if no version given in script
     version_str = '(UNKNOWN; defaulting to %s)' % app_version_str()
 
     # SCRIPT FLAGS
@@ -4514,7 +4597,6 @@ Please try again.''',
     # To prevent infinite loops, keep track of how many times each line is run.
     # When a limit is reached (default 10000 times), halt the program.
     flags['loop_limit'] = None
-    loop_counter = [0] * len(lines)
     # Optionally deviate from Python's standard handling of loop/list ranges
     flags['index_from'] = None
     flags['closed_ranges'] = None
@@ -4535,7 +4617,7 @@ Please try again.''',
             try:
                 i[j] = i[j].strip()
                 i[j] = int(i[j])
-            except:
+            except Exception:
                 pass
 
         if i[0] == 'version':
@@ -4569,10 +4651,10 @@ Please try again.''',
                 if type(i[1]) == int and i[1] > 1:
                     flags['loop_limit'] = i[1]
                 else:
-                    log_warning('looplimit: Invalid loop limit value \
+                    log_warning(f'{i[0]}: Invalid loop limit value \
 (must be a positive integer)')
             else:
-                log_warning('looplimit: Missing loop limit value')
+                log_warning(f'{i[0]}: Missing loop limit value')
         if i[0] == 'flag' and len(i) > 1 and i[1] == 'loop_limit':
             if len(i) > 2:
                 if type(i[2]) == int and i[2] > 1:
@@ -4612,10 +4694,13 @@ Please try again.''',
 
     data = []
 
-    for l in lines:
-        # First pass at parsing lines 
+    for line_str in lines:
+        # Initial parsing of lines 
         # (variable values and subcommands are parsed later)
-        data.append(parse_line(l))
+        line_list : list = parse_line(line_str)
+        # Replace command aliases (in place)
+        alias(line_list, is_subcmd=False)
+        data.append(line_list)
 
     name = 'Unknown Script'
     for i in data:
@@ -4700,6 +4785,8 @@ def get_paths(*, new_multi=False):
         # mathematical constants
         '$_pi': math.pi, '$_e': math.e,
         # system variables (can be accessed by scripts but not set directly)
+        '$_linenumber': 0, '$_ln': 0, # this one gets an alias
+        '$_linecount': len(data)-1, # subtract 1 because of the extra line 0
         '$_fillcolor': Color(255, 255, 255),
         '$_linecolor': Color(0, 0, 0),
         '$_linewidth': 1,
@@ -4884,7 +4971,7 @@ converted.',
             # This part doesn't actually open the file for conversion --
             # it's just to make sure it exists
             if open_path != '//NONE':
-                open(open_path).close()
+                open(open_path, encoding='utf-8').close()
         except FileNotFoundError:
             # This code will only be reached in legacy single-file mode because
             # the OS file selector shouldn't select a nonexistent file
@@ -5419,7 +5506,7 @@ it’s an image? Skipping.')
         conv_count += 1
 
     t2 = time()
-    return pre_summary(t2-t1, conv_count) # Return helper func's result
+    return pre_summary(t2-t1, conv_count, new_multi) # Return helper func's result
 
 def process_line(line: list):
     '''
@@ -5441,8 +5528,16 @@ def process_line(line: list):
 
     return cmd
 
-# Reads lines from one file and executes its instructions
 def process():
+    '''
+    Reads lines from one file and executes its instructions.
+    Returns the image that will be saved.
+    '''
+    # To prevent infinite loops, keep track of how many times each line is run.
+    # When a limit is reached (default 10000 times), halt the program.
+    # New in v7.2.1: Reset the loop counter for every file.
+    loop_counter = [0] * len(data)
+
     # Stack of line numbers saved when entering subroutines.
     # Note that numbers here are the line that has the gosub command,
     # so execution will resume from the *next* line.
@@ -5502,6 +5597,17 @@ unknown error.')
                 menu()
             elif item[0] == 'warning':
                 warning(item)
+            elif item[0] == 'assert':
+                # Make sure the command has enough arguments
+                if len(item) < 2: 
+                    log_warning(f'{item[0]}: missing assertion')
+                    continue
+
+                assertion_result = bool(item[1])
+                if not assertion_result:
+                    log_warning(f'{item[0]}: FAIL {data[index][1]}')
+                    # Use the unevaluated argument because otherwise it'll
+                    # just show up as "True" or "False"
             elif item[0] == 'use':
                 log_warning(f'{item[0]}: command is no longer needed in \
 scripts with draw commands. Simply call the draw commands on their own \
@@ -5521,12 +5627,14 @@ scripts with draw commands. Simply call the draw commands on their own \
                 # Line numbers start counting from 1, even internally
                 if type(item[1]) == int:
                     index = item[1]
+                    set_ln(index)
                     jumped = True
                 # OPTION 2: Go to label
                 # This will jump to the line on which the label was declared.
                 elif type(item[1]) == str:
                     if item[1] in labels:
                         index = labels[item[1]]
+                        set_ln(index)
                         jumped = True
                     else:
                         log_warning(
@@ -5550,12 +5658,14 @@ or label (string)')
                 # Line numbers start counting from 1, even internally
                 if type(item[1]) == int:
                     index = item[1]
+                    set_ln(index)
                     jumped = True
                 # OPTION 2: Go to label
                 # This will jump to the line on which the label was declared.
                 elif type(item[1]) == str:
                     if item[1] in labels:
                         index = labels[item[1]]
+                        set_ln(index)
                         jumped = True
                     else:
                         log_warning(
@@ -5568,6 +5678,7 @@ or label (string)')
             elif item[0] in ('goback', 'retsub'):
                 if len(substack) >= 1:
                     index = substack.pop()
+                    set_ln(index)
                 else:
                     log_warning(f'{item[0]}: Stack is empty')
 
@@ -5579,7 +5690,7 @@ or label (string)')
                     continue
 
                 if version_gte(7,1):
-                    log_warning('if1: This command is deprecated. \
+                    log_warning(f'{item[0]}: This command is deprecated. \
 Please use “if” instead.')
 
                 # Result of conditional command in the if statement
@@ -5596,7 +5707,7 @@ Please use “if” instead.')
             elif item[0] == 'if':
                 # Make sure the command has enough arguments
                 if len(item) < 2: 
-                    log_warning('if: missing conditional statement')
+                    log_warning(f'{item[0]}: missing conditional statement')
                     continue
 
                 # Save depth of if block so we can check it against the 
@@ -5673,7 +5784,7 @@ Please use “if” instead.')
             elif item[0] == 'while':
                 # Make sure the command has enough arguments
                 if len(item) < 2: 
-                    log_warning('while: missing conditional statement')
+                    log_warning(f'{item[0]}: missing conditional statement')
                     continue
 
                 # Fill in "do" argument with 0 if it's not present
@@ -5747,6 +5858,7 @@ Please use “if” instead.')
                 else:
                     # Otherwise, jump back out
                     index = start_line
+                    set_ln(index)
                     # We're back to the "end" line now, and we'll proceed to
                     # the next line normally
 
@@ -5762,6 +5874,7 @@ Please use “if” instead.')
                     continue
 
                 index = loop_data[index]['end_lines'][-1]
+                set_ln(index)
                 jumped = True
 
             elif item[0] == 'break':
@@ -5787,11 +5900,13 @@ Please use “if” instead.')
                     log_warning(f'break: tried to break {break_count} times \
 from a stack of {max_breaks} loops')
                     # End the program early due to error
-                    index = len(data)
+                    index = len(data) # jump to one line after last
+                    set_ln(index)
                     continue
 
                 # Jump to the appropriate end line based on break count
                 index = loop_data[index]['end_lines'][-break_count] + 1
+                set_ln(index)
                 # Leave jumped set to False because we're at the last line now, 
                 # and we DON'T want to read that one because it'll jump us
                 # back to the start of the loop
@@ -5812,6 +5927,7 @@ from a stack of {max_breaks} loops')
                         or (variables[loopVar.name] > stop \
                             and flags['closed_ranges']):
                     index = loop_data[index]['end_lines'][-1] + 1
+                    set_ln(index)
                     jumped = True
 
                 # If we make it here, we're in the loop.
@@ -5848,10 +5964,12 @@ from a stack of {max_breaks} loops')
                         or (variables[loopVar.name] > stop \
                             and flags['closed_ranges']):
                     index = loop_data[index]['end_lines'][-1] + 1
+                    set_ln(index)
                     jumped = True
                 # Otherwise, jump to first line inside loop
                 else:
                     index = loop_data[index]['start_lines'][-1] + 1
+                    set_ln(index)
                     jumped = True
                     # ...and we're off to another iteration of the loop
 
@@ -5877,6 +5995,7 @@ from a stack of {max_breaks} loops')
                         or (variables[indexVar.name] > len(seq) \
                             and flags['closed_ranges']):
                     index = loop_data[index]['end_lines'][-1] + 1
+                    set_ln(index)
                     jumped = True
 
                 # If we make it here, we're in the loop.
@@ -5901,6 +6020,7 @@ from a stack of {max_breaks} loops')
                         or (variables[indexVar.name] > len(seq)-1 \
                             and flags['closed_ranges']):
                     index = loop_data[index]['end_lines'][-1] + 1
+                    set_ln(index)
                     jumped = True
                 else:
                     # Step the index variable
@@ -5910,6 +6030,7 @@ from a stack of {max_breaks} loops')
 
                     # Jump to first line inside loop
                     index = loop_data[index]['start_lines'][-1] + 1
+                    set_ln(index)
                     jumped = True
                     # ...and we're off to another iteration of the loop
 
@@ -5920,6 +6041,42 @@ from a stack of {max_breaks} loops')
                 const(item)
             elif item[0] == 'change':
                 change(item)
+            elif item[0] == 'iadd':
+                change([item[0], # cmd name
+                        item[1], # variable identifier
+                        'add', item[2:]])
+            elif item[0] == 'isub':
+                change([item[0], # cmd name
+                        item[1], # variable identifier
+                        'sub', item[2:]])
+            elif item[0] == 'imul':
+                change([item[0], # cmd name
+                        item[1], # variable identifier
+                        'mul', item[2:]])
+            elif item[0] == 'itruediv':
+                change([item[0], # cmd name
+                        item[1], # variable identifier
+                        'truediv', item[2:]])
+            elif item[0] == 'ifloordiv':
+                change([item[0], # cmd name
+                        item[1], # variable identifier
+                        'floordiv', item[2:]])
+            elif item[0] == 'imod':
+                change([item[0], # cmd name
+                        item[1], # variable identifier
+                        'mod', item[2:]])
+            elif item[0] == 'ipow':
+                change([item[0], # cmd name
+                        item[1], # variable identifier
+                        'pow', item[2:]])
+            elif item[0] == 'inc':
+                change([item[0], # cmd name
+                        item[1], # variable identifier
+                        'add', 1])
+            elif item[0] == 'dec':
+                change([item[0], # cmd name
+                        item[1], # variable identifier
+                        'sub', 1])
 
             # Basic copying commands
             elif item[0] == 'copy':
@@ -5997,11 +6154,11 @@ default: Skipped because no “template” image was specified.')
                 twocolor(item, images['new'])
             # Prefix-only filters
             elif item[0] == 'filter.hue':
-                filter_hue(item, images['new'])
+                hslfilter([item[0], item[1], 0, 0] + item[2:], images['new'])
             elif item[0] == 'filter.saturation':
-                filter_saturation(item, images['new'])
+                hslfilter([item[0], 0, item[1], 0] + item[2:], images['new'])
             elif item[0] == 'filter.lightness':
-                filter_lightness(item, images['new'])
+                hslfilter([item[0], 0, 0, item[1]] + item[2:], images['new'])
             elif item[0] == 'filter.fill': 
                 if version_gte(7,2):
                     log_warning('fill: This command is deprecated. \
@@ -6012,17 +6169,17 @@ Please use “draw.rect” instead.')
                 if version_gte(7):
                     log_warning('hue: The prefixless version of this command \
 is deprecated. Please use “filter.hue” instead.')
-                filter_hue(item, images['new'])
+                hslfilter([item[0], item[1], 0, 0] + item[2:], images['new'])
             elif item[0] == 'saturation':
                 if version_gte(7):
                     log_warning('saturation: The prefixless version of this \
 command is deprecated. Please use “filter.saturation” instead.')
-                filter_saturation(item, images['new'])
+                hslfilter([item[0], 0, item[1], 0] + item[2:], images['new'])
             elif item[0] == 'lightness':
                 if version_gte(7):
                     log_warning('lightness: The prefixless version of this \
 command is deprecated. Please use “filter.lightness” instead.')
-                filter_lightness(item, images['new'])
+                hslfilter([item[0], 0, 0, item[1]] + item[2:], images['new'])
             elif item[0] == 'fill':
                 if version_gte(7):
                     log_warning('fill: The prefixless version of this command \
@@ -6102,11 +6259,11 @@ skipped due to error: {e}')
             # in the "try" part of the loop.
             if not jumped:
                 index += 1 # STEP
-
+                set_ln(index)
     return images['new'] 
 
 # Returns number of files successfully converted.
-def pre_summary(conv_time, conv_count):
+def pre_summary(conv_time:float, conv_count:int, new_multi:bool):
     #### STEP 5: SUMMARY ####
     cls()
 
@@ -6135,7 +6292,7 @@ def pre_summary(conv_time, conv_count):
     summary(conv_time, conv_count)
     return conv_count
 
-def summary(conv_time, conv_count, warning_page=0):
+def summary(conv_time:float, conv_count:int, warning_page:int=0):
     # Roll warning page over to 0 if needed
     warn_per_page = 10 # TODO: account for multiline warnings
     num_warn_pages = (len(warnings)-1)//warn_per_page + 1
@@ -6251,7 +6408,7 @@ SkinConverter/main/motd.txt'
     try:
         # Download and read MOTD
         urllib.request.urlretrieve(motd_url, 'motd.txt')
-        motd_file = open('motd.txt')
+        motd_file = open('motd.txt', encoding='utf-8')
         motd_lines = motd_file.read().splitlines()
         motd_file.close()
         for i in range(len(motd_lines)):
@@ -6268,8 +6425,8 @@ SkinConverter/main/motd.txt'
                     motd_buttons.insert(0, 'View Update')
                     motd_header = 'Update available'
 
-                motd_continue = button_dialog(
-                        motd_header, motd_text, motd_buttons)
+                motd_continue = button_dialog(motd_header, motd_text, 
+                                              motd_buttons)
                 if motd_continue == 'Exit':
                     exit_app()
                 elif motd_continue == 'View Update':
@@ -6278,12 +6435,12 @@ SkinConverter/releases/latest')
                     exit_app()
                 else: # Continue
                     return
-    except:
+    except Exception:
         # If the internet isn't cooperating or the MOTD file is malformed, 
         # no big deal, just skip it
         pass
 
-def crash(exctype=None, excvalue=None, tb=None):
+def crash(exctype=None, excvalue=None, _=None):
     try:
         bomb = PhotoImage(file='ui/bomb.gif')
         window.iconphoto(False, bomb)
@@ -6296,12 +6453,11 @@ def crash(exctype=None, excvalue=None, tb=None):
 messagebox.ERROR, messagebox.ABORTRETRYIGNORE)
         # btn might be a Tcl index object, so convert it to a string
         btn = str(btn)
-        if btn == 'ignore':
-            return
+        if btn == 'abort':
+            exit_app()
         elif btn == 'retry':
             setup()
-        else: # abort
-            exit_app()
+        # else ignore
 
 def exit_app():
     window.destroy()
