@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 7.2.1
+Version 7.3.0
 
 Copyright © 2022–2024 clippy#4722
 
@@ -54,7 +54,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,2,1]
+app_version = [7,3,0]
 
 # Why does Python not have this built in anymore???
 def cmp(x, y):
@@ -255,13 +255,11 @@ menu_heading_adv = Label(main_frame, text='Advanced conversion options',
         font=f_heading, bg=colors['UI_BG'])
 
 menu_btns_p1 = [
-    Button(main_frame, text='Convert a Legacy skin to Deluxe',
+    Button(main_frame, text='Convert a Legacy16 skin to Legacy32',
             font=f_large, highlightbackground=colors['UI_BG']),
-    Button(main_frame, text='Convert a Remake skin to Deluxe',
-            font=f_large, highlightbackground=colors['UI_BG']),
-    Button(main_frame, text='Convert a Deluxe skin to Legacy',
+    Button(main_frame, text='Convert a Deluxe skin to Legacy16',
             highlightbackground=colors['UI_BG']),
-    Button(main_frame, text='Convert any obj mod to Deluxe',
+    Button(main_frame, text='Convert a Remake skin to Legacy16',
             highlightbackground=colors['UI_BG']),
     Label(main_frame, bg=colors['UI_BG']), # filler
     Button(main_frame, text='Legacy/Custom...', 
@@ -271,8 +269,6 @@ menu_btns_p1 = [
 ]
 
 menu_btns_p2 = [
-    Button(main_frame, text='Convert a Remake skin to Legacy',
-            highlightbackground=colors['UI_BG']),
     Button(main_frame, 
             text='Convert a Legacy map mod to Legacy map_new',
             highlightbackground=colors['UI_BG']),
@@ -339,7 +335,7 @@ loop_data : Dict[str, any]
 base_blank : bool
 space_sep : bool # COMING IN 8.0
 
-draw_obj : PIL.ImageDraw = None # only used if draw commands are in script
+draw_obj : PIL.ImageDraw # only used if draw commands are in script
 
 # databases accessible by scripts while running them:
 images : Dict[str, PIL.Image.Image]
@@ -1178,6 +1174,21 @@ def resize(i, base_image):
     # create a new image. Python is weird.
     return new_image
 
+def crop(i:list, base_image:PIL.Image.Image):
+    '''
+    crop,0<x>,0<y>,0<width>,0<height>
+    
+    Same functionality as resize, but in a way that makes more sense if you 
+    want to make the image smaller.
+    '''
+    
+    x : int = i[1]
+    y : int = i[2]
+    width : int = i[3]
+    height : int = i[4]
+
+    return resize([i[0], width, height, -x, -y], base_image)
+
 # rotate,90<degreesClockwise: multiple of 90>,0<x>,0<y>,
 #   16[size] 
 # Rotate the area in place on the new image. Unlike copy commands, 
@@ -1917,6 +1928,20 @@ def list_replace(i: list):
 #### DRAWING COMMANDS #####################################################
 ###########################################################################
 
+def setpixel(i: list):
+    '''
+    setpixel,0<x>,0<y>,(color,"red")<color>
+    
+    Sets the color of the pixel at (x,y) on the base image.
+    '''
+
+    x : int = i[1]
+    y : int = i[2]
+    color : Color = i[3]
+
+    images['new'].putpixel((x, y), 
+                           (color.red, color.green, color.blue, color.alpha))
+
 def draw_rect(i: list):
     '''
     draw.rect,0<x>,0<y>,16<width>,16<height>,
@@ -2180,6 +2205,7 @@ def arg_check(cmd: list, is_subcmd: bool):
         'copyscale': 8,
 
         'resize': 1,
+        'crop': 4,
         'rotate': 1,
         'flip': 1,
 
@@ -2206,6 +2232,7 @@ def arg_check(cmd: list, is_subcmd: bool):
         'list.remove': 2,
         'list.replace': 3,
 
+        'setpixel': 3,
         'draw.rect': 4,
         'draw.ellipse': 4,
         'draw.line': 4,
@@ -2274,6 +2301,7 @@ def arg_check(cmd: list, is_subcmd: bool):
         'color': 1,
         'rgba': 3,
         'hsla': 3,
+        'getpixel': 2,
 
         'red': 1,
         'green': 1,
@@ -2284,6 +2312,9 @@ def arg_check(cmd: list, is_subcmd: bool):
         'hue': 1,
         'saturation': 1,
         'lightness': 1,
+
+        'getrgba': 1,
+        'gethsla': 1,
 
         'width': 1,
         'height': 1,
@@ -2508,6 +2539,8 @@ string repetition instead')
         result = rgb(cmd)
     elif cmd[0] == 'hsla':
         result = hsl(cmd)
+    elif cmd[0] == 'getpixel':
+        result = getpixel(cmd, images['new'])
 
     # Before version 7, red/green/blue/alpha checked the new image.
     # In v7.0.0, this was changed to the old image because this was more useful
@@ -2535,11 +2568,25 @@ string repetition instead')
             result = alpha_(cmd, images['new'])
 
     elif cmd[0] == 'hue':
-        result = hue(cmd, images['new'])
+        if version_gte(7,3):
+            result = hue(cmd, images['old'])
+        else:
+            result = hue(cmd, images['new'])
     elif cmd[0] == 'saturation':
-        result = saturation(cmd, images['new'])
+        if version_gte(7,3):
+            result = saturation(cmd, images['old'])
+        else:
+            result = saturation(cmd, images['new'])
     elif cmd[0] in ('lightness', 'luminosity'):
-        result = lightness(cmd, images['new'])
+        if version_gte(7,3):
+            result = lightness(cmd, images['old'])
+        else:
+            result = lightness(cmd, images['new'])
+
+    elif cmd[0] == 'getrgba':
+        result = getrgba(cmd, images['old'])
+    elif cmd[0] == 'gethsla':
+        result = gethsla(cmd, images['old'])
 
     elif cmd[0] == 'width':
         result = width_(cmd)
@@ -3397,9 +3444,159 @@ def hsl(i: list):
     rgba = hsla_to_rgba([h,s,l,a])
     return Color(rgba[0], rgba[1], rgba[2], rgba[3])
 
+def getpixel(i: list, base_image: PIL.Image.Image):
+    '''
+    getpixel,new[image],0<x>,0<y>
+    
+    Returns Color object of the color at the given (x,y) position on the base image.
+    '''
+
+    # If image name is given at arg1, set base_image to that. 
+    # Otherwise, keep base_image as is and insert an empty string so the
+    # remaining arguments are in a consistent position.
+    if type(i[1]) == str:
+        if i[1] in images:
+            base_image = images[i[1]]
+        else:
+            log_warning(f'{i[0]}: Unrecognized image name {i[1]}')
+    else:
+        i.insert(1, '')
+
+    x : int = i[2]
+    y : int = i[3]
+
+    rgba_list = getrgba([i[0], i[1], x, y], base_image) # get RGBA list
+    return rgb([i[0], rgba_list]) # create color type from that RGBA list
+
 # END COLOR TYPE SUBCOMMANDS
 
 # COLOR INFO SUBCOMMANDS
+
+def getrgba(i: list, base_image: PIL.Image.Image):
+    '''
+    (getrgba,new[image],0<x>,0<y>,1[width],1[height])
+
+    — OR —
+
+    (getrgba,(rgb,255,128,0)<color>)
+    
+    Return a list consisting of the [red, green, blue, alpha] values of a
+    Color object, pixel, or area of pixels.
+    '''
+
+    # Special case: first (and presumably only) argument has color type
+    if type(i[1]) == Color:
+        return [i[1].red, i[1].green, i[1].blue, i[1].alpha]
+
+    # If not special case, check arg count *again*
+    if len(i) <= 2:
+        log_warning(f'{i[0]}: command requires either a value of type “color” \
+or x & y values.')
+        return
+
+    # If image name is given at arg1, set base_image to that. 
+    # Otherwise, keep base_image as is and insert an empty string so the
+    # remaining arguments are in a consistent position.
+    if type(i[1]) == str:
+        if i[1] in images:
+            base_image = images[i[1]]
+        else:
+            log_warning(f'{i[0]}: Unrecognized image name {i[1]}')
+    else:
+        i.insert(1, '')
+
+    x : int = i[2]
+    y : int = i[3]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 1×1 (single pixel).
+    # If only width is specified, use that value for height too.
+    if len(i) == 3:
+        i += [1, 1]
+    width : int = i[4]
+    if len(i) == 4:
+        i += [width]
+    height : int = i[5]
+
+    if width <= 1 and height <= 1:
+        rgba : Tuple[int] = base_image.getpixel((x, y))
+        return rgba
+    else:
+        avgR = 0
+        avgG = 0
+        avgB = 0
+        avgA = 0
+
+        for loop_x in range(x, x+width):
+            for loop_y in range(y, y+height):
+                rgba : Tuple[int] = base_image.getpixel((loop_x, loop_y))
+                avgR += rgba[0]
+                avgG += rgba[1]
+                avgB += rgba[2]
+                avgA += rgba[3]
+
+        avgR = int(avgR / (width * height))
+        avgG = int(avgG / (width * height))
+        avgB = int(avgB / (width * height))
+        avgA = int(avgA / (width * height))
+
+        return [avgR, avgG, avgB, avgA]
+
+def gethsla(i: list, base_image: PIL.Image.Image):
+    '''
+    (gethsla,new[image],0<x>,0<y>)
+
+    — OR —
+
+    (gethsla,(rgb,255,128,0)<color>)
+    
+    Return a list consisting of the [hue, saturation, lightness, alpha] values 
+    of a Color object or pixel. Does NOT support averaging an area of pixels
+    because that concept simply doesn't make sense given that hue is a circle.
+    '''
+
+    # Special case: first (and presumably only) argument has color type
+    if type(i[1]) == Color:
+        return [i[1].hue, i[1].saturation, i[1].lightness, i[1].alpha]
+
+    # If not special case, check arg count *again*
+    if len(i) <= 2:
+        log_warning(f'{i[0]}: command requires either a value of type “color” \
+or x & y values.')
+        return
+
+    # If image name is given at arg1, set base_image to that. 
+    # Otherwise, keep base_image as is and insert an empty string so the
+    # remaining arguments are in a consistent position.
+    if type(i[1]) == str:
+        if i[1] in images:
+            base_image = images[i[1]]
+        else:
+            log_warning(f'{i[0]}: Unrecognized image name {i[1]}')
+    else:
+        i.insert(1, '')
+
+    x : int = i[2]
+    y : int = i[3]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 1×1 (single pixel).
+    # If only width is specified, use that value for height too.
+    if len(i) == 3:
+        i += [1, 1]
+    width : int = i[4]
+    if len(i) == 4:
+        i += [width]
+    height : int = i[5]
+
+    if width <= 1 and height <= 1:
+        rgba : Tuple[int] = base_image.getpixel((x, y))
+        return rgba_to_hsla(rgba)
+    else:
+        log_warning('gethsla: Take a minute to think about why the concept of \
+“average hue” doesn’t make sense. (Hint: Hue is a circle; what’s the average \
+of 0 + 359?')
+        return None
 
 def red_(i: list, base_image: PIL.Image.Image):
     '''
@@ -4054,37 +4251,33 @@ def menu():
     # PAGE 1
 
     menu_btns_p1[0].bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/skin_La_to_Dx32.txt'))
+            lambda _: script_button('scripts/skin_L16_to_L32.s.txt'))
     menu_btns_p1[1].bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/skin_Ra_to_Dx32.txt'))
-    menu_btns_p1[2].bind('<ButtonRelease-1>', 
             lambda _: script_button('scripts/skin_Dx32_to_L.txt'))
-    menu_btns_p1[3].bind('<ButtonRelease-1>', 
+    menu_btns_p1[2].bind('<ButtonRelease-1>', 
             lambda _: script_button('scripts/obj_L_to_Dx.txt'))
 
-    menu_btns_p1[5].bind('<ButtonRelease-1>', 
+    menu_btns_p1[4].bind('<ButtonRelease-1>', 
             lambda _: menu_p2())
 
-    menu_btns_p1[7].bind('<ButtonRelease-1>', 
+    menu_btns_p1[6].bind('<ButtonRelease-1>', 
             lambda _: exit_app())
 
     # PAGE 2
 
     menu_btns_p2[0].bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/skin_R_to_L.txt'))
-    menu_btns_p2[1].bind('<ButtonRelease-1>', 
             lambda _: script_button('scripts/map_new.txt'))
 
-    menu_btns_p2[3].bind('<ButtonRelease-1>', 
+    menu_btns_p2[2].bind('<ButtonRelease-1>', 
             lambda _: script_button(''))
-    menu_btns_p2[4].bind('<ButtonRelease-1>', 
+    menu_btns_p2[3].bind('<ButtonRelease-1>', 
             lambda _: the_W())
-    menu_btns_p2[5].bind('<ButtonRelease-1>', 
+    menu_btns_p2[4].bind('<ButtonRelease-1>', 
             lambda _: new_multi_event())
-    menu_btns_p2[6].bind('<ButtonRelease-1>', 
+    menu_btns_p2[5].bind('<ButtonRelease-1>', 
             lambda _: install_assets())
 
-    menu_btns_p2[8].bind('<ButtonRelease-1>', 
+    menu_btns_p2[7].bind('<ButtonRelease-1>', 
             lambda _: menu_p1())
 
     menu_p1()
@@ -4207,6 +4400,7 @@ def alias(cmd: list, is_subcmd: bool):
             'copy_from': 'copyfrom',
             'default_from': 'defaultfrom',
             'delete': 'clear', # deprecated in v6.0
+            'dup': 'duplicate',
             
             'filter.grayscale': 'grayscale',
             'filter.invert': 'invert',
@@ -4281,6 +4475,9 @@ def alias(cmd: list, is_subcmd: bool):
             
             'rgb': 'rgba',
             'hsl': 'hsla',
+
+            'getrgb': 'getrgba',
+            'gethsl': 'gethsla',
     }
 
     if is_subcmd and cmd[0] in v7_subcmd_aliases:
@@ -4359,6 +4556,7 @@ def parse_line(line: str) -> list:
         elif char == '/' and index+1 < len(line) and \
                 line[index+1] == '*' and not in_string and version_gte(7,2,1):
             # Start of multiline comment -- Syntax: /*
+            in_comment = True
             continue
         elif char == '\\' and in_string and \
                 (index == 0 or line[index-1] != '\\') and version_gte(6):
@@ -4388,13 +4586,20 @@ def parse_line(line: str) -> list:
                 log_warning(f'\
 Syntax error: Too many closing parentheses. Skipping line: {line}')
                 return [''] # Return empty line so converter skips it
-        elif char == '"' and index >= 1 and line[index-1] == '\\': 
+        elif char == '"' and (index == 0 or line[index-1] != '\\'): 
             # Strings are only double-quotes, in case I want to add char later.
             # Even if I don't, it's easier if I only have one quote character
             # to worry about.
             # Flip it: If we're in a string, get out.
             # If we're not in a string, get in.
             in_string = not in_string
+
+    # If file is space-separated, the loop we just exited may leave an empty 
+    # string at the end of a list if there's whitespace at the end of the line.
+    # (For example, if there's a comment at the end of the line) 
+    # We should remove this extra space because it can cause errors later.
+    if space_sep and len(output) >= 2 and output[-1] == '':
+        output.pop()
 
     # v4.1.0 AND LATER ONLY:
     # If paren_depth isn't back to 0 after exiting splitter loop, syntax error
@@ -4514,7 +4719,8 @@ Syntax error: Line ended before string did. Skipping line: {line}')
 # Return False if there was an error or the user declined to run it.
 def open_script(script_file=''):
     global data, version, version_str
-    global flags, space_sep
+    global flags, space_sep, draw_obj
+    global warnings, variables, images
 
     cls()
 
@@ -4561,11 +4767,8 @@ Please try again.''',
     
     # Determine whether file is comma-separated or space-separated
     space_sep = False
-    # TODO: Commenting out because the space-separated format needs more time
-    # to cook. Will uncomment once Strict Mode is added (space-separated files
-    # will be strict by default)
-    # if script_file.lower().endswith('.s.txt'):
-    #     space_sep = True
+    if script_file.lower().endswith('.s.txt'):
+        space_sep = True
 
     # Merge lines if the first line ends in a backslash
     # Start at len-2 and move up. This allows more than 2 lines to be merged.
@@ -4582,6 +4785,35 @@ Please try again.''',
 
     # Add empty "line 0" to make goto more consistent
     lines.insert(0, '')
+
+    # DATABASE RESETS & INITIAL SYNTAX CHECKS
+
+    # Reset warnings
+    warnings = []
+
+    # Variables will mostly be user-set but let's predefine some stuff...
+    variables = {
+        # booleans
+        '$_true': True, '$_t': True,
+        '$_false': False, '$_f': False,
+        # mathematical constants
+        '$_pi': math.pi, '$_e': math.e,
+        # system variables (can be accessed by scripts but not set directly)
+        '$_linenumber': 0, '$_ln': 0, # this one gets an alias
+        '$_linecount': len(lines)-1, # subtract 1 because of the extra line 0
+        '$_fillcolor': Color(255, 255, 255),
+        '$_linecolor': Color(0, 0, 0),
+        '$_linewidth': 1,
+        # private variables (can't be accessed by scripts; internal use only;
+        # subject to change at any time)
+        '$__constants': [], # List of all constants in the variables dict.
+                            # These should be strings, e.g. ['$PI', '$DEBUG']
+    }
+
+    # Images the converter can access, 
+    # including 'old' (open), 'template', 'alt', and 'new' (save/base)
+    # and any user-defined images
+    images = {}
 
     # Before we begin, we need to determine the script's target version 
     # and flags because they'll influence some aspects of how we parse code.
@@ -4600,6 +4832,10 @@ Please try again.''',
     # Optionally deviate from Python's standard handling of loop/list ranges
     flags['index_from'] = None
     flags['closed_ranges'] = None
+    
+    # Reset the draw object so it won't point to an image that no longer exists
+    # This was a bug before 7.3
+    draw_obj = None
     
     for raw_line in lines:
         i = raw_line.split('#')[0].rstrip()
@@ -4724,10 +4960,10 @@ Please try again.''',
     for i in data:
         if i[0] == 'description':
             if len(i) > 1:
-                description = ','.join(i[1:])
+                description = i[1]
                 break
             else:
-                log_warning('Syntax error: Empty description')
+                log_warning('description: command requires at least 1 argument')
 
     # Warn if the “version” field is later than the current version
     # (unless it's just a newer release version)
@@ -4767,34 +5003,10 @@ Please try again.''',
 def get_paths(*, new_multi=False):
     global legacy_multi, open_path, save_path, alt_path, template_path
     global base_blank, start_num, stop_num, multi_open_paths, multi_save_paths
-    global warnings, variables, labels, images
+    global labels
 
     #### STEP 3: OPEN & SAVE PATHS ####
     cls()
-
-    # DATABASE RESETS & INITIAL SYNTAX CHECKS
-
-    # Reset warnings
-    warnings = []
-
-    # Variables will mostly be user-set but let's predefine some stuff...
-    variables = {
-        # booleans
-        '$_true': True, '$_t': True,
-        '$_false': False, '$_f': False,
-        # mathematical constants
-        '$_pi': math.pi, '$_e': math.e,
-        # system variables (can be accessed by scripts but not set directly)
-        '$_linenumber': 0, '$_ln': 0, # this one gets an alias
-        '$_linecount': len(data)-1, # subtract 1 because of the extra line 0
-        '$_fillcolor': Color(255, 255, 255),
-        '$_linecolor': Color(0, 0, 0),
-        '$_linewidth': 1,
-        # private variables (can't be accessed by scripts; internal use only;
-        # subject to change at any time)
-        '$__constants': [], # List of all constants in the variables dict.
-                            # These should be strings, e.g. ['$PI', '$DEBUG']
-    }
 
     # Dictionary of labels and the index of `data` on which they were found.
     # Example: {'_start': 0}
@@ -4817,11 +5029,6 @@ def get_paths(*, new_multi=False):
                     labels[item[1]] = index
             else:
                 log_warning('label: empty label on line %d' % index)
-
-    # Images the converter can access, 
-    # including 'old' (open), 'template', 'alt', and 'new' (save/base)
-    # and any user-defined images
-    images = {}
 
     # Load rest of header data
     # Remember, you can use int, float, and string literals here but NOT
@@ -6122,6 +6329,8 @@ default: Skipped because no “template” image was specified.')
             # Transformation commands
             elif item[0] == 'resize':
                 images['new'] = resize(item, images['new'])
+            elif item[0] == 'crop':
+                images['new'] = crop(item, images['new'])
             elif item[0] == 'rotate':
                 rotate(item, images['new'])
             elif item[0] == 'flip':
@@ -6201,6 +6410,8 @@ is deprecated. Please use “filter.fill” instead.')
                 list_replace(item)
 
             # Drawing commands
+            elif item[0] == 'setpixel':
+                setpixel(item)
             elif item[0] in ('draw.rect', 'draw.rectangle'):
                 draw_rect(item) # uses global draw_obj instead of img param
             elif item[0] == 'draw.ellipse':

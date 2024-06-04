@@ -452,3 +452,21 @@ Version 7.2.1 (Feb. 29, 2024):
   * More code cleanup
   * This will probably be the last version to include Deluxe conversions on the 
     title screen. The scripts will be deprecated or removed in future versions.
+
+Version 7.3.0 (Jun. 4, 2024):
+  + Added Legacy16 -> Legacy32 script to standard installation
+  + Added option to separate commands' arguments with spaces instead of commas
+      * This should make scripts easier for me to read and edit going forward
+      * To use this feature, script files must end with ".s.txt"
+      * The comma-separation syntax will remain supported indefinitely
+  + New commands: crop, setpixel, getpixel, getrgba, gethsla
+  * Bug fixes:
+      * Fixed draw commands so they no longer break after the first time you run
+        a script that uses them
+      * Fixes default source image for hue/saturation/lightness subcommands 
+        to be "old" instead of "new" (previously, the spec said "old" but the
+        code used "new")
+      * Fixed broken logic in Deluxe->Legacy16 conversion script
+      * Partially fixed /* this kind of comment */
+      * Fixed crash bug involving pre-execution warnings
+      * Fixed parsing of "quoted string literals"
