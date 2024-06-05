@@ -470,3 +470,11 @@ Version 7.3.0 (Jun. 4, 2024):
       * Partially fixed /* this kind of comment */
       * Fixed crash bug involving pre-execution warnings
       * Fixed parsing of "quoted string literals"
+
+Version 7.3.1 (Jun. 5, 2024):
+  * Fixed URLs for asset installation
+      * The assets that would be installed are only used in a couple scripts
+        (e.g. converting Deluxe skins to Legacy) but this should get rid of a
+        confusing error message when the converter tries to connect to the
+        now-defunct MR Deluxe servers.
+  * MOTD now supports newlines

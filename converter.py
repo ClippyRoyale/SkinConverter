@@ -6550,9 +6550,11 @@ def summary(conv_time:float, conv_count:int, warning_page:int=0):
 # List of files to install on first run
 # Only download images that a script actually uses
 install_list = [
-    ['https://marioroyale.com/royale/img/game/smb_obj.png', 
+    ['https://raw.githubusercontent.com/mroyale/assets-dx/main/img/game/\
+smb_obj.png', 
         'deluxe/smb_obj.png'],
-    ['https://marioroyale.com/royale/img/game/smb_mario.png', 
+    ['https://raw.githubusercontent.com/mroyale/assets-dx/main/img/game/\
+smb_mario.png', 
         'deluxe/smb_mario.png'],
     ['https://github.com/mroyale/assets/raw/legacy/img/game/smb_map_new.png', 
         'legacy/smb_map_new.png'],
@@ -6628,7 +6630,7 @@ SkinConverter/main/motd.txt'
             if (len(motd_lines[i]) == 2) and \
                     ((app_version_str() in motd_lines[i][0]) or \
                         (motd_lines[i][0] == '*')):
-                motd_text = motd_lines[i][1]
+                motd_text = motd_lines[i][1].replace('^','\n')
                 motd_header = 'News!'
                 motd_buttons = ['Exit', 'Continue']
                 # Add update button if MOTD is flagged as an update notice
