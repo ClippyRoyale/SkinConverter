@@ -478,3 +478,13 @@ Version 7.3.1 (Jun. 5, 2024):
         confusing error message when the converter tries to connect to the
         now-defunct MR Deluxe servers.
   * MOTD now supports newlines
+
+Version 7.3.2 (Jun. 17, 2024):
+  + Transparent background remover script
+  + Built-in "transparent" color name
+  * Bug fixes:
+      * Fixed range command
+      * Fixed infinite loops when placing `if` inside `for` loops
+      * Fix default image on getpixel
+      * Fixed basically every color-related command 
+        (getpixel, getrgba, red, rgba, etc.)

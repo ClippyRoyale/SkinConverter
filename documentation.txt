@@ -1,4 +1,4 @@
-version,7,2,1 # The version of the Converter app that this script is made for.
+version,7,3,2 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
@@ -110,6 +110,8 @@ copyscale,0<oldX>,0<oldY>,32<oldWidth>,32<oldHeight>,0<newX>,0<newY>,16<newWidth
 
 resize,256<newWidth>,256[newHeight],0[xOffset],0[yOffset] # Resize the new image's canvas. Does not perform any scaling. If no height given, create a square canvas. Anchor at top left by default, or move original image right by `offsetX` pixels and down by `offsetY` pixels.
 
+crop,0<x>,0<y>,0<width>,0<height> # Same functionality as resize, but in a way that makes more sense if you want to make the image smaller
+
 rotate,90<degreesClockwise: multiple of 90>,0<x>,0<y>,16[size] # Rotate the area in place on the new image. Unlike copy commands, only one size argument is used, as the rotated area must be square. TODO: add arbitrary rotation w/ interpolation
 
 flip,x<direction: x or y>,0[x],0[y],16[width],16[height]
@@ -181,7 +183,7 @@ list.replace,$l<listVar>,0<index>,"thing"<item> # Replace the contents of the gi
 
 # DRAWING COMMANDS
 
-use,draw # Initializes extra code needed for drawing. Required if you want to use any commands with the "draw" prefix.
+setpixel,0<x>,0<y>,(color,"red")<color> # Sets the color of the pixel at (x,y) on the base image.
 
 # DRAW: SHAPES
 
@@ -430,16 +432,23 @@ const,$TAU<name>,6.283<value> # Set a constant value so you can refer back to it
     gray: #808080
     silver: #c0c0c0
     white: #ffffff
+    transparent: #00000000
 (color,n00) # Define a color from the NES palette (Nestopia's 15° Canonical palette to be exact). Colors are numbered in hexadecimal from n00 to n3f.
 
 (rgba,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255[alpha: 0 to 255]) # Alias: rgb
 
 (hsla,0<hue: 0 to 359>,100<saturation: 0 to 100>,50<lightness: 0 to 100>,255[alpha: 0 to 255]) # Define a color based on the hue/saturation/lightness (or luminosity) model, plus optional alpha. (Alias: hsl)
 
+(getpixel,0<x>,0<y>) # Returns Color object of the color at the given (x,y) position on the base image.
+
 
 
 # COLOR INFO SUBCOMMANDS
 # These return RGBA, HSLA, etc. color values of a pixel, or (if width and height are given) the average value across an area (as an integer). You can specify the name of an image you want to get the data point from, or go right to coordinates if you want to get data from the old image.
+
+(getrgba,new[image],0<x>,0<y>,1[width],1[height]) # Return a list consisting of the [red, green, blue, alpha] values of a Color object, pixel, or area of pixels.
+
+(gethsla,new[image],0<x>,0<y>) # Return a list consisting of the [hue, saturation, lightness, alpha] values of a Color object or pixel. Does NOT support averaging an area of pixels because that concept simply doesn't make sense given that hue is a circle.
 
 (red,old[image],0<x>,0<y>,1[width],1[height]) # Return the red value (from 0 to 255) of a single pixel. If width and height are given, take the average value over the given rectangle.
 (green,old[image],0<x>,0<y>,1[width],1[height])
@@ -485,6 +494,7 @@ scale,256<newWidth>,256<newHeight>,1[algo] # Scale the image to the new width an
 
 # FILTERS
 removealpha,$fillcolor[color],0[x],0[y],16[width],16[height] # Remove all transparency (alpha) from the area and replace it with the given color. Basically it's like placing the area on top of a rectangle of that color. If no color is given, default to the current fill color. The alpha channel of `color` will be set to 255 (100% opaque).
+blur,1<stdDev> # Gaussian blur filter
 
 # VARIABLES
 load,alt2<name>,smb_skin2580.png<path> # Load the image at the given path and store it associated with the given string identifier. This is a header command, so it will always be called once at the start of the program and it can't be used with variables. The image cannot be retrieved like a variable, but it does block its name from being used for variables. TODO: Maybe call this "setpath"? Or "source"? Reserve "read" for a possible future non-header version
@@ -514,6 +524,17 @@ text.font,smb<fontName> # Set the font used to draw text. Name X should have a c
 text.letterspacing,0<amount> # Set the amount of extra space between each character (AKA tracking/kerning) when drawing text. Can be positive or negative; default is 0 (no spacing).
 text.linespacing,0<amount> # Set the amount of extra space between each line (AKA leading) when drawing text. Can be positive or negative; default is 0 (set solid). TODO: setting for space before vs after
 text.indent,0<amount>,0[firstAmount] # Set the indent used at the start of each paragraph when drawing text. `amount` is in pixels. Set `firstAmount` if you want to indent by a different amount on the first line of the text box; if omitted, the first indent will be the same as the others.
+text.underline,"auto"[size],"auto"[offset],$_textcolor[color],1[number],"single"[style],(list)[styleOptions] # Draw a line under all future text. 
+    # To disable underline, set `size` to 0. Otherwise, `size` is the width of the line in pixels. 
+    # `offset` is how far below the text the line should be drawn -- for example, size 1 = 1 pixel of empty space between the baseline and the underline. Default `size` and `offset` ("auto") are calculated based on the underscore character. 
+    # You can set `color` if you want the underline to be a different color; otherwise, it will be the same as the text color. 
+    # Use `number` if you want a double or triple underline. Additional underlines will be placed at y position (firstUnderlineY + 2*thickness)
+    # `style` can be "straight" (default), "dotted", or "wavy". 
+    # TODO: `styleOptions` varies depending on what `style` is set to. 
+text.strike,"auto"[size],"auto"[offset],$_textcolor[color],"single"[style] # Strikethrough; uses same arguments as underline. Default `offset` is the vertical midpoint of the lowercase "o".
+text.dropshadow,(color,black)<color>,1<xOffset>,1<yOffset>,0[blur] # Enable a drop-shadow effect for future text-drawing commands. The shadow will be drawn at (textX+xOffset, textY+yOffset). If greater than 0, `blur` is defined as the standard deviation to a Gaussian blur function.
+text.dropshadow,#_f # To disable drop shadow, set the first argument to anything that evaluates to False. Other text effects can be disabled in the same way.
+text.glow,(color,red)<color> # Glow effect: draws an outline around the edge of the text (like in SMAS). TODO: size, blur
 
 # LAYERS
 layer.new,0<depth>,layer0[name],0[x],0[y],256[width],256[height] # Create a new layer. Default depth is right in front of currently selected layer. Default name based on the given depth. Default x/y is (0,0) and default width and height are the current width and height of the base image. For depth, higher numbers are at the front, just like in the MR level editor. TODO: Better system for layer depth

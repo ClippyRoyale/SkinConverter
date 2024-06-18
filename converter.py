@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 7.3.0
+Version 7.3.2
 
 Copyright © 2022–2024 clippy#4722
 
@@ -54,7 +54,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,3,0]
+app_version = [7,3,2]
 
 # Why does Python not have this built in anymore???
 def cmp(x, y):
@@ -128,7 +128,7 @@ app_icon = PhotoImage(file='ui/iconHD.png')
 window.iconphoto(False, app_icon)
 
 colors = {
-    # 24 basic colors
+    # 25 basic colors
     'red': '#ff0000',
     'maroon': '#800000',
     'orange': '#ff8000',
@@ -153,6 +153,7 @@ colors = {
     'gray': '#808080',
     'silver': '#c0c0c0',
     'white': '#ffffff',
+    'transparent': '#00000000', # 8-digit
 
     # NES palette colors (Using Nestopia's 15° Canonical palette)
     'n00': '#666666',
@@ -255,11 +256,11 @@ menu_heading_adv = Label(main_frame, text='Advanced conversion options',
         font=f_heading, bg=colors['UI_BG'])
 
 menu_btns_p1 = [
-    Button(main_frame, text='Convert a Legacy16 skin to Legacy32',
+    Button(main_frame, text='Convert a Legacy5 skin to Legacy7',
             font=f_large, highlightbackground=colors['UI_BG']),
-    Button(main_frame, text='Convert a Deluxe skin to Legacy16',
+    Button(main_frame, text='Convert a Deluxe skin to Legacy5',
             highlightbackground=colors['UI_BG']),
-    Button(main_frame, text='Convert a Remake skin to Legacy16',
+    Button(main_frame, text='Convert a Remake skin to Legacy5',
             highlightbackground=colors['UI_BG']),
     Label(main_frame, bg=colors['UI_BG']), # filler
     Button(main_frame, text='Legacy/Custom...', 
@@ -3168,11 +3169,11 @@ def range_(i: list):
     l = []
     # Conditions vary depending on step's sign and closed_range flag
     if step > 0:
-        while (n <= stop if flags['closed_range'] else n < stop):
+        while (n <= stop if flags['closed_ranges'] else n < stop):
             l.append(n)
             n += step
     elif step < 0:
-        while (n >= stop if flags['closed_range'] else n > stop):
+        while (n >= stop if flags['closed_ranges'] else n > stop):
             l.append(n)
             n += step
     else: # step == 0
@@ -3407,39 +3408,83 @@ def hex_to_rgb(hex_str: str):
 
 def rgb(i: list):
     '''
-    (rgb,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,
+    (rgba,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,
         255[alpha: 0 to 255])
 
+    — OR —
+
+    (rgba,(list,255,128,0[,255])<list>)
+
     Returns a Color based on red, green, blue, and (optional) alpha values. 
-    (alias: rgba)
+    (alias: rgb)
     '''
 
-    r = i[1]
-    g = i[2]
-    b = i[3]
+    # Special case: first (and presumably only) argument has `list` type
+    if type(i[1]) == list and len(i[1]) >= 3:
+        if len(i[1]) == 3: # no alpha included
+            return Color(i[1][0], i[1][1], i[1][2], 255)
+        elif len(i[1]) >= 4:
+            return Color(i[1][0], i[1][1], i[1][2], i[1][3])
+        else:
+            log_warning(f'{i[0]}: command requires 3 arguments or a list with \
+3 or more items')
+            return
+
+    # If not special case, check arg count *again*
+    if len(i) <= 2:
+        log_warning(f'{i[0]}: command requires 3 arguments or a list with 3 or \
+more items')
+        return
+
+    r : int = i[1]
+    g : int = i[2]
+    b : int = i[3]
 
     if len(i) == 3:
         i.append(255) # If no alpha given, default to 255 (fully opaque)
-    a = i[4]
+    a : int = i[4]
 
     return Color(r, g, b, a)
 
 def hsl(i: list):
     '''
-    (hsl,0<hue: 0 to 359>,100<saturation: 0 to 100>,50<lightness: 0 to 100>,
+    (hsla,0<hue: 0 to 359>,100<saturation: 0 to 100>,50<lightness: 0 to 100>,
         255[alpha: 0 to 255]) 
 
+    — OR —
+
+    (hsla,(list,255,128,0[,255])<list>)
+
     Define a color based on the hue/saturation/lightness (or luminosity) model, 
-    plus optional alpha. (Alias: hsla)
+    plus optional alpha. (Alias: hsl)
     '''
 
-    h = i[1]
-    s = i[2]
-    l = i[3]
+    # Special case: first (and presumably only) argument has `list` type
+    if type(i[1]) == list and len(i[1]) >= 3:
+        if len(i[1]) == 3: # no alpha included
+            rgba = hsla_to_rgba([i[1][0], i[1][1], i[1][2], 255])
+            return Color(rgba[0], rgba[1], rgba[2], rgba[3])
+        elif len(i[1]) >= 4:
+            rgba = hsla_to_rgba([i[1][0], i[1][1], i[1][2], i[1][3]])
+            return Color(rgba[0], rgba[1], rgba[2], rgba[3])
+        else:
+            log_warning(f'{i[0]}: command requires 3 arguments or a list with \
+3 or more items')
+            return
+
+    # If not special case, check arg count *again*
+    if len(i) <= 2:
+        log_warning(f'{i[0]}: command requires 3 arguments or a list with 3 or \
+more items')
+        return
+
+    h : int = i[1]
+    s : int = i[2]
+    l : int = i[3]
 
     if len(i) == 3:
         i.append(255) # If no alpha given, default to 255 (fully opaque)
-    a = i[4]
+    a : int = i[4]
 
     rgba = hsla_to_rgba([h,s,l,a])
     return Color(rgba[0], rgba[1], rgba[2], rgba[3])
@@ -3460,7 +3505,10 @@ def getpixel(i: list, base_image: PIL.Image.Image):
         else:
             log_warning(f'{i[0]}: Unrecognized image name {i[1]}')
     else:
-        i.insert(1, '')
+        i.insert(1, 'new')
+        # Default to `new` if no image specified.
+        # In most other commands, we just insert a blank, but here we need
+        # the image name to be right because we pass it to `getrgba` later
 
     x : int = i[2]
     y : int = i[3]
@@ -3511,16 +3559,16 @@ or x & y values.')
     # If width/height specified, use those values.
     # If neither is specified, use 1×1 (single pixel).
     # If only width is specified, use that value for height too.
-    if len(i) == 3:
+    if len(i) == 4:
         i += [1, 1]
     width : int = i[4]
-    if len(i) == 4:
+    if len(i) == 5:
         i += [width]
     height : int = i[5]
 
     if width <= 1 and height <= 1:
         rgba : Tuple[int] = base_image.getpixel((x, y))
-        return rgba
+        return list(rgba)
     else:
         avgR = 0
         avgG = 0
@@ -3582,10 +3630,10 @@ or x & y values.')
     # If width/height specified, use those values.
     # If neither is specified, use 1×1 (single pixel).
     # If only width is specified, use that value for height too.
-    if len(i) == 3:
+    if len(i) == 4:
         i += [1, 1]
     width : int = i[4]
-    if len(i) == 4:
+    if len(i) == 5:
         i += [width]
     height : int = i[5]
 
@@ -3636,10 +3684,10 @@ Defaulting to “old”.')
     # If width/height specified, use those values.
     # If neither is specified, use 1×1 (single pixel).
     # If only width is specified, use that value for height too.
-    if len(i) == 3:
+    if len(i) == 4:
         i += [1, 1]
     width = i[4]
-    if len(i) == 4:
+    if len(i) == 5:
         i += [width]
     height = i[5]
 
@@ -3695,10 +3743,10 @@ Defaulting to “old”.')
     # If width/height specified, use those values.
     # If neither is specified, use 1×1 (single pixel).
     # If only width is specified, use that value for height too.
-    if len(i) == 3:
+    if len(i) == 4:
         i += [1, 1]
     width = i[4]
-    if len(i) == 4:
+    if len(i) == 5:
         i += [width]
     height = i[5]
 
@@ -3754,10 +3802,10 @@ Defaulting to “old”.')
     # If width/height specified, use those values.
     # If neither is specified, use 1×1 (single pixel).
     # If only width is specified, use that value for height too.
-    if len(i) == 3:
+    if len(i) == 4:
         i += [1, 1]
     width = i[4]
-    if len(i) == 4:
+    if len(i) == 5:
         i += [width]
     height = i[5]
 
@@ -3817,10 +3865,10 @@ Defaulting to “old”.')
     # If width/height specified, use those values.
     # If neither is specified, use 1×1 (single pixel).
     # If only width is specified, use that value for height too.
-    if len(i) == 3:
+    if len(i) == 4:
         i += [1, 1]
     width = i[4]
-    if len(i) == 4:
+    if len(i) == 5:
         i += [width]
     height = i[5]
 
@@ -3877,10 +3925,10 @@ Defaulting to “old”.')
     # If width/height specified, use those values.
     # If neither is specified, use 1×1 (single pixel).
     # If only width is specified, use that value for height too.
-    if len(i) == 3:
+    if len(i) == 4:
         i += [1, 1]
     width = i[4]
-    if len(i) == 4:
+    if len(i) == 5:
         i += [width]
     height = i[5]
 
@@ -3937,10 +3985,10 @@ Defaulting to “old”.')
     # If width/height specified, use those values.
     # If neither is specified, use 1×1 (single pixel).
     # If only width is specified, use that value for height too.
-    if len(i) == 3:
+    if len(i) == 4:
         i += [1, 1]
     width = i[4]
-    if len(i) == 4:
+    if len(i) == 5:
         i += [width]
     height = i[5]
 
@@ -3997,10 +4045,10 @@ Defaulting to “old”.')
     # If width/height specified, use those values.
     # If neither is specified, use 1×1 (single pixel).
     # If only width is specified, use that value for height too.
-    if len(i) == 3:
+    if len(i) == 4:
         i += [1, 1]
     width = i[4]
-    if len(i) == 4:
+    if len(i) == 5:
         i += [width]
     height = i[5]
 
@@ -6175,9 +6223,9 @@ from a stack of {max_breaks} loops')
                     jumped = True
                 # Otherwise, jump to first line inside loop
                 else:
-                    index = loop_data[index]['start_lines'][-1] + 1
+                    index = loop_data[index]['start_lines'][-1]
                     set_ln(index)
-                    jumped = True
+                    jumped = False
                     # ...and we're off to another iteration of the loop
 
             elif item[0] == 'foreach':
