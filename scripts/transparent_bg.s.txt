@@ -1,0 +1,19 @@
+version 7 3 2
+
+# Default loop limit is 10,000 -- and since we're going pixel-by-pixel, that won't work here. The v5 skin sheet is 66k total pixels, and the v7 sheet is 144k pixels, so both would break the limit.
+flag loop_limit 200000
+
+name "Transparent Background Remover"
+author "Clippy"
+description "Removes a partially transparent background (such as the Mario Royale skin template) from an image."
+
+set $w (width "old")
+set $h (height "old")
+
+for $x $w
+    for $y $h
+        if (< (alpha (getpixel $x $y)) 200)
+            setpixel $x $y (color "transparent")
+        end if
+    end for
+end for

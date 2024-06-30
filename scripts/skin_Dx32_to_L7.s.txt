@@ -1,0 +1,158 @@
+version 7 4 0
+name "Deluxe to Legacy7 (REV-A)"
+author "Clippy"
+description "Convert a Mario Royale skin from the Deluxe format (16×32 small sprites) to the Legacy7 format (24×24 small sprites)."
+
+template "assets/legacy7/smb_skin0.png"
+
+if (!= (width old) 256)
+    error "Are you sure that's a Deluxe skin? Please try again with a source image that has a width of 256 pixels."
+end if
+
+base 1056 136
+
+# Fireballs, leaf FX, and P-Meter (from template)
+default  0 0  368 16
+
+# SMALL -- TODO
+# Will need downscale option
+
+set $old_x_list (list \
+    240 48  224 208 192 160 160 224 208 192 160 176 240 144 128 112 \
+    112 96  80  240 64  240 64  32  32 )
+    # Note that we're taking advantage of the otherwise unused taunt frame 1
+    # for the spin jump
+set $old_y_list (* (list 0) 21) # TODO: just hardcode the old&new y positions
+
+# TODO: test whether having spaces on both sides of a backslash messes things up
+set $new_x_list (list \
+    4   28  52  76  100 124 148 172 196 220 244 268 292 316 340 364 \
+    388 412 436 460 484 508 532 556 580)
+set $new_y_list (* (list 16) 21)
+
+set $small_fit (empty  32 0  224 8)
+if $small_fit
+    for $i (len $old_x_list)
+        copy    (get $old_x_list $i) 8    (get $new_x_list $i) 16    16 24
+    end for
+else
+    set $new_width 16 # because source sprites won't be wider than 16px
+    set $new_height 24
+    set $left 0
+    set $right 15 # INCLUSIVE
+    set $bottom 31 # INCLUSIVE
+    # This is the one that can vary:
+    for $top 0 8
+        if (or (not (empty 80 0 176 (+ 1 $top))) (not (empty 32 0 32 (+ 1 $top)))) # Includes swim sprites but not the dropped taunt frame
+            break
+        end if
+    end for
+
+    # Adapted from scale_all_vert in skin_Dx32_to_L.txt
+    for $i (len $old_x_list)
+        set $old_x (get $old_x_list $i)
+        set $old_y (get $old_y_list $i)
+        set $new_x (get $new_x_list $i)
+        set $new_y (get $new_y_list $i)
+        
+        copyscale   (+ $old_x $left)  \
+            (+ $old_y $top)  \
+            (+ 1 (- $right $left))  \
+            (+ 1 (- $bottom $top))  \
+            $new_x  $new_y  $new_width  $new_height
+    end for
+end if
+
+# Spin is gonna look kinda bad but there's no way around that
+# Mostly we just copy above, but we do need to flip one thing...
+flip    "x"     508 24  # (... then flip)
+
+# SUPER
+copy    224 32  0 40    32 32   # stand
+copy    128 64  32 40   32 32   # taunt
+copy    192 32  64 40   32 32   # walk1
+copy    160 32  96 40   32 32   # walk2
+copy    128 32  128 40  32 32   # walk3
+copy    32 32   160 40  32 32   # jump
+dup     160 40  192 40  32 32   # fall (autofill with jump)
+dup     64 40   224 40  128 32  # run 1/2/3/j (autofill with walk)
+copy    64 32   352 40  32 32   # skid
+copy    96 32   384 40  32 32   # crouch
+copy    0 32    416 40  32 32   # climb1
+copy    224 64  448 40  32 32   # climb2
+copy    0 64    736 40  32 32   # transform
+# Super/Fire swim sprites go from 3 to 4 frames
+copy    96 64   480 40  32 32   # swim1->1
+copy    96 64   512 40  32 32   # swim1->2
+copy    64 64   544 40  32 32   # swim2->3
+copy    32 64   576 40  32 32   # swim3->4
+# Spin is gonna look kinda bad but there's no way around that
+dup     0 40    608 40  32 32   # spin1/left (autofill with stand)
+copy    192 64  32 40   32 32   # spin2/front (autofill with taunt)
+dup     0 40    672 40  32 32   # spin3/right (autofill with stand...)
+flip    x       672 40  32 32   # (...then flip)
+copy    192 64  32 40   32 32   # spin4/back (autofill with taunt, sadly)
+
+# FIRE -- TODO
+copy    224 128 0 72    32 32   # stand
+copy    128 160 32 72   32 32   # taunt
+copy    192 128 64 72   32 32   # walk1
+copy    160 128 96 72   32 32   # walk2
+copy    128 128 128 72  32 32   # walk3
+copy    32 128  160 72  32 32   # jump
+dup     160 72  192 72  32 32   # fall (autofill with jump)
+dup     64 72   224 72  128 32  # run 1/2/3/j (autofill with walk)
+copy    64 128  352 72  32 32   # skid
+copy    96 128  384 72  32 32   # crouch
+copy    0 128   416 72  32 32   # climb1
+copy    224 160 448 72  32 32   # climb2
+copy    224 192 736 72  32 32   # transform
+copy    0 160   768 72  32 32   # attack
+# Super/Fire swim sprites go from 3 to 4 frames
+copy    96 160  480 72  32 32   # swim1->1
+copy    96 160  512 72  32 32   # swim1->2
+copy    64 160  544 72  32 32   # swim2->3
+copy    32 160  576 72  32 32   # swim3->4
+# Spin is gonna look kinda bad but there's no way around that
+dup     0 72    608 72  32 32   # spin1/left (autofill with stand)
+copy    192 160 32 40   32 32   # spin2/front (autofill with taunt)
+dup     0 72    672 72  32 32   # spin3/right (autofill with stand...)
+flip    x       672 72  32 32   # (...then flip)
+copy    192 160 32 40   32 32   # spin4/back (autofill with taunt, sadly)
+
+# LEAF
+copy    224 224 0 104   32 32   # stand
+copy    128 256 32 104  32 32   # taunt
+copy    192 224 64 104  32 32   # walk1
+copy    160 224 96 104  32 32   # walk2
+copy    128 224 128 104 32 32   # walk3
+copy    32 224  160 104 32 32   # jump
+dup     160 104 192 104 32 32   # fall (autofill with jump)
+copy    64 224  352 104 32 32   # skid
+copy    96 224  384 104 32 32   # crouch
+copy    0 224   416 104 32 32   # climb1
+copy    224 256 448 104 32 32   # climb2
+copy    0 256   736 104 32 32   # transform
+# Super/Fire swim sprites go from 3 to 4 frames
+copy    96 256  480 104 32 32   # swim1->1
+copy    96 256  512 104 32 32   # swim1->2
+copy    64 256  544 104 32 32   # swim2->3
+copy    32 256  576 104 32 32   # swim3->4
+# this time we have real spin sprites
+copy    160 288 608 104 32 32   # spinjump1/left
+copy    128 288 640 104 32 32   # spinjump2/front
+copy    96 288  672 104 32 32   # spinjump3/right
+copy    64 288  704 104 32 32   # spinjump4/back
+# Leaf-exclusive moves:
+dup     608 104 736 104 128 32  # spinattack
+copy    0 256   864 104 32 32   # glide1
+copy    224 288 896 104 32 32   # glide2
+copy    192 288 928 104 32 32   # glide3
+copy    192 320 960 104 32 32   # maxglide1
+copy    160 320 992 104 32 32   # maxglide2
+copy    128 320 1024 104 32 32  # maxglide3
+# Unlike other powerups, Leaf does have p-run sprites
+copy    32 288  224 104 32 32   # run1
+copy    0 288   256 104 32 32   # run2
+copy    224 320 288 104 32 32   # run3
+dup     960 104 320 104 32 32   # runjump

@@ -1,0 +1,22 @@
+version,7,2,0
+name,NSMBW Downscaler
+description,Scales sprite sheets down from 24×24 (NSMBW size) to 16×16 (MR size). For use in creating the NSMBW mod.
+author,Clippy
+
+base,blank
+
+set,$old_w,(width,old)
+set,$old_h,(height,old)
+
+if,(or, (!=,0,(%,$old_w,3)), (!=,0,(%,$old_h,3)) )
+    error,"Width and height of original image must be divisible by 3"
+end,if
+
+set,$new_w,(//,(*,$old_w,2),3)	# 2/3 of old width
+set,$new_h,(//,(*,$old_h,2),3)	# 2/3 of old height
+
+# Canvas is still blank here (for now)
+resize,$new_w,$new_h
+
+copyscale, 0,0,$old_w,$old_h, 0,0,$new_w,$new_h
+

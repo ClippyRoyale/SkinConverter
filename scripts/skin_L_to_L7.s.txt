@@ -1,0 +1,135 @@
+version 7 3 0
+name "Legacy16 to Legacy32"
+author "Clippy"
+description "Convert a Mario Royale skin from the v4–v6 format (16×32 Super sprites) to the v7 format (32×32 Super sprites; 24×24 small sprites)."
+
+template "assets/legacy7/smb_skin0.png"
+
+# Uncomment for testing
+#open "assets_full/legacy/smb_skin*.png"
+#save "conv_skin*.png"
+#start 0
+#stop 10
+
+base 1056 136
+
+# Leaf FX and P-Meter (from template)
+default 128 0   240 16
+
+# Fireballs
+copy    16 0    0 0     64 16
+# Explosion FX
+copy    224 0   64 0    32 16
+copy    240 16  96 0
+copy    240 32  112 0
+
+# SMALL
+copy    208 0   4 24    # stand
+copy    80 0    28 24   # taunt
+copy    192 0   52 24   # walk1
+copy    176 0   76 24   # walk2
+copy    160 0   100 24  # walk3
+copy    128 0   124 24  # jump
+dup     124 24  148 24  # fall (autofill with jump)
+dup     52 24   176 24  88 16   # run 1/2/3/j (autofill with walk)
+copy    144 0   268 24  # skid
+dup     4 24    292 24  # crouch (autofill with stand)
+copy    112 0   316 24  # climb1
+copy    96 0    340 24  # climb2
+# Small swim sprites go from 5 to 4 frames (keeping original frames 1,2,3,5)
+copy    240 80  364 24  # swim 1->1
+copy    224 80  388 24  # swim 2->2
+copy    208 80  412 24  # swim 3->3
+copy    176 80  436 24  # swim 5->4
+# Spin is gonna look kinda bad but there's no way around that
+dup     4 24    460 24  # spin1/left (autofill with stand)
+dup     28 24   484 24  # spin2/front (autofill with taunt)
+dup     4 24    508 24  # spin3/right (autofill with stand...)
+flip    "x"     508 24  # (... then flip)
+dup     28 24   532 24  # spin4/front (autofill with taunt, sadly)
+# Animated death sprite, like in SMW
+copy    0 0     556 24
+copy    0 0     580 24
+
+# SUPER
+copy    208 16  8 40    16 32   # stand
+copy    0 16    40 40   16 32   # taunt
+copy    176 16  72 40   16 32   # walk1
+copy    160 16  104 40  16 32   # walk2
+copy    144 16  136 40  16 32   # walk3
+copy    112 16  168 40  16 32   # jump
+dup     168 40  200 40  16 32   # fall (autofill with jump)
+dup     72 40   232 40  112 32  # run 1/2/3/j (autofill with walk)
+copy    128 16  360 40  16 32   # skid
+copy    192 16  392 40  16 32   # crouch
+copy    96 16   424 40  16 32   # climb1
+copy    80 16   456 40  16 32   # climb2
+copy    224 16  744 40  16 32   # transform
+# Super/Fire swim sprites go from 6 to 4 frames (keep original frames 1,2,3,6)
+copy    240 96  488 40  16 32   # swim1->1
+copy    224 96  520 40  16 32   # swim2->2
+copy    208 96  554 40  16 32   # swim3->3
+copy    160 96  584 40  16 32   # swim6->4
+# Spin is gonna look kinda bad but there's no way around that
+dup     8 40    616 40  16 32   # spin1/left (autofill with stand)
+dup     40 40   648 40  16 32   # spin2/front (autofill with stand)
+dup     8 40    680 40  16 32   # spin3/right (autofill with stand...)
+flip    "x"     680 40  16 32   # (...then flip)
+dup     40 40   712 40  16 32   # spin4/back (autofill with stand, sadly)
+
+# FIRE
+# These sprites are complicated because some skins use the full 32×32 space and some don't.
+# We need to determine how to place Fire sprites on the 32×32 grid, based on how the contents of their leftmost 8 columns of pixels
+# Ex.: Infringio is NOT considered 32×32 because his gun doesn't go into the left 8 columns
+
+# 32×32 => calculate left bounds, and use the position lists below
+set $old_x_list (list   176 16  128 96  64  0   32  224 192 160 64  224)
+set $old_y_list (list   48  16  48  48  48  48  48  128 128 128 128 48)
+# order: /              stand   walk1   walk3   skid    swim2   swim6->4
+#        \                  taunt   walk2   jump    swim1   swim3   attack
+set $new_x_list (list   0   32  64  96  128 160 352 480 512 546 576 768)
+set $new_y_list (list   72  72  72  72  72  72  72  72  72  72  72  72)
+# Don't bother checking swim4 and swim5 because they'll get dropped anyway
+
+# Get left/right scaling bounds for a 32×32 area.
+# Adapted from `bounds` subroutine in Dx32_to_L16.txt
+set $left 8
+for $i (len $old_x_list) # i is looping thru the position lists
+    for $j 0 8 # j is looping thru the pixel columns of each sprite
+        if (not (empty (+ $j (get $old_x_list $i)) (get $old_y_list $i) 1 32))
+            set $left (min $j $left)
+            break
+        end if
+    end for
+end for
+
+# Place a fire sprite in the position that'll mess up its hitbox the LEAST.
+for $i (len $old_x_list) # i is looping thru the position lists
+    copy (+ $left (get $old_x_list $i)) (get $old_y_list $i) (get $new_x_list $i) (get $new_y_list $i) (- 32 $left) 32
+end for
+
+# 16×32 => always put in same location
+copy    160 48  392 72  16 32   # crouch
+copy    64 16   424 72  16 32   # climb1
+copy    48 16   456 72  16 32   # climb2
+copy    208 48  744 72  16 32   # transform
+# duplications => don't use the `place` subroutine for these either
+dup     160 72  192 72  32 32   # fall (autofill with jump)
+dup     64 72   224 72  128 32  # run 1/2/3/j (autofill with walk)
+# Spin is gonna look kinda bad but there's no way around that
+dup     0 72    608 72  32 32   # spin1/left (autofill with stand)
+dup     32 72   640 72  32 32   # spin2/front (autofill with stand)
+dup     0 72    672 72  32 32   # spin3/right (autofill with stand...)
+flip    "x"     672 72  32 32   # (...then flip)
+dup     32 72   704 72  32 32   # spin4/back (autofill with stand, sadly)
+
+# LEAF
+# Fill in the super sprites so that ears/tail can be added manually
+dup     0 40    0 104       736 32  # most of them
+dup     616 40  744 104     112 32  # spinattack (autofill with spinjump)
+dup     200 40  872 104     16 32   # fly1 (autofill with fall)
+dup     200 40  904 104     16 32   # fly2 (autofill with fall)
+dup     200 40  936 104     16 32   # fly3 (autofill with fall)
+dup     328 40  968 104     16 32   # pfly1 (autofill with pjump)
+dup     328 40  1000 104    16 32   # pfly2 (autofill with pjump)
+dup     328 40  1032 104    16 32   # pfly3 (autofill with pjump)

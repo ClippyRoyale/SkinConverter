@@ -1,0 +1,10 @@
+version,7,2,0
+
+name,Hello World!
+author,Clippy
+description,Just a simple Hello World program. Doesn't convert any files.
+
+open,0
+save,0
+
+warning,"Hello world!"
