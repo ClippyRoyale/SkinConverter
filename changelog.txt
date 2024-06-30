@@ -488,3 +488,23 @@ Version 7.3.2 (Jun. 17, 2024):
       * Fix default image on getpixel
       * Fixed basically every color-related command 
         (getpixel, getrgba, red, rgba, etc.)
+
+Version 7.4.0 (Jun. 29, 2024):
+  + New script to convert Deluxe skins to Legacy v7 format
+      * Requires SkinV7 template (can be downloaded through the setup dialog)
+      - Removed SkinFX.png file included with installation (superseded by 
+        downloadable legacy7/smb_skin0.png)
+  + `titlecase` and `sentencecase` subcommands for strings 
+  * Reorganized main menu
+      + Added button for the background-remover script from the last update
+  * Bug fixes:
+      * Fixed R->L5 button on menu opening wrong script
+      * `join` command now converts everything to a string before joining it
+  * Yes, this is ANOTHER update to the v7 branch
+      * v8 is coming out any month now, I promise
+  - Moved remaining X-to-Deluxe conversion scripts to Deprecated folder
+      * They were already gone from the main menu, but this clears out the
+        scripts folder a little more
+  - Removed the W
+      * Unfortunately, I ran out of space for The W button on the main menu.
+        It'll come back someday.

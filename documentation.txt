@@ -377,6 +377,9 @@ const,$TAU<name>,6.283<value> # Set a constant value so you can refer back to it
 (upper,"Hello"<str>) # Convert string to all caps. (Alias: uppercase)
 (lower,"Hello"<str>) # Convert string to all lowercase. (Alias: lowercase)
 
+(titlecase,"hello world"<str>) # Convert string to title case (first letter of each word capitalized; rest of word lowercase). This isn't a "true" title case, because short words like "a", "of", or "the" are still capitalized. Python has a similar function, but it's buggy so I made my own.
+(sentencecase,"hello"<str>) # Capitalize first letter of string, make the rest lowercase.
+
 (startswith,"Hello"<str>,"He"<substr>) # Returns true if str starts with substr; false otherwise.
 (endswith,"Hello"<str>,"lo"<substr>) # Returns true if str ends with substr; false otherwise.
 
@@ -498,10 +501,6 @@ blur,1<stdDev> # Gaussian blur filter
 
 # VARIABLES
 load,alt2<name>,smb_skin2580.png<path> # Load the image at the given path and store it associated with the given string identifier. This is a header command, so it will always be called once at the start of the program and it can't be used with variables. The image cannot be retrieved like a variable, but it does block its name from being used for variables. TODO: Maybe call this "setpath"? Or "source"? Reserve "read" for a possible future non-header version
-
-# STRINGS
-(titlecase,"hello world"<str>) # Convert string to title case (first letter of each word capitalized; rest of word lowercase). Python has a similar function but it's buggy so I'm not using it.
-(sentencecase,"hello"<str>) # Capitalize first letter of string, make the rest lowercase.
 
 # LISTS
 # Rule of thumb: anything with prefix "list." changes the list in place.

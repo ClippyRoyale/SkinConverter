@@ -1,27 +1,22 @@
 '''
 MR Skin Converter 
-Version 7.3.2
+Version 7.4.0
 
 Copyright © 2022–2024 clippy#4722
 
-Having trouble running the program? Try running it online:
-https://replit.com/@ClippyRoyale/MR-Converter-GUI?embed=true
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program (see the file license.txt).
-    If not, see <https://www.gnu.org/licenses/>.
-
-See changelog.txt for version history.
+You should have received a copy of the GNU General Public License
+along with this program (see the file license.txt).
+If not, see <https://www.gnu.org/licenses/>.
 '''
 
 import math
@@ -54,7 +49,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,3,2]
+app_version = [7,4,0]
 
 # Why does Python not have this built in anymore???
 def cmp(x, y):
@@ -254,36 +249,63 @@ menu_heading = Label(main_frame, text='What do you want to convert?',
         font=f_heading, bg=colors['UI_BG'])
 menu_heading_adv = Label(main_frame, text='Advanced conversion options', 
         font=f_heading, bg=colors['UI_BG'])
+menu_spacer = Label(main_frame, bg=colors['UI_BG'])
+
+menu_btn_skin_l_l7 = Button(main_frame, 
+        text='Convert a Legacy5 skin to Legacy7',
+        font=f_large, highlightbackground=colors['UI_BG'])
+menu_btn_skin_d_l7 = Button(main_frame, 
+        text='Convert a Deluxe skin to Legacy7',
+        highlightbackground=colors['UI_BG'])
+menu_btn_trans_bg = Button(main_frame, 
+        text='Remove a partially transparent background',
+        highlightbackground=colors['UI_BG'])
+
+menu_btn_skin_d_l = Button(main_frame, text='Convert a Deluxe skin to Legacy',
+        highlightbackground=colors['UI_BG'])
+menu_btn_skin_r_l = Button(main_frame, text='Convert a Remake skin to Legacy',
+        highlightbackground=colors['UI_BG'])
+menu_btn_map_l_ln = Button(main_frame, 
+        text='Convert a Legacy map mod to Legacy map_new',
+        highlightbackground=colors['UI_BG'])
+
+menu_btn_custom = Button(main_frame, text='Run a custom script',
+        highlightbackground=colors['UI_BG'])
+menu_btn_submit = Button(main_frame, text='Submit your custom script',
+        highlightbackground=colors['UI_BG'])
+menu_btn_multi = Button(main_frame, text='Convert multiple images...',
+        highlightbackground=colors['UI_BG'])
+menu_btn_assets = Button(main_frame, text='Update game images',
+        highlightbackground=colors['UI_BG'])
+
+menu_btn_page_next = Button(main_frame, text='Advanced/Custom...', 
+        highlightbackground=colors['UI_BG'])
+menu_btn_page_prev = Button(main_frame, text='Back', 
+        highlightbackground=colors['UI_BG'])
+menu_btn_exit = Button(main_frame, text='Exit', 
+        highlightbackground=colors['UI_BG'])
 
 menu_btns_p1 = [
-    Button(main_frame, text='Convert a Legacy5 skin to Legacy7',
-            font=f_large, highlightbackground=colors['UI_BG']),
-    Button(main_frame, text='Convert a Deluxe skin to Legacy5',
-            highlightbackground=colors['UI_BG']),
-    Button(main_frame, text='Convert a Remake skin to Legacy5',
-            highlightbackground=colors['UI_BG']),
-    Label(main_frame, bg=colors['UI_BG']), # filler
-    Button(main_frame, text='Legacy/Custom...', 
-            highlightbackground=colors['UI_BG']),
-    Label(main_frame, bg=colors['UI_BG']), # filler
-    Button(main_frame, text='Exit', highlightbackground=colors['UI_BG']),
+    menu_btn_skin_l_l7,
+    menu_btn_skin_d_l7,
+    menu_btn_trans_bg,
+    menu_spacer,
+    menu_btn_page_next,
+    menu_spacer,
+    menu_btn_exit,
 ]
 
 menu_btns_p2 = [
-    Button(main_frame, 
-            text='Convert a Legacy map mod to Legacy map_new',
-            highlightbackground=colors['UI_BG']),
-    Label(main_frame, bg=colors['UI_BG']), # filler
-    Button(main_frame, text='Run a custom script',
-            highlightbackground=colors['UI_BG']),
-    Button(main_frame, text='Submit your custom script',
-            highlightbackground=colors['UI_BG']),
-    Button(main_frame, text='Convert multiple images...',
-            highlightbackground=colors['UI_BG']),
-    Button(main_frame, text='Update game images',
-            highlightbackground=colors['UI_BG']),
-    Label(main_frame, bg=colors['UI_BG']), # filler
-    Button(main_frame, text='Back', highlightbackground=colors['UI_BG']),
+    menu_btn_skin_d_l,
+    menu_btn_skin_r_l,
+    menu_btn_map_l_ln,
+    menu_spacer,
+    menu_btn_custom,
+    #menu_btn_submit, # temporarily removed for space reasons
+    menu_btn_multi,
+    menu_btn_assets,
+    menu_spacer,
+    menu_btn_page_prev,
 ]
 
 icons = {
@@ -2285,6 +2307,8 @@ def arg_check(cmd: list, is_subcmd: bool):
         'str_mul': 2, # DEPRECATED since 7.2
         'upper': 1,
         'lower': 1,
+        'titlecase': 1,
+        'sentencecase': 1,
         'startswith': 2,
         'endswith': 2,
         'join': 1,
@@ -2509,6 +2533,10 @@ string repetition instead')
         result = py_method(cmd[0:2], 'upper') # args: var + 0 extra
     elif cmd[0] == 'lower':
         result = py_method(cmd[0:2], 'lower') # args: var + 0 extra
+    elif cmd[0] == 'titlecase':
+        result = titlecase(cmd)
+    elif cmd[0] == 'sentencecase':
+        result = py_method(cmd[0:2], 'capitalize') # args: var + 0 extra
     elif cmd[0] == 'startswith':
         result = py_method(cmd[0:3], 'startswith') # args: var + 1 extra
     elif cmd[0] == 'endswidth':
@@ -3185,6 +3213,29 @@ def range_(i: list):
 
 # STRING SUBCOMMANDS
 
+def titlecase(i: list):
+    '''
+    (titlecase,"hello world"<str>)
+    
+    Convert string to title case (first letter of each word capitalized; 
+    rest of word lowercase). This isn't a "true" title case, because short 
+    words like "a", "of", or "the" are still capitalized. Python has a similar 
+    function, but it's buggy so I made my own.
+    '''
+    str__ = i[1]
+    result = ''
+    cap_next_letter = True
+    for c in str__:
+        if cap_next_letter and c.isalpha():
+            # use title(), not upper() -- for edge cases like ǅ
+            result += c.title()
+            cap_next_letter = False
+        else:
+            result += c.lower()
+        if c.isspace():
+            cap_next_letter = True
+    return result
+
 def join(i: list):
     '''
     (join,(list,"Hello","World")<strList>,""[sep]) 
@@ -3196,7 +3247,14 @@ def join(i: list):
     if len(i) == 2:
         i.append('')
     sep : str = i[2]
-    return sep.join(strList)
+    
+    result = ''
+    for i in range(len(strList)):
+        # Convert each item to string before adding to list
+        result += str(strList[i])
+        if i != len(strList)-1:
+            result += sep
+    return result
 
 def split(i: list):
     '''
@@ -4298,34 +4356,36 @@ def menu():
 
     # PAGE 1
 
-    menu_btns_p1[0].bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/skin_L16_to_L32.s.txt'))
-    menu_btns_p1[1].bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/skin_Dx32_to_L.txt'))
-    menu_btns_p1[2].bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/obj_L_to_Dx.txt'))
+    menu_btn_skin_l_l7.bind('<ButtonRelease-1>', 
+            lambda _: script_button('scripts/skin_L_to_L7.s.txt'))
+    menu_btn_skin_d_l7.bind('<ButtonRelease-1>', 
+            lambda _: script_button('scripts/skin_Dx32_to_L7.s.txt'))
 
-    menu_btns_p1[4].bind('<ButtonRelease-1>', 
+    menu_btn_page_next.bind('<ButtonRelease-1>', 
             lambda _: menu_p2())
 
-    menu_btns_p1[6].bind('<ButtonRelease-1>', 
+    menu_btn_exit.bind('<ButtonRelease-1>', 
             lambda _: exit_app())
 
     # PAGE 2
 
-    menu_btns_p2[0].bind('<ButtonRelease-1>', 
+    menu_btn_skin_d_l.bind('<ButtonRelease-1>', 
+            lambda _: script_button('scripts/skin_Dx32_to_L.txt'))
+    menu_btn_skin_r_l.bind('<ButtonRelease-1>', 
+            lambda _: script_button('scripts/skin_R_to_L.txt'))
+    menu_btn_map_l_ln.bind('<ButtonRelease-1>', 
             lambda _: script_button('scripts/map_new.txt'))
 
-    menu_btns_p2[2].bind('<ButtonRelease-1>', 
+    menu_btn_custom.bind('<ButtonRelease-1>', 
             lambda _: script_button(''))
-    menu_btns_p2[3].bind('<ButtonRelease-1>', 
+    menu_btn_submit.bind('<ButtonRelease-1>', 
             lambda _: the_W())
-    menu_btns_p2[4].bind('<ButtonRelease-1>', 
+    menu_btn_multi.bind('<ButtonRelease-1>', 
             lambda _: new_multi_event())
-    menu_btns_p2[5].bind('<ButtonRelease-1>', 
+    menu_btn_assets.bind('<ButtonRelease-1>', 
             lambda _: install_assets())
 
-    menu_btns_p2[7].bind('<ButtonRelease-1>', 
+    menu_btn_page_prev.bind('<ButtonRelease-1>', 
             lambda _: menu_p1())
 
     menu_p1()
@@ -6604,8 +6664,12 @@ smb_obj.png',
     ['https://raw.githubusercontent.com/mroyale/assets-dx/main/img/game/\
 smb_mario.png', 
         'deluxe/smb_mario.png'],
-    ['https://github.com/mroyale/assets/raw/legacy/img/game/smb_map_new.png', 
+    ['https://raw.githubusercontent.com/mroyale/assets/legacy/img/game/\
+smb_map_new.png', 
         'legacy/smb_map_new.png'],
+    ['https://raw.githubusercontent.com/mroyale/assets/v7/img/skins/\
+smb_skin0.png',
+        'legacy7/smb_skin0.png'],
 ]
 
 # Check if assets need to be (re)installed
@@ -6641,7 +6705,7 @@ i[0], icon='error')
 i[0], icon='error')
             menu()
 
-    simple_dialog('Success', 'The images were successfully downloaded.',
+    simple_dialog('Success!', 'The images were successfully downloaded.',
                 icon='done')
     menu()
 
