@@ -508,3 +508,12 @@ Version 7.4.0 (Jun. 29, 2024):
   - Removed the W
       * Unfortunately, I ran out of space for The W button on the main menu.
         It'll come back someday.
+
+Version 7.5.0 (Sep. 22, 2024):
+  + Legacy5->Legacy7 conversion script now preserves credits area and includes
+    status report regarding possible issues with the conversion
+  + New commands: sum, list.swap, bin, hex
+  * Bug fixes:
+      * rgb+hsl now work with 3 arguments
+      * and+or once again work with literals and variables (they've only worked 
+        with subcommands since 7.2.1)

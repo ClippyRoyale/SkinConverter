@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 7.4.0
+Version 7.5.0
 
 Copyright © 2022–2024 clippy#4722
 
@@ -49,7 +49,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,4,0]
+app_version = [7,5,0]
 
 # Why does Python not have this built in anymore???
 def cmp(x, y):
@@ -407,7 +407,7 @@ header_commands = ['mrconverter', 'version', 'flag', 'name', 'description',
 # the variable will be kept as a Var class (instead of being substituted).
 set_commands = ['set', 'change', 'const', 'for', 'foreach',
                 'list.add', 'list.addall', 'list.clear', 'list.insert',
-                'list.remove', 'list.replace',
+                'list.remove', 'list.replace', 'list.swap',
                 # Augmented assignment
                 'iadd', 'isub', 'imul', 'itruediv', 
                 'ifloordiv', 'imod', 'ipow',
@@ -455,7 +455,8 @@ class Color:
             return True
         return self.red == other.red \
             and self.green == other.green \
-            and self.blue == other.blue
+            and self.blue == other.blue \
+            and self.alpha == other.alpha
     
     def __repr__(self):
         return f'<Color: \
@@ -1947,6 +1948,25 @@ def list_replace(i: list):
     l : list = subst_var(listVar, i[0], mutable=True)
     l[index] = item
 
+def list_swap(i: list):
+    '''
+    list.swap $l<listVar> 0<index1> 1<index2> 
+    
+    Swap the positions of the items of `listVar` at `index1` and `index2`  
+    (eliminating the need to create a temporary variable).
+    '''
+    if not var_check(i[1], i[0], exists=True):
+        # var_check will generate its own warning if it fails, so no need
+        # for another one here
+        return
+    
+    listVar : list = i[1]
+    index1 : int = i[2]
+    index2 : int = i[3]
+
+    l : list = subst_var(listVar, i[0], mutable=True)
+    l[index1], l[index2] = l[index2], l[index1]
+
 ###########################################################################
 #### DRAWING COMMANDS #####################################################
 ###########################################################################
@@ -2254,6 +2274,7 @@ def arg_check(cmd: list, is_subcmd: bool):
         'list.insert': 3,
         'list.remove': 2,
         'list.replace': 3,
+        'list.swap': 3,
 
         'setpixel': 3,
         'draw.rect': 4,
@@ -2265,9 +2286,6 @@ def arg_check(cmd: list, is_subcmd: bool):
     }
 
     v7_subcmd_min_args = {
-        'empty': 2,
-        'len': 1,
-
         'eq': 2,
         'ne': 2,
         'lt': 2,
@@ -2296,10 +2314,12 @@ def arg_check(cmd: list, is_subcmd: bool):
         'max': 1,
         'round': 1,
 
+        'len': 1,
         'get': 2,
         'slice': 3,
         'in': 2,
         'find': 2,
+        'sum': 1,
         'count': 2,
         'sort': 1,
         'reverse': 1,
@@ -2321,12 +2341,18 @@ def arg_check(cmd: list, is_subcmd: bool):
         'float': 1,
         'str': 1,
         'bool': 1,
+        'hex': 1,
+        'bin': 1,
         'type': 1,
 
         'color': 1,
         'rgba': 3,
         'hsla': 3,
         'getpixel': 2,
+
+        'empty': 2,
+        'getrgba': 1,
+        'gethsla': 1,
 
         'red': 1,
         'green': 1,
@@ -2337,9 +2363,6 @@ def arg_check(cmd: list, is_subcmd: bool):
         'hue': 1,
         'saturation': 1,
         'lightness': 1,
-
-        'getrgba': 1,
-        'gethsla': 1,
 
         'width': 1,
         'height': 1,
@@ -2453,12 +2476,7 @@ def subcmd(raw_cmd: abc.Sequence):
 
     # Main dictionary of subcommands (except noops)
     # No aliases included because those are already accounted for above
-    if cmd[0] == 'empty':
-        result = empty(cmd, images['old'])
-    elif cmd[0] == 'len':
-        result = len(cmd[1])
-
-    elif cmd[0] == 'eq':
+    if cmd[0] == 'eq':
         result = eq(cmd)
     elif cmd[0] == 'ne':
         result = ne(cmd)
@@ -2509,6 +2527,8 @@ def subcmd(raw_cmd: abc.Sequence):
     elif cmd[0] == 'round':
         result = round_(cmd)
 
+    elif cmd[0] == 'len':
+        result = len(cmd[1])
     elif cmd[0] == 'get':
         result = get(cmd)
     elif cmd[0] == 'slice':
@@ -2517,6 +2537,8 @@ def subcmd(raw_cmd: abc.Sequence):
         result = cmd[2] in cmd[1]
     elif cmd[0] == 'find':
         result = find(cmd)
+    elif cmd[0] == 'sum':
+        result = sum(cmd[1])
     elif cmd[0] == 'count':
         result = py_method(cmd[0:3], 'count') # args: var + 1 extra
     elif cmd[0] == 'sort':
@@ -2559,6 +2581,10 @@ string repetition instead')
         result = str_(cmd)
     elif cmd[0] == 'bool':
         result = bool_(cmd)
+    elif cmd[0] == 'hex':
+        result = hex_(cmd)
+    elif cmd[0] == 'bin':
+        result = bin_(cmd)
     elif cmd[0] == 'type':
         result = type_(cmd)
 
@@ -2612,6 +2638,8 @@ string repetition instead')
         else:
             result = lightness(cmd, images['new'])
 
+    elif cmd[0] == 'empty':
+        result = empty(cmd, images['old'])
     elif cmd[0] == 'getrgba':
         result = getrgba(cmd, images['old'])
     elif cmd[0] == 'gethsla':
@@ -2630,51 +2658,6 @@ string repetition instead')
     #p#rint(cmd, result)
 
     return result
-
-def empty(i: list, open_image: PIL.Image.Image):
-    '''
-    (empty,old[image],0<x>,0<y>,16[width],16[height])
-
-    True if the area on the given image is completely empty (every pixel is
-    transparent), False otherwise.
-    '''
-
-    # If image name is given at arg1, set base_image to that. 
-    # Otherwise, keep base_image as is and insert an empty string so the
-    # remaining arguments are in a consistent position.
-    if type(i[1]) == str:
-        if i[1] in images:
-            open_image = images[i[1]]
-        else:
-            log_warning(f'{i[0]}: Unrecognized image name {i[1]}. \
-Defaulting to “old”.')
-    else:
-        i.insert(1, '')
-
-    x = i[2]
-    y = i[3]
-
-    # If width/height specified, use those values.
-    # If neither is specified, use 16×16.
-    # If only width is specified, use that value for height too.
-    if len(i) == 4:
-        i += [16, 16]
-    width = i[4]
-    if len(i) == 5:
-        i += [width]
-    height = i[5]
-
-    region = open_image.crop((x, y, x+width, y+height))
-
-    # Loop thru each pixel in region, making sure it's transparent
-    for loop_x in range(width):
-        for loop_y in range(height):
-            rgba = region.getpixel((loop_x, loop_y))
-            # If a single pixel isn't transparent, return False
-            if rgba[3] != 0:
-                return False
-    # If we make it here, it's empty, return True
-    return True
 
 def iif(i: list):
     '''
@@ -2814,6 +2797,8 @@ def logic_or(i: list):
         if type(arg) == Subcommand:
             # Execute subcommands one at a time, then check short-circuiting
             arg_result = subcmd(arg.content)
+        else:
+            arg_result = arg
 
         short_circuit = bool(short_circuit or arg_result)
         if short_circuit == True:
@@ -2832,6 +2817,8 @@ def logic_and(i: list):
         if type(arg) == Subcommand:
             # Execute subcommands one at a time, then check short-circuiting
             arg_result = subcmd(arg.content)
+        else:
+            arg_result = arg
 
         short_circuit = bool(short_circuit and arg_result)
         if short_circuit == False:
@@ -3367,6 +3354,50 @@ def bool_(i: list):
         log_warning(f'{i[0]}: couldn’t convert {i[1]} to bool type')
         return False
 
+def hex_(i: list):
+    '''
+    (hex 17<x> #_t[prefix])
+    
+    Return hexadecimal string representation of x. `prefix` determines whether 
+    to include the "0x" prefix at the start of the string. You can also set 
+    `prefix` to a string to add a custom prefix. 
+    Ex: (hex 17) => "0x11", (hex 255 "#") => "#0000ff"
+    '''
+
+    x = i[1]
+    if len(i) == 2:
+        prefix = True
+    hex_str = hex(x)
+
+    if type(i[2]) == str:
+        prefix = i[2]
+        return prefix+hex_str
+    else:
+        prefix = bool(i[2])
+        return ('0x' if prefix else '')+hex_str
+
+def bin_(i: list):
+    '''
+    (bin 7<x> #_t[prefix])
+    
+    Return binary string representation of x. `prefix` determines whether to 
+    include the "0b" prefix at the start of the string. You can also set 
+    `prefix` to a string to add a custom prefix. 
+    Ex: (bin 7) => "0b111"
+    '''
+
+    x = i[1]
+    if len(i) == 2:
+        prefix = True
+    bin_str = bin(x)
+
+    if type(i[2]) == str:
+        prefix = i[2]
+        return prefix+bin_str
+    else:
+        prefix = bool(i[2])
+        return ('0b' if prefix else '')+bin_str
+
 def type_(i: list):
     '''
     (type,$x<data>) 
@@ -3498,7 +3529,7 @@ more items')
     g : int = i[2]
     b : int = i[3]
 
-    if len(i) == 3:
+    if len(i) == 4:
         i.append(255) # If no alpha given, default to 255 (fully opaque)
     a : int = i[4]
 
@@ -3540,7 +3571,7 @@ more items')
     s : int = i[2]
     l : int = i[3]
 
-    if len(i) == 3:
+    if len(i) == 4:
         i.append(255) # If no alpha given, default to 255 (fully opaque)
     a : int = i[4]
 
@@ -3572,11 +3603,73 @@ def getpixel(i: list, base_image: PIL.Image.Image):
     y : int = i[3]
 
     rgba_list = getrgba([i[0], i[1], x, y], base_image) # get RGBA list
-    return rgb([i[0], rgba_list]) # create color type from that RGBA list
+    return Color(rgba_list[0], rgba_list[1], rgba_list[2], 
+                 rgba_list[3]) # create color type from that RGBA list
 
 # END COLOR TYPE SUBCOMMANDS
 
 # COLOR INFO SUBCOMMANDS
+
+def empty(i: list, open_image: PIL.Image.Image):
+    '''
+    (empty 0<x> 0<y> 16[width] 16[height]) 
+
+    — OR —
+
+    (empty (rgb 255 128 0)<color>)
+    
+    True if the area on the given image (by default "old") is completely empty 
+    (every pixel is transparent), False otherwise.
+
+    Note that unlike the Color Info Subcommands, this defaults to the old 
+    image, not the new one.
+    '''
+
+    # Special case: first (and presumably only) argument has color type
+    if type(i[1]) == Color:
+        return i[1].alpha == 0
+
+    # If not special case, check arg count *again*
+    if len(i) <= 2:
+        log_warning(f'{i[0]}: Command requires either a value of type “color” \
+or x & y values')
+        return
+
+    # If image name is given at arg1, set base_image to that. 
+    # Otherwise, keep base_image as is and insert an empty string so the
+    # remaining arguments are in a consistent position.
+    if type(i[1]) == str:
+        if i[1] in images:
+            open_image = images[i[1]]
+        else:
+            log_warning(f'{i[0]}: Unrecognized image name “{i[1]}”')
+    else:
+        i.insert(1, '')
+
+    x : int = i[2]
+    y : int = i[3]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 16×16.
+    # If only width is specified, use that value for height too.
+    if len(i) == 4:
+        i += [16, 16]
+    width : int = i[4]
+    if len(i) == 5:
+        i += [width]
+    height : int = i[5]
+
+    region = open_image.crop((x, y, x+width, y+height))
+
+    # Loop thru each pixel in region, making sure it's transparent
+    for loop_x in range(width):
+        for loop_y in range(height):
+            rgba : Tuple[int] = region.getpixel((loop_x, loop_y))
+            # If a single pixel isn't transparent, return False
+            if rgba[3] != 0:
+                return False
+    # If we make it here, it's empty, return True
+    return True
 
 def getrgba(i: list, base_image: PIL.Image.Image):
     '''
@@ -6516,6 +6609,8 @@ is deprecated. Please use “filter.fill” instead.')
                 list_remove(item)
             elif item[0] == 'list.replace':
                 list_replace(item)
+            elif item[0] == 'list.swap':
+                list_swap(item)
 
             # Drawing commands
             elif item[0] == 'setpixel':
@@ -6613,7 +6708,7 @@ def pre_summary(conv_time:float, conv_count:int, new_multi:bool):
 
 def summary(conv_time:float, conv_count:int, warning_page:int=0):
     # Roll warning page over to 0 if needed
-    warn_per_page = 10 # TODO: account for multiline warnings
+    warn_per_page = 6 # TODO: account for multiline warnings
     num_warn_pages = (len(warnings)-1)//warn_per_page + 1
     if warning_page >= num_warn_pages:
         warning_page = 0

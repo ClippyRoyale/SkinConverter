@@ -179,6 +179,8 @@ list.remove,$l<listVar>,0<index> # Remove the item at the given index from the l
 
 list.replace,$l<listVar>,0<index>,"thing"<item> # Replace the contents of the given `index` of `listVar` with `item`.
 
+list.swap,$l<listVar>,0<index1>,1<index2> # Swap the positions of the items of `listVar` at `index1` and `index2` (eliminating the need to create a temporary variable).
+
 
 
 # DRAWING COMMANDS
@@ -356,6 +358,8 @@ const,$TAU<name>,6.283<value> # Set a constant value so you can refer back to it
 
 (find,"Hello"<seq>,"l"<item>,0[start],()[stop]) # Return the index of the first occurrence of item/substring `item` in the list/string `seq`. Return -1 if `item` couldn't be found anywhere in `seq`. Use `start` and `stop` arguments to only search a subset of the sequence.
 
+(sum,(list,1,2,3,0.5)<list>) # Returns the sum of all items in the list. This makes the most sense with lists of numbers, but you can technically do it with anything you can use + on. (Right now this is only useful for lists but it would also be applicable to dictionaries, etc if they were added.)
+
 (count,"Hello"<seq>,"l"<sub>) # Counts the number of times the item/substring `sub` appears in the list/string `seq`.
 
 (sort,$s<seq>) # Returns a sorted version of list l, in ascending order according to Python's built-in Timsort algorithm. The value of the variable you pass in is not changed. Unlike Python, I only have one command for reversing and one command for sorting, because two felt like overkill, and I thought it was better to keep the one that also worked with strings.
@@ -401,6 +405,10 @@ const,$TAU<name>,6.283<value> # Set a constant value so you can refer back to it
 (str,"Hello"<x1>,"World"[x2],1[x3],...) # Convert the argument(s) to a string. If more than one argument is passed in, they will each be converted to strings, then concatenated together. The result of the example will be "HelloWorld1" (with no spaces in between because neither string had a space in it). (aliases: string, str+, str_add)
 
 (bool,1) # alias: boolean
+
+(hex,17<x>,#_t[prefix]) # Return hexadecimal string representation of x. `prefix` determines whether to include the "0x" prefix at the start of the string. You can also set `prefix` to a string to add a custom prefix. Ex: (hex 17) => "0x11", (hex 255 "#") => "#0000ff"
+
+(bin,7<x>,#_t[prefix]) # Return binary string representation of x. `prefix` determines whether to include the "0b" prefix at the start of the string. You can also set `prefix` to a string to add a custom prefix. Ex: (bin 7) => "0b111"
 
 (type,$x<data>) # Returns the data type of the given variable (or literal), as a string. Possible types: "int", "float", "str", "bool", "list", "color", "null"
 
@@ -485,79 +493,6 @@ const,$TAU<name>,6.283<value> # Set a constant value so you can refer back to it
 ###############################################################################
 
 # COMING SOON:
-# Anything here is subject to change, and syntax should not be treated as final.
-
-# I'm unlikely to add switch statements, because they just open up a bunch of cans of worms when I start thinking about implementation.
-
-from,old<image>,<cmd> # Set the source image for the following command. Can be combined with "to" (see below).
-
-to,new<image>,<cmd> # Set the target image for the following command. Target image must be writeable.
-
-scale,256<newWidth>,256<newHeight>,1[algo] # Scale the image to the new width and height, using nearest-neighbor scaling (add other algorithms? add percentages? scale specific areas as part of copying?)
-
-# FILTERS
-removealpha,$fillcolor[color],0[x],0[y],16[width],16[height] # Remove all transparency (alpha) from the area and replace it with the given color. Basically it's like placing the area on top of a rectangle of that color. If no color is given, default to the current fill color. The alpha channel of `color` will be set to 255 (100% opaque).
-blur,1<stdDev> # Gaussian blur filter
-
-# VARIABLES
-load,alt2<name>,smb_skin2580.png<path> # Load the image at the given path and store it associated with the given string identifier. This is a header command, so it will always be called once at the start of the program and it can't be used with variables. The image cannot be retrieved like a variable, but it does block its name from being used for variables. TODO: Maybe call this "setpath"? Or "source"? Reserve "read" for a possible future non-header version
-
-# LISTS
-# Rule of thumb: anything with prefix "list." changes the list in place.
-$x[0] # Returns the item at index 0 of the given list/string. The first item has index 0, second item has index 1, etc., unless you change the index_from flag. In addition, index -1 is the last item, -2 is the second-to-last item, etc. There are two ways to do this, because you can only use the former if you're getting an item from a list returned by a subcommand, and you can only set list items with the latter.
-
-# COLORS
-(gray,128<luma: 0 to 255>,255[alpha: 0 to 255]) # Define a grayscale color based on luma, with optional alpha.
-(luma,0<x>,0<y>,1[width],1[height]) # The value that would be used if the image were converted to grayscale (from 0 to 255)
-
-# TEXT DRAWING
-text.new,"Hello world"<textContent>,0<x>,0<y>,80[width],24[height],-1<outline: -1 for no box, 0 for fill, 1 for outline, 2 for both> # Draw a text box with the given text. x and y are the position of the top left corner. Width and height are in pixels -- NOT characters/lines. Any text past the maximum width will be wrapped to the next line. Any text past the maximum height will be cut off, with ellipsis in the bottom right corner. If outline is set to 0, 1, or 2: a rectangle with the given width and height will be drawn under the text. 
-(text.try,"Hello world"<textContent>,0<x>,0<y>,80[width],24[height],-1<outline: -1 for no box, 0 for fill, 1 for outline, 2 for both>) # Works the same as text, except that instead of actually drawing the text box, return a list with the width and height the box WOULD have.
-text.continue,"Hello world"<textContent> # Continue drawing text in the previous text box, with the same x/y/width/height/outline settings. Use this when you went to stop writing text to change some formatting setting, then go back to drawing text where you left off.
-
-# TEXT DRAWING OPTIONS
-text.color,(rgb,0,0,0)<color> # Set text color. This is different from outline and fill color to make it easier to draw text boxes.
-text.size,1<scaleX>,1[scaleY] # Change the size of text from the usual 1:1 ratio. Argument(s) must be positive integers. If 1 argument is given, y-scale and x-scale are assumed to be the same.
-textalign,left<alignment> # Set the alignment of the text to left/l, center/c, right/r, or justify/j.
-text.font,smb<fontName> # Set the font used to draw text. Name X should have a corresponding "X.png" in the fonts folder in a 16×16 extended ASCII table. Default is "arcade".
-text.letterspacing,0<amount> # Set the amount of extra space between each character (AKA tracking/kerning) when drawing text. Can be positive or negative; default is 0 (no spacing).
-text.linespacing,0<amount> # Set the amount of extra space between each line (AKA leading) when drawing text. Can be positive or negative; default is 0 (set solid). TODO: setting for space before vs after
-text.indent,0<amount>,0[firstAmount] # Set the indent used at the start of each paragraph when drawing text. `amount` is in pixels. Set `firstAmount` if you want to indent by a different amount on the first line of the text box; if omitted, the first indent will be the same as the others.
-text.underline,"auto"[size],"auto"[offset],$_textcolor[color],1[number],"single"[style],(list)[styleOptions] # Draw a line under all future text. 
-    # To disable underline, set `size` to 0. Otherwise, `size` is the width of the line in pixels. 
-    # `offset` is how far below the text the line should be drawn -- for example, size 1 = 1 pixel of empty space between the baseline and the underline. Default `size` and `offset` ("auto") are calculated based on the underscore character. 
-    # You can set `color` if you want the underline to be a different color; otherwise, it will be the same as the text color. 
-    # Use `number` if you want a double or triple underline. Additional underlines will be placed at y position (firstUnderlineY + 2*thickness)
-    # `style` can be "straight" (default), "dotted", or "wavy". 
-    # TODO: `styleOptions` varies depending on what `style` is set to. 
-text.strike,"auto"[size],"auto"[offset],$_textcolor[color],"single"[style] # Strikethrough; uses same arguments as underline. Default `offset` is the vertical midpoint of the lowercase "o".
-text.dropshadow,(color,black)<color>,1<xOffset>,1<yOffset>,0[blur] # Enable a drop-shadow effect for future text-drawing commands. The shadow will be drawn at (textX+xOffset, textY+yOffset). If greater than 0, `blur` is defined as the standard deviation to a Gaussian blur function.
-text.dropshadow,#_f # To disable drop shadow, set the first argument to anything that evaluates to False. Other text effects can be disabled in the same way.
-text.glow,(color,red)<color> # Glow effect: draws an outline around the edge of the text (like in SMAS). TODO: size, blur
-
-# LAYERS
-layer.new,0<depth>,layer0[name],0[x],0[y],256[width],256[height] # Create a new layer. Default depth is right in front of currently selected layer. Default name based on the given depth. Default x/y is (0,0) and default width and height are the current width and height of the base image. For depth, higher numbers are at the front, just like in the MR level editor. TODO: Better system for layer depth
-layer.select,0<depth OR name> # Set which layer you're currently working on.
-
-# (Lower-priority layer commands)
-layer.newobject,(text,...)<cmd>,0<depth>,layer0[name] # Create a new layer consisting of the given command's output, with x/y/w/h determined by the x/y/w/h values associated with the given command.
-layer.crop,0<x>,0<y>,16<width>,16<height>
-layer.show,0[target: depth OR name] # Default to current layer
-layer.hide,0[target: depth OR name]
-layer.delete,0[target: depth OR name]
-layer.merge,0[fromlayer: depth OR name],0[tolayer: depth OR name] # Default to merging current layer down to the layer behind it
-layer.mergevisible # Merge all visible layers
-
-# FUNCTIONS
-func,(sqrt,@x:int,@y=2),int # Local variables use @ at start instead of $
-return,()[result] # Exit the current function and return a value (defaulting to null)
-
-# MODULES
-run,<filename> # Run the script located at `filename` as if you were running it independently, including opening and saving files.
-include,<filename> # Include the full contents of the script located at `filename` in this script at the location of the include line. Header commands in the included script will be ignored, so it is your responsibility to make sure the right images are opened and saved.
-chain,(width,new)[width],(height,new)[height] # Replace `old` image with the contents of `new`, and create an empty image at `new`. The width and height arguments determine the canvas dimensions of `new`; omit them to keep `new` at the same size as before. Use this command to chain multiple `include` statements together.
-import,<filename> # Like `include` but only loads in top-level variable and function definitions; all other commands will be ignored. Like importing a module in Python.
-
-# NOT ADDING:
-# No trigonometry, calculus, bitwise operators, logarithms, factorial, etc. -- all of those seem like overkill for what's supposed to be an image-editing program (unless I can figure out a one-line way to map to Python functions)
-# Ruby's "redo" and "retry" are probably too rare to be worth implementing. They can easily be replicated with gotos
+# [This section has been removed because it is now out of date.
+# All information on upcoming commands is now in the documentation for v8.0,
+# which is still in the works.]
