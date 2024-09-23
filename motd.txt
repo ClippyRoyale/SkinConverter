@@ -1,6 +1,7 @@
-7.4.0 Welcome to v7.4.0! If you’re looking to convert your MR Legacy skins to the new format, you’re in the right place.^^In other news, the options for converting skins to Deluxe format are now deprecated, and v7.x will be the last versions released on Replit, because Replit has become a slow AI-infested mess.
+7.5.0 lol replit is a trash website
+u_7.4.0 Version 7.5.0 of the Skin Converter is now available! It improves the process to convert your MR Legacy v5 skins to Legacy v7, by adding a status report showing possible issues with the conversion. (Thankfully there is no "AI" involved.)
 # Versions 7.3.0 and earlier don't support ^ as newline character
-u_7.3.0_7.3.1_7.3.2 Version 7.4.0 of the Skin Converter is now available! It adds conversion from MR Deluxe to Legacy v7, along with a transparent background remover.
+u_7.3.0_7.3.1_7.3.2 Version 7.5.0 of the Skin Converter is now available! It adds conversion from MR Deluxe to Legacy v7, along with a transparent background remover.
 u_6.0.0_6.1.0_7.0.0_7.0.1_7.1.0_7.2.0_7.2.1 Version 7.3.2 of the Skin Converter is now available! If you want to convert Legacy skins to the new 7.0 format, you’ll need to get the update.
 # "View Update" button was added in 6.0.0, so 5.x needs extra instructions
 u_5.2.0_5.2.1_5.2.2 Version 7.3.2 of the Skin Converter is now available! If you want to convert Legacy skins to the new 7.0 format, you’ll need to get the update. Visit https://github.com/ClippyRoyale/SkinConverter/releases to download the update.
