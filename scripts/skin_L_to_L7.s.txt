@@ -1,9 +1,10 @@
-version 7 3 0
-name "Legacy16 to Legacy32"
+version 7 5 0
+name "Legacy16 to Legacy32 (REV-B)"
 author "Clippy"
 description "Convert a Mario Royale skin from the v4–v6 format (16×32 Super sprites) to the v7 format (32×32 Super sprites; 24×24 small sprites)."
 
 template "assets/legacy7/smb_skin0.png"
+alt "ui/skin_status.png"
 
 # Uncomment for testing
 #open "assets_full/legacy/smb_skin*.png"
@@ -12,6 +13,12 @@ template "assets/legacy7/smb_skin0.png"
 #stop 10
 
 base 1056 136
+
+# For batch conversion of folders with a mix of converted or unconverted skins...
+if (> (width "old") 256)
+    warning "skin already converted"
+    skip
+end if
 
 # Leaf FX and P-Meter (from template)
 default 128 0   240 16
@@ -133,3 +140,103 @@ dup     200 40  936 104     16 32   # fly3 (autofill with fall)
 dup     328 40  968 104     16 32   # pfly1 (autofill with pjump)
 dup     328 40  1000 104    16 32   # pfly2 (autofill with pjump)
 dup     328 40  1032 104    16 32   # pfly3 (autofill with pjump)
+
+# CREDITS AREA
+copy    0 160   800 0   256 96
+
+# STATUS REPORT
+copyalt 0 0     608 0   192 32  # Copy the text with the boxes unchecked
+copyalt 32 32   640 32  160 8   # "pls delete after manual skin check"
+
+# TEST #1: Does the skin have unique swim sprites? (If not, the skin was automatically converted during the v4 skin sheet update)
+set $old_x 128
+set $old_y 0
+set $new_x 240
+set $new_y 80
+set $width 16
+set $height 16
+gosub area_eq
+if $eq  #no
+    copyalt 16 32   608 16  8 8
+else    #yes
+    copyalt 0 32    608 16  8 8
+end if
+
+# TEST #2: Does the skin have unique taunt sprites? (If not, the skin was automatically converted during the v4 skin sheet update)
+set $old_x 208
+set $old_y 0
+set $new_x 80
+set $new_y 0
+set $width 16
+set $height 16
+gosub area_eq
+if $eq  #no
+    copyalt 16 32   608 24  8 8
+else    #yes
+    copyalt 0 32    608 24  8 8
+end if
+
+# TEST #3: Do general fire sprites (those not covered below) take up the full 32×32 box? (If so, they may have been shifted in ways we don't want.)
+# If the answer to this is Yes and subsequent fire checks are also Yes, the checkboxes will all be green. However, if this one is No and later ones are Yes, those boxes will be yellow.
+set $oob_gen (or \
+    (not (empty 0 48 8 32)) \
+    (not (empty 32 48 8 32)) \
+    (not (empty 64 48 8 32)) \
+    (not (empty 96 48 8 32)) \
+    (not (empty 128 48 8 32)) \
+    (not (empty 176 48 8 32)) \
+)
+if $oob_gen
+    copyalt 8 32    704 0   8 8
+end if
+
+# TEST #4: Do fire attack sprites take up the full 32×32 box? (If so, they may have been shifted in ways we don't want. Attack sprites seem to be particularly liable to cause unwanted shifting.)
+set $oob_atk (not (empty 224 48 8 32))
+if $oob_atk
+    copyalt 8 32    704 8   8 8
+end if
+
+# TEST #5: Do fire swim sprites take up the full 32×32 box? (If so, they may have been shifted in ways we don't want.)
+set $oob_swim (or \
+    (not (empty 64 128 8 32)) \
+    (not (empty 96 128 8 32)) \
+    (not (empty 128 128 8 32)) \
+    (not (empty 160 128 8 32)) \
+    (not (empty 192 128 8 32)) \
+    (not (empty 224 128 8 32)) \
+)
+if $oob_swim
+    copyalt 8 32    704 16  8 8
+end if
+
+# TEST #6: Do fire taunt sprites take up the full 32×32 box? (If so, they may have been shifted in ways we don't want.)
+set $oob_taunt (not (empty 16 16 8 32))
+if $oob_taunt
+    copyalt 8 32    704 24  8 8
+end if
+
+# If everything is out-of-bounds, it's probably on purpose (32×32 fire)
+if (and $oob_gen $oob_atk $oob_swim $oob_taunt)
+    copyalt 0 32    704 0   8 8
+    copyalt 0 32    704 8   8 8
+    copyalt 0 32    704 16  8 8
+    copyalt 0 32    704 24  8 8
+end if
+
+exit # Avoid falling through to subroutines
+
+# Test equality of two areas on the new image
+# Arguments: $old_x, $old_y, $new_x, $new_y, $width, $height
+label area_eq
+set $eq $_t
+for $i 0 $width
+    for $j 0 $height
+        #warning (str (+ $old_x $i) "," (+ $old_y $j) "," (+ $new_x $i) "," (+ $new_y $j) "," (getpixel (+ $old_x $i) (+ $old_y $j)) "," (getpixel (+ $new_x $i) (+ $new_y $j)))
+        if (!= (getpixel "old" (+ $old_x $i) (+ $old_y $j)) (getpixel "old" (+ $new_x $i) (+ $new_y $j)))
+            set $eq $_f
+            retsub
+        end if
+    end for
+end for
+# if we make it here, they're equal
+retsub

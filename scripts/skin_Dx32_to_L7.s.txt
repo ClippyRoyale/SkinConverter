@@ -156,3 +156,5 @@ copy    32 288  224 104 32 32   # run1
 copy    0 288   256 104 32 32   # run2
 copy    224 320 288 104 32 32   # run3
 dup     960 104 320 104 32 32   # runjump
+
+# No status report for D->L7 conversions because the formats are more similar than L5 vs L7.
