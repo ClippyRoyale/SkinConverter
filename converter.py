@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 7.5.0
+Version 7.5.1
 
 Copyright © 2022–2024 clippy#4722
 
@@ -49,7 +49,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,5,0]
+app_version = [7,5,1]
 
 # Why does Python not have this built in anymore???
 def cmp(x, y):
@@ -115,9 +115,6 @@ window = Tk()
 window.wm_title('Clippy’s Skin Converter')
 window.geometry('480x360')
 window.resizable(False, False)
-# Run in fullscreen on Replit only
-if os.path.isdir("/home/runner") == True:
-    window.attributes('-fullscreen', True)
 
 app_icon = PhotoImage(file='ui/iconHD.png')
 window.iconphoto(False, app_icon)
@@ -5028,7 +5025,7 @@ Please try again.''',
     # SCRIPT FLAGS
     flags = {}
     # To prevent infinite loops, keep track of how many times each line is run.
-    # When a limit is reached (default 10000 times), halt the program.
+    # When a limit is reached (default 100,000 times), halt the program.
     flags['loop_limit'] = None
     # Optionally deviate from Python's standard handling of loop/list ranges
     flags['index_from'] = None
@@ -5123,7 +5120,7 @@ Please try again.''',
 
     # Default flags if not set by script
     if flags['loop_limit'] is None:
-        flags['loop_limit'] = 10000
+        flags['loop_limit'] = 100000
     if flags['index_from'] is None:
         flags['index_from'] = 0
     if flags['closed_ranges'] is None:
@@ -6681,24 +6678,6 @@ def pre_summary(conv_time:float, conv_count:int, new_multi:bool):
     #### STEP 5: SUMMARY ####
     cls()
 
-    # Check if we're running on replit
-    if os.path.isdir("/home/runner") == True:
-        # User is using repl.it, so provide extra instructions on how to
-        # download images
-        help_text = [
-            'Looks like you’re using the online converter!',
-            '<b>To download your converted image(s):',
-            '1. Exit fullscreen',
-            '2. Find the sidebar',
-            '3. Click on the ⋮ (3 dots) next to the file you just converted',
-            '4. Select “Download” from the menu that pops up',
-            '<b>If converting multiple files...',
-            '...the quickest option is probably to download the whole project.',
-            'This will download a lot of unnecessary files but it’s faster',
-            'than downloading each image one at a time.'
-        ]
-        simple_dialog('Replit Help', help_text, 'Okay', icon='info')
-
     if conv_count == 0 and (legacy_multi or new_multi):
         # Break out before we would show summary
         return 0
@@ -6891,25 +6870,6 @@ try:
     # Comment the next line out to print full crash messages to the console
     # Uncomment this line before releasing updates to the public
     window.report_callback_exception = crash
-
-    # Check if we're running on replit
-    if os.path.isdir("/home/runner") == True:
-        # Ask user to enter fullscreen
-        messagebox.showinfo(window, 
-            message='''\
-Looks like you’re running the online (Replit) version of the skin converter! 
-You may want to enter fullscreen so you can click all the buttons.
-Click the ⋮ on the “Output” menu bar then click “Maximize”. 
-If you’re on a phone, rotate it sideways, zoom out, \
-and hide your browser’s toolbar.''')
-
-        # show online instructions
-        messagebox.showinfo(window, 
-        message='''Before converting your first file:
-1. Create a Replit account. You can use an existing Google or Github account.
-2. Click “Fork Repl” and follow the instructions.
-3. In your newly-forked project, drag the images you want to convert \
-into the list of files in the left sidebar.''')
 
     # Proceed to setup on all platforms
     setup()

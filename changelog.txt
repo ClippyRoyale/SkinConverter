@@ -517,3 +517,8 @@ Version 7.5.0 (Sep. 22, 2024):
       * rgb+hsl now work with 3 arguments
       * and+or once again work with literals and variables (they've only worked 
         with subcommands since 7.2.1)
+
+Version 7.5.1 (Sep. 28, 2024):
+  * Fixed bug with L5->L7 conversion that put one column of swim sprites 
+    2px too far to the right
+  - Removed all Replit-related code
