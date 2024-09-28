@@ -1,5 +1,5 @@
-version 7 5 0
-name "Legacy16 to Legacy32 (REV-B)"
+version 7 5 1
+name "Legacy16 to Legacy32 (REV-B1)"
 author "Clippy"
 description "Convert a Mario Royale skin from the v4–v6 format (16×32 Super sprites) to the v7 format (32×32 Super sprites; 24×24 small sprites)."
 
@@ -75,7 +75,7 @@ copy    224 16  744 40  16 32   # transform
 # Super/Fire swim sprites go from 6 to 4 frames (keep original frames 1,2,3,6)
 copy    240 96  488 40  16 32   # swim1->1
 copy    224 96  520 40  16 32   # swim2->2
-copy    208 96  554 40  16 32   # swim3->3
+copy    208 96  552 40  16 32   # swim3->3
 copy    160 96  584 40  16 32   # swim6->4
 # Spin is gonna look kinda bad but there's no way around that
 dup     8 40    616 40  16 32   # spin1/left (autofill with stand)
@@ -94,7 +94,7 @@ set $old_x_list (list   176 16  128 96  64  0   32  224 192 160 64  224)
 set $old_y_list (list   48  16  48  48  48  48  48  128 128 128 128 48)
 # order: /              stand   walk1   walk3   skid    swim2   swim6->4
 #        \                  taunt   walk2   jump    swim1   swim3   attack
-set $new_x_list (list   0   32  64  96  128 160 352 480 512 546 576 768)
+set $new_x_list (list   0   32  64  96  128 160 352 480 512 544 576 768)
 set $new_y_list (list   72  72  72  72  72  72  72  72  72  72  72  72)
 # Don't bother checking swim4 and swim5 because they'll get dropped anyway
 
@@ -146,7 +146,7 @@ copy    0 160   800 0   256 96
 
 # STATUS REPORT
 copyalt 0 0     608 0   192 32  # Copy the text with the boxes unchecked
-copyalt 32 32   640 32  160 8   # "pls delete after manual skin check"
+copyalt 32 32   640 32  160 8   # "delete this after manual skin check"
 
 # TEST #1: Does the skin have unique swim sprites? (If not, the skin was automatically converted during the v4 skin sheet update)
 set $old_x 128
