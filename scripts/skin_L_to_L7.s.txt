@@ -1,5 +1,5 @@
 version 7 5 1
-name "Legacy16 to Legacy32 (REV-B1)"
+name "Legacy16 to Legacy32 (REV-B2)"
 author "Clippy"
 description "Convert a Mario Royale skin from the v4–v6 format (16×32 Super sprites) to the v7 format (32×32 Super sprites; 24×24 small sprites)."
 
@@ -38,7 +38,7 @@ copy    176 0   76 24   # walk2
 copy    160 0   100 24  # walk3
 copy    128 0   124 24  # jump
 dup     124 24  148 24  # fall (autofill with jump)
-dup     52 24   176 24  88 16   # run 1/2/3/j (autofill with walk)
+dup     52 24   172 24  88 16   # run 1/2/3/j (autofill with walk)
 copy    144 0   268 24  # skid
 dup     4 24    292 24  # crouch (autofill with stand)
 copy    112 0   316 24  # climb1
