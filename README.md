@@ -25,8 +25,10 @@ Simple: use the skin converter! It’ll convert your old skins into files you ca
 
 1. Install the latest version of Python at https://python.org if you don’t have it already.
 2. Download the source code at https://github.com/ClippyRoyale/SkinConverter/releases/latest (click on “Source code (zip)” in the Assets section).
-3. Once the source code zip file has finished downloading, unzip it.
-4. Open the file “converter.py”.
+3. Unzip the file you just downloaded.
+4. Double-click “converter.py” to open the code in IDLE.
+5. Go to the Run menu and click Run Module.
+6. Enjoy!
 
 If you’re unable to install Python or download the source code (e.g. because you’re on a school computer), there is also a deprecated online version hosted on Replit. I am no longer updating it, but I’ve kept it online as a last-resort option. This program is provided AS IS. Please do not expect me to provide any troubleshooting or bug fixes. Link: https://replit.com/@WaluigiRoyale/MR-Converter-GUI (You’ll need to create a Replit account and click the Fork button. From there, follow the instructions that pop up when you run the program.)
 
