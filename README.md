@@ -30,7 +30,7 @@ Simple: use the skin converter! It’ll convert your old skins into files you ca
 5. Go to the Run menu and click Run Module.
 6. Enjoy!
 
-If you’re unable to install Python or download the source code (e.g. because you’re on a school computer), there is also a deprecated online version hosted on Replit. I am no longer updating it, but I’ve kept it online as a last-resort option. This program is provided AS IS. Please do not expect me to provide any troubleshooting or bug fixes. Link: https://replit.com/@WaluigiRoyale/MR-Converter-GUI (You’ll need to create a Replit account and click the Fork button. From there, follow the instructions that pop up when you run the program.)
+If you’re unable to install Python or download the source code (e.g. because you’re on a school computer), there is also a deprecated online version (based on v7.5.1) hosted on Replit. I am no longer updating it, but I’ve kept it online as a last-resort option. This program is provided AS IS. Please do not expect me to provide any troubleshooting or bug fixes. Link: https://replit.com/@WaluigiRoyale/MR-Converter-GUI (You’ll need to create a Replit account and click the Fork button. From there, follow the instructions that pop up when you run the program.)
 
 ## System Requirements
 This program doesn't have a very attractive interface. This is because I'd rather spend my time making the program *work*. In fact, it'll work on basically any operating system released in the last 15 years.
