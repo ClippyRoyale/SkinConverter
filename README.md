@@ -2,50 +2,44 @@
 
 Source code and documentation copyright (C) 2022–2024 ClippyRoyale
 
-# Quick start link: https://replit.com/@WaluigiRoyale/MR-Converter-GUI
-
 ## What is this?
 
 This is a GUI-based program for converting skins or other sprite sheets for different versions of the browser game MRoyale. You can convert:
-* Legacy skins to Deluxe format
-* Remake skins to Deluxe format
-* Legacy object mods to Deluxe format
+* Legacy v5 (16×32) skins to Legacy v7 (32×32) format
+* Deluxe skins to Legacy format (v5 or v7)
 * Remake skins to Legacy format
 * Legacy smb_map to smb_map_new
+* You can also remove the semi-transparent template background from your skins, if you saved your skin image with the template left in by mistake.
 
-While this program is not designed for maximum efficiency, it’s still pretty fast — as of version 5.2.1, it converts about 69.2 files per second.
+While this program is not designed for maximum efficiency (it is written in Python after all), it’s still pretty fast. For example, I tested v5.2.1 and it was able to convert 69 skins per second from Legacy to Deluxe. (That functionality is now deprecated since MR Deluxe is dead.)
 
 ## Why is this useful?
 
-Let’s say you made a skin that was in MR Remake or MR Legacy and you want to use it in MR Deluxe. You know that player skins won’t be officially added to Deluxe but you still want to change the skin on your own computer with Redirector or something. But you also don’t want to spend half an hour remaking all your skins manually because you’d just be doing the same thing over and over.
+Let’s say you made a skin that was in MR Remake or MR Deluxe and you want to use it in MR Legacy, but you don’t want to spend half an hour remaking all your skins manually because you’d just be doing the same thing over and over.
 
 Or let’s say you’re the owner of MR Legacy and you want to add swimming and taunt sprites to the game but it feels like an impossible task because you’d have to add them to every existing skin. What do you do?
 
-Simple, use the skin converter! It’ll convert your old skins into files you can use with the latest version of the game!
+Simple: use the skin converter! It’ll convert your old skins into files you can use with the latest version of the game!
 
 ## How do I use it?
 
-There are two main ways to run this program:
+1. Install the latest version of Python at https://python.org if you don’t have it already.
+2. Download the source code at https://github.com/ClippyRoyale/SkinConverter/releases/latest (click on “Source code (zip)” in the Assets section).
+3. Once the source code zip file has finished downloading, unzip it.
+4. Open the file “converter.py”.
 
-1. On your computer. The app will run faster and look better but some programming experience is recommended. You’ll need to install Python and the “pillow” module. If you don’t know how to do either of these things or you aren’t allowed to install programs on your computer (e.g. because it’s a school computer), try option 2...
-2. Online with Replit. This method is a little clunkier but it supports basically any device, including Windows, Mac, Linux, Chromebooks, Android, and iOS. Link: https://replit.com/@WaluigiRoyale/MR-Converter-3
+If you’re unable to install Python or download the source code (e.g. because you’re on a school computer), there is also a deprecated online version hosted on Replit. I am no longer updating it, but I’ve kept it online as a last-resort option. This program is provided AS IS. Please do not expect me to provide any troubleshooting or bug fixes. Link: https://replit.com/@WaluigiRoyale/MR-Converter-GUI (You’ll need to create a Replit account and click the Fork button. From there, follow the instructions that pop up when you run the program.)
 
 ## System Requirements
 This program doesn't have a very attractive interface. This is because I'd rather spend my time making the program *work*. In fact, it'll work on basically any operating system released in the last 15 years.
 
-The online (Replit) version will work on any operating system that can run a modern web browser:
-* MacOS 10.7 or later
-  * MacOS 10.15– : Use Firefox or Chrome (or Safari on 12.0+)
-  * MacOS 10.7–10.14: Use Chromium Legacy
-* Windows 7 or later
-  * Windows 10– : Use Firefox or Chrome
-  * Windows 7–8.1: Use Firefox ESR
-
-If you download the source code from this Github project's Releases, it should run on any operating system that can run Python 3.6 (though I've only tested it as far back as Python 3.7):
+It should run on any operating system that can run Python 3.6 (though I've only tested it as far back as Python 3.7):
 * MacOS 10.6 or later
 * Windows Vista or later
 
-You should also be able to use it on Linux (including Chrome OS) as well, but there are too many variations of that for me to provide any guarantees.
+You should also be able to use it on Linux as well, but there are too many variations of that for me to provide any guarantees.
+
+The deprecated online version can also run on Windows XP via the Supermium browser.
 
 ## Troubleshooting
 
