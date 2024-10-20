@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 7.5.1
+Version 7.5.2
 
 Copyright © 2022–2024 clippy#4722
 
@@ -49,7 +49,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,5,1]
+app_version = [7,5,2]
 
 # Why does Python not have this built in anymore???
 def cmp(x, y):
@@ -2471,6 +2471,7 @@ def subcmd(raw_cmd: abc.Sequence):
         # Subcommands existed starting in v4.1, but you couldn't nest them
         log_warning('Nested subcommands are only supported in v6.0.0 and later')
 
+    result = None
     # Main dictionary of subcommands (except noops)
     # No aliases included because those are already accounted for above
     if cmd[0] == 'eq':
