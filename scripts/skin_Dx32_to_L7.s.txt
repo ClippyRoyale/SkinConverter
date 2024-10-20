@@ -1,9 +1,10 @@
-version 7 4 0
-name "Deluxe to Legacy7 (REV-A)"
+version 7 5 2
+name "Deluxe to Legacy7 (REV-B)"
 author "Clippy"
 description "Convert a Mario Royale skin from the Deluxe format (16×32 small sprites) to the Legacy7 format (24×24 small sprites)."
 
 template "assets/legacy7/smb_skin0.png"
+alt "ui/skin_status_d2l.png"
 
 if (!= (width old) 256)
     error "Are you sure that's a Deluxe skin? Please try again with a source image that has a width of 256 pixels."
@@ -14,8 +15,7 @@ base 1056 136
 # Fireballs, leaf FX, and P-Meter (from template)
 default  0 0  368 16
 
-# SMALL -- TODO
-# Will need downscale option
+# SMALL
 
 set $old_x_list (list \
     240 48  224 208 192 160 160 224 208 192 160 176 240 144 128 112 \
@@ -24,7 +24,6 @@ set $old_x_list (list \
     # for the spin jump
 set $old_y_list (* (list 0) 21) # TODO: just hardcode the old&new y positions
 
-# TODO: test whether having spaces on both sides of a backslash messes things up
 set $new_x_list (list \
     4   28  52  76  100 124 148 172 196 220 244 268 292 316 340 364 \
     388 412 436 460 484 508 532 556 580)
@@ -69,7 +68,7 @@ flip    "x"     508 24  # (... then flip)
 
 # SUPER
 copy    224 32  0 40    32 32   # stand
-copy    128 64  32 40   32 32   # taunt
+copy    128 64  32 40   32 32   # taunt (use frame 3)
 copy    192 32  64 40   32 32   # walk1
 copy    160 32  96 40   32 32   # walk2
 copy    128 32  128 40  32 32   # walk3
@@ -88,14 +87,14 @@ copy    64 64   544 40  32 32   # swim2->3
 copy    32 64   576 40  32 32   # swim3->4
 # Spin is gonna look kinda bad but there's no way around that
 dup     0 40    608 40  32 32   # spin1/left (autofill with stand)
-copy    192 64  32 40   32 32   # spin2/front (autofill with taunt)
+copy    192 64  640 40   32 32   # spin2/front (autofill with taunt1)
 dup     0 40    672 40  32 32   # spin3/right (autofill with stand...)
 flip    x       672 40  32 32   # (...then flip)
-copy    192 64  32 40   32 32   # spin4/back (autofill with taunt, sadly)
+copy    192 64  704 40   32 32   # spin4/back (autofill with taunt1, sadly)
 
-# FIRE -- TODO
+# FIRE
 copy    224 128 0 72    32 32   # stand
-copy    128 160 32 72   32 32   # taunt
+copy    128 160 32 72   32 32   # taunt (use frame 3)
 copy    192 128 64 72   32 32   # walk1
 copy    160 128 96 72   32 32   # walk2
 copy    128 128 128 72  32 32   # walk3
@@ -115,10 +114,10 @@ copy    64 160  544 72  32 32   # swim2->3
 copy    32 160  576 72  32 32   # swim3->4
 # Spin is gonna look kinda bad but there's no way around that
 dup     0 72    608 72  32 32   # spin1/left (autofill with stand)
-copy    192 160 32 40   32 32   # spin2/front (autofill with taunt)
+copy    192 160 640 72  32 32   # spin2/front (autofill with taunt1)
 dup     0 72    672 72  32 32   # spin3/right (autofill with stand...)
 flip    x       672 72  32 32   # (...then flip)
-copy    192 160 32 40   32 32   # spin4/back (autofill with taunt, sadly)
+copy    192 160 704 72  32 32   # spin4/back (autofill with taunt1, sadly)
 
 # LEAF
 copy    224 224 0 104   32 32   # stand
@@ -157,4 +156,5 @@ copy    0 288   256 104 32 32   # run2
 copy    224 320 288 104 32 32   # run3
 dup     960 104 320 104 32 32   # runjump
 
-# No status report for D->L7 conversions because the formats are more similar than L5 vs L7.
+# STATUS REPORT
+copyalt 0 0     608 0   192 40
