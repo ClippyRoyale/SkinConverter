@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 7.5.2
+Version 7.5.3
 
 Copyright © 2022–2024 clippy#4722
 
@@ -49,7 +49,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,5,2]
+app_version = [7,5,3]
 
 # Why does Python not have this built in anymore???
 def cmp(x, y):
@@ -258,9 +258,9 @@ menu_btn_trans_bg = Button(main_frame,
         text='Remove a partially transparent background',
         highlightbackground=colors['UI_BG'])
 
-menu_btn_skin_d_l = Button(main_frame, text='Convert a Deluxe skin to Legacy',
+menu_btn_skin_d_l = Button(main_frame, text='Convert a Deluxe skin to Legacy5',
         highlightbackground=colors['UI_BG'])
-menu_btn_skin_r_l = Button(main_frame, text='Convert a Remake skin to Legacy',
+menu_btn_skin_r_l = Button(main_frame, text='Convert a Remake skin to Legacy5',
         highlightbackground=colors['UI_BG'])
 menu_btn_map_l_ln = Button(main_frame, 
         text='Convert a Legacy map mod to Legacy map_new',
@@ -6764,6 +6764,8 @@ def install_assets():
         os.makedirs('./assets/deluxe')
     if not os.path.isdir('assets/legacy'):
         os.makedirs('./assets/legacy')
+    if not os.path.isdir('assets/legacy7'):
+        os.makedirs('./assets/legacy7')
 
     for i in install_list:
         try:
