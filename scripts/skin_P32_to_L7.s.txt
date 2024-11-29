@@ -1,0 +1,120 @@
+version 7 5 2
+name "Promised32 to Legacy7"
+author "Ray"
+description "Convert a Mario Royale skin from the Promised format (32×32 small sprites) to the Legacy7 format (24×24 small sprites)."
+
+template "assets/legacy7/smb_skin0.png"
+alt "ui/skin_status_p2l.png"
+
+if (!= (width old) 256)
+    error "Are you sure that's a Promised skin? Please try again with a source image that has a width of 256 pixels."
+end if
+
+base 1056 136
+
+# For batch conversion of folders with a mix of converted or unconverted skins...
+if (> (width "old") 256)
+    warning "skin already converted"
+    skip
+end if
+
+# Fireballs, Leaf FX and P-Meter (from template)
+default 0 0     368 16
+
+# SMALL
+copy    196 8   0 16    24 24   # stand
+dup     0 16    24 16   24 24   # taunt
+copy    164 8   48 16   24 24   # walk1
+copy    132 8   72 16   24 24   # walk2
+copy    100 8   96 16   24 24   # walk3
+copy    36 8    120 16  24 24   # jump
+dup     120 16  144 16  24 24   # fall (autofill with jump)
+dup     48 16   168 16  96 24   # run 1/2/3/j (autofill with walk)
+copy    68 8    264 16  24 24   # skid
+dup     0 16    288 16  24 24   # crouch (autofill with stand)
+copy    4 8     312 16  24 24   # climb1
+copy    228 40  336 16  24 24   # climb2
+# Small swim (jump copied)
+dup     120 16  360 16  24 24   # swim 1
+dup     120 16  384 16  24 24   # swim 2
+dup     120 16  408 16  24 24   # swim 3
+dup     120 16  432 16  24 24   # swim 4
+# Spin is physically impossible, so stand it is
+dup     0 16    456 16  24 24  # spin1/left (autofill with stand)
+dup     24 16   480 16  24 24  # spin2/front (autofill with taunt)
+dup     0 16    504 16  24 24  # spin3/right (autofill with stand...)
+flip    "x"     504 16  24 24  # (... then flip)
+dup     24 16   528 16  24 24  # spin4/front (autofill with taunt, sadly)
+# Animated death sprite, like in SMW
+copy    228 8   552 16  24 24
+copy    228 8   576 16  24 24
+
+# SUPER
+copy    160 32  0 40    32 32   # stand
+dup     0 40    32 40   32 32   # taunt
+copy    96 32   64 40   32 32   # walk1
+copy    64 32   96 40   32 32   # walk2
+copy    32 32   128 40  32 32   # walk3
+copy    224 64  160 40  32 32   # jump
+dup     160 40  192 40  32 32   # fall (autofill with jump)
+dup     64 40   224 40  128 32  # run 1/2/3/j (autofill with walk)
+copy    0 32    352 40  32 32   # skid
+copy    128 32  384 40  32 32   # crouch
+copy    160 64  416 40  32 32   # climb1
+copy    192 64  448 40  32 32   # climb2
+copy    192 32  736 40  32 32   # transform
+# Super/Fire swims are also copied jumps
+dup     160 40  480 40  32 32   # swim1
+dup     160 40  512 40  32 32   # swim2
+dup     160 40  544 40  32 32   # swim3
+dup     160 40  576 40  32 32   # swim4
+# Spin is physically impossible, so stand it is
+dup     0 40    608 40  32 32   # spin1/left (autofill with stand)
+dup     32 40   640 40  32 32   # spin2/front (autofill with stand)
+dup     0 40    672 40  32 32   # spin3/right (autofill with stand...)
+flip    "x"     672 40  32 32   # (...then flip)
+dup     32 40   704 40  32 32   # spin4/back (autofill with stand, sadly)
+
+# FIRE
+copy    0 64    0 72    32 32   # stand
+dup     0 72    32 72   32 32   # taunt
+copy    224 96  64 72   32 32   # walk1
+copy    192 96  96 72   32 32   # walk2
+copy    160 96  128 72  32 32   # walk3
+copy    96 96   160 72  32 32   # jump
+dup     160 72  192 72  32 32   # fall (autofill with jump)
+dup     64 72   224 72  128 32  # run 1/2/3/j (autofill with walk)
+copy    128 96  352 72  32 32   # skid
+copy    64 96   384 72  32 32   # crouch
+copy    96 64   416 72  32 32   # climb1
+copy    128 64  448 72  32 32   # climb2
+copy    32 64   736 72  32 32   # transform
+copy    64 64   768 72  32 32   # shoot
+# Super/Fire swims are also copied jumps
+dup     160 72  480 72  32 32   # swim1
+dup     160 72  512 72  32 32   # swim2
+dup     160 72  544 72  32 32   # swim3
+dup     160 72  576 72  32 32   # swim4
+# Spin is physically impossible, so stand it is
+dup     0 72    608 72  32 32   # spin1/left (autofill with stand)
+dup     32 72   640 72  32 32   # spin2/front (autofill with stand)
+dup     0 72    672 72  32 32   # spin3/right (autofill with stand...)
+flip    "x"     672 72  32 32   # (...then flip)
+dup     32 72   704 72  32 32   # spin4/back (autofill with stand, sadly)
+
+# LEAF
+# Fill in the super sprites so that ears/tail can be added manually
+dup     0 40    0 104       768 32  # most of them
+dup     608 40  736 104     128 32  # spinattack (autofill with spinjump)
+dup     192 40  864 104     32 32   # fly1 (autofill with fall)
+dup     192 40  896 104     32 32   # fly2 (autofill with fall)
+dup     192 40  928 104     32 32   # fly3 (autofill with fall)
+dup     320 40  960 104     32 32   # pfly1 (autofill with pjump)
+dup     320 40  992 104     32 32   # pfly2 (autofill with pjump)
+dup     320 40  1024 104    32 32   # pfly3 (autofill with pjump)
+
+# CREDITS AREA
+copy    0 128   800 0   256 104
+
+# STATUS REPORT
+copyalt 0 0     608 0   192 40  # Copy the text
