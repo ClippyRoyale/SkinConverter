@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 7.5.3
+Version 7.5.4
 
 Copyright © 2022–2024 clippy#4722
 
@@ -49,7 +49,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,5,3]
+app_version = [7,5,4]
 
 # Why does Python not have this built in anymore???
 def cmp(x, y):
@@ -253,11 +253,13 @@ menu_btn_skin_l_l7 = Button(main_frame,
         font=f_large, highlightbackground=colors['UI_BG'])
 menu_btn_skin_d_l7 = Button(main_frame, 
         text='Convert a Deluxe skin to Legacy7',
-        highlightbackground=colors['UI_BG'])
+        font=f_large, highlightbackground=colors['UI_BG'])
 menu_btn_trans_bg = Button(main_frame, 
         text='Remove a partially transparent background',
         highlightbackground=colors['UI_BG'])
 
+menu_btn_skin_p_l7 = Button(main_frame, 
+        text='Convert a Legacy3 32×32 proposal skin to Legacy7', highlightbackground=colors['UI_BG'])
 menu_btn_skin_d_l = Button(main_frame, text='Convert a Deluxe skin to Legacy5',
         highlightbackground=colors['UI_BG'])
 menu_btn_skin_r_l = Button(main_frame, text='Convert a Remake skin to Legacy5',
@@ -293,6 +295,7 @@ menu_btns_p1 = [
 ]
 
 menu_btns_p2 = [
+    menu_btn_skin_p_l7,
     menu_btn_skin_d_l,
     menu_btn_skin_r_l,
     menu_btn_map_l_ln,
@@ -301,7 +304,7 @@ menu_btns_p2 = [
     #menu_btn_submit, # temporarily removed for space reasons
     menu_btn_multi,
     menu_btn_assets,
-    menu_spacer,
+    # menu_spacer,
     menu_btn_page_prev,
 ]
 
@@ -4460,6 +4463,8 @@ def menu():
 
     # PAGE 2
 
+    menu_btn_skin_p_l7.bind('<ButtonRelease-1>', 
+            lambda _: script_button('scripts/skin_P32_to_L7.s.txt'))
     menu_btn_skin_d_l.bind('<ButtonRelease-1>', 
             lambda _: script_button('scripts/skin_Dx32_to_L.txt'))
     menu_btn_skin_r_l.bind('<ButtonRelease-1>', 
@@ -6450,31 +6455,31 @@ from a stack of {max_breaks} loops')
             elif item[0] == 'iadd':
                 change([item[0], # cmd name
                         item[1], # variable identifier
-                        'add', item[2:]])
+                        'add'] + item[2:])
             elif item[0] == 'isub':
                 change([item[0], # cmd name
                         item[1], # variable identifier
-                        'sub', item[2:]])
+                        'sub'] + item[2:])
             elif item[0] == 'imul':
                 change([item[0], # cmd name
                         item[1], # variable identifier
-                        'mul', item[2:]])
+                        'mul'] + item[2:])
             elif item[0] == 'itruediv':
                 change([item[0], # cmd name
                         item[1], # variable identifier
-                        'truediv', item[2:]])
+                        'truediv'] + item[2:])
             elif item[0] == 'ifloordiv':
                 change([item[0], # cmd name
                         item[1], # variable identifier
-                        'floordiv', item[2:]])
+                        'floordiv'] + item[2:])
             elif item[0] == 'imod':
                 change([item[0], # cmd name
                         item[1], # variable identifier
-                        'mod', item[2:]])
+                        'mod'] + item[2:])
             elif item[0] == 'ipow':
                 change([item[0], # cmd name
                         item[1], # variable identifier
-                        'pow', item[2:]])
+                        'pow'] + item[2:])
             elif item[0] == 'inc':
                 change([item[0], # cmd name
                         item[1], # variable identifier
