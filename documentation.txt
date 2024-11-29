@@ -1,4 +1,4 @@
-version,7,3,2 # The version of the Converter app that this script is made for.
+version,7,5,4 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation

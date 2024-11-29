@@ -530,3 +530,9 @@ Version 7.5.3 (Nov. 1, 2024):
   * Fixed bug with installing Legacy7 skin template
   * Updated title-screen p2 buttons to clarify which scripts convert to the 
     Legacy5 format
+
+Version 7.5.4 (Nov. 28, 2024):
+  + Added script to convert skins for the scrapped 2019 32×32 format to Legacy7
+      * This script was written by Ray. Thank you so much!
+  * Fixed i-series commands (iadd/+=, isub/-=, etc.)
+  * Improved L5->L7 status report
