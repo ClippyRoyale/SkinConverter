@@ -531,8 +531,16 @@ Version 7.5.3 (Nov. 1, 2024):
   * Updated title-screen p2 buttons to clarify which scripts convert to the 
     Legacy5 format
 
-Version 7.5.4 (Nov. 28, 2024):
+Version 7.5.4 (Nov. 29, 2024):
   + Added script to convert skins for the scrapped 2019 32×32 format to Legacy7
       * This script was written by Ray. Thank you so much!
   * Fixed i-series commands (iadd/+=, isub/-=, etc.)
   * Improved L5->L7 status report
+
+Version 7.5.5 (Feb. 13, 2025):
+  + Using `rotate` command without any x/y coordinates rotates the full image
+  + Use `flip,xy` to rotate a rectangular area of an image by 180°
+  * Auto-detect space-separated files based on `version` line (even if they
+    don't have the .s.txt extension)
+  * Fixed some text getting cut off in Legacy5->Legacy7 conversion
+  * Fixed the `reverse` command

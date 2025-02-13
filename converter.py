@@ -1,8 +1,8 @@
 '''
 MR Skin Converter 
-Version 7.5.4
+Version 7.5.5
 
-Copyright © 2022–2024 clippy#4722
+Copyright 2022–2025 ClippyRoyale
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,5,4]
+app_version = [7,5,5]
 
 # Why does Python not have this built in anymore???
 def cmp(x, y):
@@ -1213,32 +1213,49 @@ def crop(i:list, base_image:PIL.Image.Image):
 
     return resize([i[0], width, height, -x, -y], base_image)
 
-# rotate,90<degreesClockwise: multiple of 90>,0<x>,0<y>,
-#   16[size] 
-# Rotate the area in place on the new image. Unlike copy commands, 
-# only one size argument is used, as the rotated area must be square.
-def rotate(i, base_image):
-    degreesClockwise = i[1]
+def rotate(i:list, base_image:PIL.Image.Image):
+    '''
+    rotate 90<degCW: multiple of 90> 0<x> 0<y> 16[size]
+    
+    Rotate the area clockwise, in place, on the new image. Unlike copy 
+    commands, only 1 size argument is used, as the rotated area must be square.
+    If you want to rotate a rectangular area 180°, flip it horizontally then 
+    vertically instead.
 
-    x = i[2]
-    y = i[3]
+    — OR —
+
+    rotate 90<degCW: multiple of 90> 
+    
+    Rotate the full canvas of the new image. This may change the image's 
+    dimensions (e.g. rotating a 400×300 image by 90° will make it 300×400).
+    '''
+    degCW : int = i[1]
+
+    if (degCW % 90) != 0:
+        log_warning(f'{i[0]}: \
+Rotating by a number not divisible by 90 may have unintended effects.')
+
+    if len(i) == 2: 
+        # Special case to rotate entire image if x/y/w/h omitted
+        rotated_image = base_image.rotate(
+                -degCW, # negated b/c PIL rotates counterclockwise
+                PIL.Image.Resampling.NEAREST, expand=True)
+        return rotated_image
+
+    x : int = i[2]
+    y : int = i[3]
 
     # If size specified, use that value. If not, use 16. 
     # Remember: squares only.
     if len(i) == 4:
         i += [16]
-    size = i[4]
+    size : int = i[4]
 
-    if (i[1] % 90) != 0:
-        log_warning('\
-Rotating by a number not divisible by 90 may have unintended effects.')
-
-    # The rotation angle is negated in the PIL call 
-    # because PIL rotates counterclockwise.
     region = base_image.crop((x, y, x+size, y+size))
-    region = region.rotate(-degreesClockwise, 
-        PIL.Image.Resampling.NEAREST, expand=0)
+    region = region.rotate(-degCW, # negated b/c PIL rotates counterclockwise
+        PIL.Image.Resampling.NEAREST, expand=False)
     base_image.paste(region, (x, y, x+size, y+size))
+    return base_image
 
 # flip,x<direction: x or y>,0[x],0[y],16[width],16[height]
 # Flip the area in place on the new image. Unlike rotation, width and height
@@ -1263,9 +1280,11 @@ def flip(i, base_image):
 
     region = base_image.crop((x, y, x+width, y+height))
     # PIL has different commands for horizontal vs. vertical flip
-    if direction == 'x':
+    # New in 7.5.5: can now flip horizontally and vertically at the same time
+    # (i.e. rotate an area 180° even if it's not square)
+    if 'x' in direction or 'h' in direction:
         region = PIL.ImageOps.mirror(region)
-    elif direction == 'y':
+    if 'y' in direction or 'v' in direction:
         region = PIL.ImageOps.flip(region)
     # Otherwise, if direction is invalid, do nothing (the goal is to make 
     # it so the user CAN'T crash the program by mistake)
@@ -2545,7 +2564,7 @@ def subcmd(raw_cmd: abc.Sequence):
     elif cmd[0] == 'sort':
         result = sorted(cmd[1])
     elif cmd[0] == 'reverse':
-        result = reversed(cmd[1])
+        result = cmd[1][::-1]
 
     elif cmd[0] == 'str_mul':
         if version_gte(7,2):
@@ -6536,7 +6555,7 @@ default: Skipped because no “template” image was specified.')
             elif item[0] == 'crop':
                 images['new'] = crop(item, images['new'])
             elif item[0] == 'rotate':
-                rotate(item, images['new'])
+                images['new'] = rotate(item, images['new'])
             elif item[0] == 'flip':
                 flip(item, images['new'])
 

@@ -1,4 +1,4 @@
-version,7,5,4 # The version of the Converter app that this script is made for.
+version,7,5,5 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
@@ -112,7 +112,7 @@ resize,256<newWidth>,256[newHeight],0[xOffset],0[yOffset] # Resize the new image
 
 crop,0<x>,0<y>,0<width>,0<height> # Same functionality as resize, but in a way that makes more sense if you want to make the image smaller
 
-rotate,90<degreesClockwise: multiple of 90>,0<x>,0<y>,16[size] # Rotate the area in place on the new image. Unlike copy commands, only one size argument is used, as the rotated area must be square. TODO: add arbitrary rotation w/ interpolation
+rotate,90<degreesClockwise: multiple of 90>,0<x>,0<y>,16[size] # Rotate the area in place on the new image. Unlike copy commands, only one size argument is used, as the rotated area must be square. If you want to rotate a rectangular area 180°, flip it horizontally then vertically instead. TODO: add arbitrary rotation w/ interpolation
 
 flip,x<direction: x or y>,0[x],0[y],16[width],16[height]
 # Flip the area in place on the new image. Unlike rotation, width and height can be different here.
