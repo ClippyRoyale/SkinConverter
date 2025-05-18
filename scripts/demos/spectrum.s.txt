@@ -1,0 +1,15 @@
+version 7 6 0
+name "Spectrum Generator"
+author "Clippy"
+description "Generate an image of a 361×201 color spectrum where x=hue and y=lightness."
+
+flag closedRanges 1
+
+open 0
+base 361 201
+
+for $x 0 360
+    for $y 0 200
+        setpixel $x $y (hsl $x 100 (- 100 (* 0.5 $y)))
+    end for
+end for

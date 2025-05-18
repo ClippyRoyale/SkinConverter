@@ -58,9 +58,9 @@ copy,	0,16,	136,64,	16,32
 # powerdown
 copy,	224,16,	8,64,	16,32
 
-# Test for fire32 (with swim sprites)
+# Test for fire32 (with taunt and swim sprites)
 # If any of the leftmost 8 columns of fire sprites are not empty, assume the skin is 32×32
-set,$fire32,(or, (not,(empty,0,48,8,32)), (not,(empty,32,48,8,32)), (not,(empty,64,48,8,32)), (not,(empty,96,48,8,32)), (not,(empty,128,48,8,32)), (not,(empty,176,48,8,32)), (not,(empty,224,48,8,32)),     (not,(empty,64,128,8,32)), (not,(empty,96,128,8,32)), (not,(empty,128,128,8,32)), (not,(empty,160,128,8,32)), (not,(empty,192,128,8,32)), (not,(empty,224,128,8,32)))
+set,$fire32,(or, (not,(empty,16,16,8,32)), (not,(empty,0,48,8,32)), (not,(empty,32,48,8,32)), (not,(empty,64,48,8,32)), (not,(empty,96,48,8,32)), (not,(empty,128,48,8,32)), (not,(empty,176,48,8,32)), (not,(empty,224,48,8,32)),     (not,(empty,64,128,8,32)), (not,(empty,96,128,8,32)), (not,(empty,128,128,8,32)), (not,(empty,160,128,8,32)), (not,(empty,192,128,8,32)), (not,(empty,224,128,8,32)))
 
 # FIRE
 if,$fire32

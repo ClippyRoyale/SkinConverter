@@ -4,7 +4,7 @@ author "Ray"
 description "Convert a Mario Royale skin from the Promised format (32×32 small sprites) to the Legacy7 format (24×24 small sprites)."
 
 template "assets/legacy7/smb_skin0.png"
-alt "ui/skin_status_p2l.png"
+alt "sc_assets/skin_status_p2l.png"
 
 if (!= (width old) 256)
     error "Are you sure that's a Promised skin? Please try again with a source image that has a width of 256 pixels."

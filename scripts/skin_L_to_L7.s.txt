@@ -1,10 +1,10 @@
-version 7 5 1
-name "Legacy16 to Legacy32 (REV-B2)"
+version 7 6 0
+name "Legacy16 to Legacy32 (REV-D)"
 author "Clippy"
-description "Convert a Mario Royale skin from the v4–v6 format (16×32 Super sprites) to the v7 format (32×32 Super sprites; 24×24 small sprites)."
+description "Convert a Mario Royale skin from the v4–v6 format (16×32 Super sprites) to the v7 format (32×32 Super sprites; 24×24 small sprites). New Pin-the-Tail-on-the-Character Edition!"
 
-template "assets/legacy7/smb_skin0.png"
-alt "ui/skin_status.png"
+template "sc_assets/leaf_template.png" # reorganize this for v8.0
+alt "sc_assets/skin_status.png"
 
 # Uncomment for testing
 #open "assets_full/legacy/smb_skin*.png"
@@ -12,7 +12,8 @@ alt "ui/skin_status.png"
 #start 0
 #stop 10
 
-base 1056 136
+# Final size will be 1056 × 136, but we need 32 more pixels to use as a workspace for recoloring the tails.
+base 1056 168
 
 # For batch conversion of folders with a mix of converted or unconverted skins...
 if (> (width "old") 256)
@@ -53,10 +54,12 @@ dup     4 24    460 24  # spin1/left (autofill with stand)
 dup     28 24   484 24  # spin2/front (autofill with taunt)
 dup     4 24    508 24  # spin3/right (autofill with stand...)
 flip    "x"     508 24  # (... then flip)
-dup     28 24   532 24  # spin4/front (autofill with taunt, sadly)
+dup     28 24   532 24  # spin4/front (autofill with taunt...)
+flip    "x"     532 24  # (... then flip)
 # Animated death sprite, like in SMW
 copy    0 0     556 24
 copy    0 0     580 24
+flip    "x"     580 24  # (flip frame 2)
 
 # SUPER
 copy    208 16  8 40    16 32   # stand
@@ -79,10 +82,11 @@ copy    208 96  552 40  16 32   # swim3->3
 copy    160 96  584 40  16 32   # swim6->4
 # Spin is gonna look kinda bad but there's no way around that
 dup     8 40    616 40  16 32   # spin1/left (autofill with stand)
-dup     40 40   648 40  16 32   # spin2/front (autofill with stand)
+dup     40 40   648 40  16 32   # spin2/front (autofill with taunt)
 dup     8 40    680 40  16 32   # spin3/right (autofill with stand...)
 flip    "x"     680 40  16 32   # (...then flip)
-dup     40 40   712 40  16 32   # spin4/back (autofill with stand, sadly)
+dup     40 40   712 40  16 32   # spin4/back (autofill with taunt...)
+flip    "x"     712 40  16 32   # (...then flip)
 
 # FIRE
 # These sprites are complicated because some skins use the full 32×32 space and some don't.
@@ -98,20 +102,47 @@ set $new_x_list (list   0   32  64  96  128 160 352 480 512 544 576 768)
 set $new_y_list (list   72  72  72  72  72  72  72  72  72  72  72  72)
 # Don't bother checking swim4 and swim5 because they'll get dropped anyway
 
-# Get left/right scaling bounds for a 32×32 area.
-# Adapted from `bounds` subroutine in Dx32_to_L16.txt
-set $left 8
+# Get left scaling bounds for a 32×32 area.
+# Adapted from `bounds` subroutine in skin_Dx32_to_L.txt
+set $reg_left 8
+# Alternate bounds for sprites that often take up more space
+# Alt left bounds can't be greater (i.e. narrower) than $left
+set $taunt_left 8
+set $attack_left 8
+set $swim_left 8
 for $i (len $old_x_list) # i is looping thru the position lists
     for $j 0 8 # j is looping thru the pixel columns of each sprite
         if (not (empty (+ $j (get $old_x_list $i)) (get $old_y_list $i) 1 32))
-            set $left (min $j $left)
-            break
+            if (= $i 1)
+                set $taunt_left (min $j $taunt_left $reg_left)
+                break
+            elseif (= $i 11)
+                set $attack_left (min $j $attack_left $reg_left)
+                break
+            elseif (in (range 7 11) $i)
+                set $swim_left (min $j $swim_left $reg_left)
+                break
+            else
+                set $reg_left (min $j $reg_left)
+                break
+            end if
         end if
     end for
 end for
 
-# Place a fire sprite in the position that'll mess up its hitbox the LEAST.
 for $i (len $old_x_list) # i is looping thru the position lists
+    # Determine which version of $left we want
+    if (= $i 1)
+        set $left $taunt_left
+    elseif (= $i 11)
+        set $left $attack_left
+    elseif (in (range 7 11) $i)
+        set $left $swim_left
+    else
+        set $left $reg_left
+    end if
+
+    # Place a fire sprite in the position that'll mess up its hitbox the LEAST
     copy (+ $left (get $old_x_list $i)) (get $old_y_list $i) (get $new_x_list $i) (get $new_y_list $i) (- 32 $left) 32
 end for
 
@@ -120,15 +151,16 @@ copy    160 48  392 72  16 32   # crouch
 copy    64 16   424 72  16 32   # climb1
 copy    48 16   456 72  16 32   # climb2
 copy    208 48  744 72  16 32   # transform
-# duplications => don't use the `place` subroutine for these either
+# duplications => don't use the main placement loop for these either
 dup     160 72  192 72  32 32   # fall (autofill with jump)
 dup     64 72   224 72  128 32  # run 1/2/3/j (autofill with walk)
 # Spin is gonna look kinda bad but there's no way around that
 dup     0 72    608 72  32 32   # spin1/left (autofill with stand)
-dup     32 72   640 72  32 32   # spin2/front (autofill with stand)
+dup     32 72   640 72  32 32   # spin2/front (autofill with taunt)
 dup     0 72    672 72  32 32   # spin3/right (autofill with stand...)
 flip    "x"     672 72  32 32   # (...then flip)
-dup     32 72   704 72  32 32   # spin4/back (autofill with stand, sadly)
+dup     32 72   704 72  32 32   # spin4/back (autofill with taunt...)
+flip    "x"     704 72  32 32   # (...then flip)
 
 # LEAF
 # Fill in the super sprites so that ears/tail can be added manually
@@ -223,7 +255,176 @@ if (and $oob_gen $oob_atk $oob_swim $oob_taunt)
     copyalt 0 32    704 24  8 8
 end if
 
+
+
+# Place tails under Super sprites to make Raccoon sprites
+
+# Get palette of the Super sprites
+# Performance benchmarks:
+# - getpixel loop on new image: 10s
+# - getpixel loop on old image: 2.2s
+# - pal.get: 0.2s
+set $pal (pal.get 80 16 144 32)
+if (in $pal (color "transparent"))
+    list.remove $pal (find $pal (color "transparent"))
+end if
+set $PAL_SIZE (len $pal)
+
+# Check whether the Super stand sprite has an outline:
+# 1. Make list (with repeats) of 
+set $total_rows 0
+set $edge_colors (list)
+for $y 104 136
+    # First, check if the row is empty 
+    # (and if so, skip it and ignore it in our calculations)
+    if (empty "new" 8 $y 16 1) # Note that we only need to check the 16×32 area
+        next
+    else
+        ++ $total_rows
+    end if
+    # Check for outline on left
+    for $x 8 24
+        set $c (getpixel $x $y)
+        if (= (alpha $c) 0)
+            next
+        else
+            list.add $edge_colors $c
+            break
+        end if
+    end for
+    # Check for outline on right
+    for $x 23 7 -1
+        set $c (getpixel $x $y)
+        if (= (alpha $c) 0)
+            next
+        else
+            list.add $edge_colors $c
+            break
+        end if
+    end for
+end for
+
+# 2. Count if any of the edge colors pass the threshold for how much they appear
+set $OUTLINE $_f
+set $outline_color (color "transparent")
+set $outline_pct 0
+foreach $c $pal
+    set $temp_pct (/ (count $edge_colors $c) (* $total_rows 2))
+    if (> $temp_pct 0.8)
+        set $OUTLINE $_t
+        set $outline_color $c
+        set $outline_pct $temp_pct
+        break
+    elseif (> $temp_pct $outline_pct)
+        # This doesn't count as an outline, it's just for debugging
+        set $outline_pct $temp_pct
+    end if
+end foreach
+# If the loop finishes and none of the edge colors pass the threshold, 
+# it's not outlined
+
+# Copy correct tail into temp area, then recolor it
+if (= $PAL_SIZE 1) # Special case for single-color palette
+    copyfrom template   0 16    0 136   1056 32
+    recolor () (get $pal 0)     0 136   1056 32
+elseif (>= $PAL_SIZE 8)
+    copyfrom template   0 80    0 136   1056 32
+    # no recoloring
+elseif (and $OUTLINE (= $PAL_SIZE 2))
+    # DARK *and* MEDIUM both use outline color
+    # LIGHT is the remaining color
+    copyfrom template   0 48    0 136   1056 32
+
+    list.remove $pal (find $pal $outline_color)
+    recolor (list (color "n0f") (color "n16") (color "n36")) \
+            (list $outline_color $outline_color (get $pal 0)) \
+            0 136   1056 32
+elseif (and $OUTLINE (>= $PAL_SIZE 3))
+    # DARK = outline color (not necessarily the darkest color -- see neon skins)
+    # LIGHT = closest to NES orange
+    # MEDIUM = closest to brown
+    copyfrom template   0 48    0 136   1056 32
+
+    # Remove outline color before calculating best medium/light matches
+    list.remove $pal (find $pal $outline_color)
+
+    # Sets $best_medium and $best_light
+    gosub best_medium_light
+
+    recolor (list (color "n0f") (color "n16") (color "n36")) \
+            (list $outline_color $best_medium $best_light) \
+            0 136   1056 32
+else # if no outline and 2-6 colors
+    # MEDIUM = closest to brown
+    # LIGHT = closest to NES orange
+    copyfrom template    0 16    0 136   1056 32
+
+    # Sets $best_medium and $best_light
+    gosub best_medium_light
+
+    recolor (list (color "n18") (color "n27")) \
+            (list $best_medium $best_light) \ 
+            0 136   1056 32
+end if
+
+# Get right bounds for a 32×32 area, so we know whether to shift the tail left.
+# Adapted from `bounds` subroutine in skin_Dx32_to_L.txt
+# Positions on ORIGINAL skin to check
+set $old_x_list (list   208 0   176 160 144 112 128 240 224 208 160 )
+set $old_y_list (list   16  16  16  16  16  16  16  96  96  96  96  )
+# order: /              stand   walk1   walk3   skid    swim2   swim6->4
+#        \                  taunt   walk2   jump    swim1   swim3
+# Don't bother checking swim4 and swim5 because they'll get dropped anyway
+set $right 15
+for $i (len $old_x_list) # i is looping thru the position lists
+    for $j 15 7 -1 # Only check positions where the tail will attach
+        if (< (alpha "old" (+ (get $old_x_list $i) $j) (+ (get $old_y_list $i) 20) 1 8) 16) # lower number = tail sticks out more (further right)
+            set $right (min $j $right)
+        end if
+    end for
+end for
+
+# Realign tail if sprite is narrow
+if (< $right 23)
+    for $x 0 1056 32
+        if (not (in (list 672 800) $x)) # Exception: flipped spin sprites
+            move $x 136  (+ $x (- $right 15)) 136 32 32
+        else 
+            move $x 136  (- $x (- $right 15)) 136 32 32
+        end if
+    end for
+end if
+# Clear left 16px column, so tail doesn't appear on left side in really narrow skins
+for $x 0 1056 32
+    if (not (in (list 672 800) $x)) 
+        clear $x 136 16 32
+    else # flipped spin sprites
+        clear (+ $x 16) 136 16 32
+    end if
+end for
+# Move tail under super sprites
+under   0 136   0 104   1056 32     "new"
+
+# Resize canvas to final size
+resize 1056 136
+
+# New debug text
+default 384 0 200 8
+# Colors:__
+set $text_n $PAL_SIZE
+set $text_x 456
+set $text_y 0
+gosub text_int
+# Outline:___%
+set $text_n (int (* 100 $outline_pct))
+set $text_x 544
+gosub text_int
+
 exit # Avoid falling through to subroutines
+
+
+
+# SUBROUTINES
 
 # Test equality of two areas on the new image
 # Arguments: $old_x, $old_y, $new_x, $new_y, $width, $height
@@ -231,7 +432,6 @@ label area_eq
 set $eq $_t
 for $i 0 $width
     for $j 0 $height
-        #warning (str (+ $old_x $i) "," (+ $old_y $j) "," (+ $new_x $i) "," (+ $new_y $j) "," (getpixel (+ $old_x $i) (+ $old_y $j)) "," (getpixel (+ $new_x $i) (+ $new_y $j)))
         if (!= (getpixel "old" (+ $old_x $i) (+ $old_y $j)) (getpixel "old" (+ $new_x $i) (+ $new_y $j)))
             set $eq $_f
             retsub
@@ -239,4 +439,65 @@ for $i 0 $width
     end for
 end for
 # if we make it here, they're equal
+retsub
+
+# Draw an integer value as text.
+# This is also something of a dry run for the text-drawing functionality I hope to add in v8.x
+# Arguments: $text_x:int, $text_y:int, $text_n:int
+label text_int
+if (= $text_n 0)
+    copyfrom template 0 0 $text_x $text_y 8 8
+else 
+    set $digits (+ 1 (int (log $text_n)))
+    += $text_x (* 8 (- $digits 1))
+    for $i 0 $digits
+        copyfrom template (* 8 (% $text_n 10)) 0 $text_x $text_y 8 8
+        -= $text_x 8
+        //= $text_n 10
+    end for
+end if
+retsub
+
+# Return the "distance" between two colors by treating their RGB values as 3D coordinates and applying the Pythagorean theorem.
+# Arguments: $c1:color, $c2:color
+# Returns: $cd
+label color_dist
+set $cd (^ (+ \
+    (^ (- (red $c1) (red $c2)) 2) \
+    (^ (- (green $c1) (green $c2)) 2) \
+    (^ (- (blue $c1) (blue $c2)) 2) \
+    ) 0.5)
+retsub
+
+# Calculate best combination of LIGHT & MEDIUM (i.e. shortest distance)
+label best_medium_light
+set $best_dist 1000 # max distance from Pythagorean theorem is ~444
+set $best_medium (get $pal 0)
+set $best_light (get $pal 1)
+foreach $mindex $mitem $pal
+    foreach $lindex $litem $pal
+        # light and medium must be different
+        if (= $lindex $mindex)
+            next
+        end if
+
+        set $c1 $litem
+        set $c2 (color "n27")
+        gosub color_dist    # sets $cd
+        set $cdl $cd        # because we're about to overwrite $cd
+
+        set $c1 $mitem
+        set $c2 (color "brown")
+        # NOTE: HSL brown used instead of NES brown because the latter
+        # is actually closer to NES red than NES olive
+        gosub color_dist    # sets $cd
+        set $cdm $cd        # because we're about to overwrite $cd
+
+        if (< (+ $cdl $cdm) $best_dist)
+            set $best_dist (+ $cdl $cdm)
+            set $best_medium $mitem
+            set $best_light $litem
+        end if
+    end foreach
+end foreach
 retsub

@@ -1,0 +1,19 @@
+version 7 6 0
+name "NES palette generator"
+author "Clippy"
+description "Generates the Canonical (AKA Nestopia/YUV-V1) NES palette using the values hardcoded into the converter."
+
+open 0
+base 256 64
+
+set $hex (list "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "A" "B" "C" "D" "E" "F")
+
+foreach $y $j $hex
+    foreach $x $i $hex
+        if (>= $y 4)
+            exit
+        end
+        draw.fillcolor (color (str "n" $j $i))
+        draw.rect  (* $x 16)  (* $y 16)  16  16
+    end
+end
