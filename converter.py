@@ -1,6 +1,6 @@
 '''
 MR Skin Converter 
-Version 7.5.5
+Version 7.6.0
 
 Copyright 2022–2025 ClippyRoyale
 
@@ -49,7 +49,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,5,5]
+app_version = [7,6,0]
 
 # Why does Python not have this built in anymore???
 def cmp(x, y):
@@ -902,6 +902,90 @@ def swap(i: list, base_image: PIL.Image.Image):
     # Paste both regions
     base_image.paste(region1, (x2, y2, x2+width, y2+height))
     base_image.paste(region2, (x1, y1, x1+width, y1+height))
+
+def over(i:list, open_image:PIL.Image.Image, base_image:PIL.Image.Image):
+    '''
+    over 0[oldX] 0[oldY] 0[newX] 0[newY] 16[width] 16[height] "old"[imageName]
+    
+    Like copy, except overlay the copied area on top of the existing pixels 
+    (using alpha blending), instead of clearing them.
+    '''
+
+    # If no x or y specified, apply to whole image
+    if len(i) <= 4:
+        i = [i[0], 0, 0, 0, 0, base_image.size[0], base_image.size[1]]
+    oldX : int = i[1]
+    oldY : int = i[2]
+    newX : int = i[3]
+    newY : int = i[4]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 16×16.
+    # If only width is specified, use that value for height too.
+    if len(i) == 5:
+        i += [16, 16]
+    width : int = i[5]
+    if len(i) == 6:
+        i += [width]
+    height : int = i[6]
+
+    if len(i) >= 8:
+        # Option to override source image
+        if i[7] not in images:
+            log_warning(
+                f'{i[0]}: Skipped because {i[7]} is not a defined image name'
+            )
+            return
+        # else
+        open_image = images[i[7]]
+
+    region = open_image.crop((oldX, oldY, oldX+width, oldY+height))
+    temp = PIL.Image.new('RGBA', (base_image.width, base_image.height))
+    temp.paste(region, (newX, newY, newX+width, newY+height))
+
+    return PIL.Image.alpha_composite(base_image, temp)
+
+def under(i:list, open_image:PIL.Image.Image, base_image:PIL.Image.Image):
+    '''
+    under 0[oldX] 0[oldY] 0[newX] 0[newY] 16[width] 16[height] "old"[imageName]
+    
+    Like copy, except place the copied area underneath the existing pixels 
+    (using alpha blending).
+    '''
+
+    # If no x or y specified, apply to whole image
+    if len(i) <= 4:
+        i = [i[0], 0, 0, 0, 0, base_image.size[0], base_image.size[1]]
+    oldX : int = i[1]
+    oldY : int = i[2]
+    newX : int = i[3]
+    newY : int = i[4]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 16×16.
+    # If only width is specified, use that value for height too.
+    if len(i) == 5:
+        i += [16, 16]
+    width : int = i[5]
+    if len(i) == 6:
+        i += [width]
+    height : int = i[6]
+
+    if len(i) >= 8:
+        # Option to override source image
+        if i[7] not in images:
+            log_warning(
+                f'{i[0]}: Skipped because {i[7]} is not a defined image name'
+            )
+            return
+        # else
+        open_image = images[i[7]]
+
+    region = open_image.crop((oldX, oldY, oldX+width, oldY+height))
+    temp = PIL.Image.new('RGBA', (base_image.width, base_image.height))
+    temp.paste(region, (newX, newY, newX+width, newY+height))
+
+    return PIL.Image.alpha_composite(temp, base_image)
 
 ###########################################################################
 #### ADVANCED COPYING COMMANDS ############################################
@@ -1890,6 +1974,59 @@ def twocolor(i: list, base_image: PIL.Image.Image):
                             (rgba[0], rgba[1], rgba[2], rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
 
+def recolor(i:list, base_image:PIL.Image.Image):
+    '''
+    recolor ()<oldColor> $_fillcolor<newColor> 0[x] 0[y] 16[width] 16[height]
+    
+    Replace every pixel matching `oldColor` with `newColor`. If `oldColor` is 
+    null, recolor all non-transparent colors.
+    '''
+    oldColor = i[1]
+    newColor = i[2]
+    if isinstance(oldColor, list) and isinstance(newColor, list) and len(oldColor) != len(newColor):
+        log_warning(f'{i[0]}: list lengths don’t match')
+        return None
+
+    # For filters, if no x or y specified, apply filter to whole image
+    if len(i) <= 5: # number on the right should be equal to the index of y
+        i = [i[0], i[1], i[2], 0, 0, base_image.size[0], base_image.size[1]]
+    x : int = i[3]
+    y : int = i[4]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 16×16.
+    # If only width is specified, use that value for height too.
+    if len(i) == 5:
+        i += [16, 16]
+    width : int = i[5]
+    if len(i) == 6:
+        i += [width]
+    height : int = i[6]
+
+    region = base_image.crop((x, y, x+width, y+height))
+    for loop_x in range(width):
+        for loop_y in range(height):
+            oldRGBA : Tuple[int] = region.getpixel((loop_x, loop_y))
+            if isinstance(oldColor, list) and isinstance(newColor, list):
+                for j in range(len(oldColor)):
+                    if oldRGBA == (oldColor[j].red, oldColor[j].green, 
+                                        oldColor[j].blue, oldColor[j].alpha):
+                        region.putpixel((loop_x, loop_y), 
+                                (newColor[j].red, newColor[j].green, 
+                                newColor[j].blue, newColor[j].alpha))
+            else:
+                # If oldColor is null, recolor all non-empty pixels;
+                # if not, check for color match
+                if (oldColor is None and oldRGBA[3] > 0) \
+                        or (oldColor is not None and \
+                            oldRGBA == (oldColor.red, oldColor.green, 
+                                        oldColor.blue, oldColor.alpha)):
+                    region.putpixel((loop_x, loop_y), 
+                                    (newColor.red, newColor.green, 
+                                    newColor.blue, newColor.alpha))
+
+    base_image.paste(region, (x, y, x+width, y+height))
+
 ###########################################################################
 #### LIST COMMANDS ########################################################
 ###########################################################################
@@ -1916,8 +2053,9 @@ to call a method on it')
         return
     
     # else
-    varRef : SetVar = i[1]
-    if not var_check(varRef, i[0], exists=True):
+    varRef = i[1]
+    # Normally a SetVar but not always (`count` cmd is an exception)
+    if isinstance(varRef, SetVar) and not var_check(varRef, i[0], exists=True):
         # var_check will generate its own warning if it fails, so no need
         # for another one here
         return
@@ -2197,10 +2335,11 @@ def subst_var(ref: Var, cmd_name='', mutable=False):
     if type(ref) == Var or (type(ref) == SetVar and mutable):
         var_name : str = ref.name
         if var_check(ref, cmd_name, exists=True):
-            if isinstance(variables[var_name], list) and not mutable:
-                # Deep-copy mutable data types (i.e. lists).
-                # This causes a bit of a performance hit but it fixes a
-                # lot of bugs because the whole lists-are-references thing
+            if (isinstance(variables[var_name], list) and not mutable) \
+                    or isinstance(variables[var_name], Color):
+                # Deep-copy reference types (e.g. lists, colors).
+                # This may cause a performance hit but it fixes a lot
+                # of bugs because the whole lists-are-references thing
                 # goes against common sense sometimes.
                 return deepcopy(variables[var_name])
             else:
@@ -2228,7 +2367,7 @@ def arg_check(cmd: list, is_subcmd: bool):
 
         'goto': 1,
         'gosub': 1,
-        'goback': 0,
+        'retsub': 0,
         'if1': 1,
         'if': 1,
         'elseif': 1,
@@ -2262,6 +2401,8 @@ def arg_check(cmd: list, is_subcmd: bool):
         'duplicate': 4,
         'move': 4,
         'swap': 4,
+        'over': 0,
+        'under': 0,
 
         'tile': 8,
         'copyscale': 8,
@@ -2286,6 +2427,7 @@ def arg_check(cmd: list, is_subcmd: bool):
         'hslfilter': 3,
         'selcolor': 4,
         'twocolor': 3,
+        'recolor': 2,
 
         'list.add': 2,
         'list.addall': 2,
@@ -2326,6 +2468,7 @@ def arg_check(cmd: list, is_subcmd: bool):
         'mod': 2,
         'pow': 2,
 
+        'log': 1,
         'abs': 1,
         'floor': 1,
         'ceil': 1,
@@ -2368,6 +2511,7 @@ def arg_check(cmd: list, is_subcmd: bool):
         'rgba': 3,
         'hsla': 3,
         'getpixel': 2,
+        'pal.get': 0,
 
         'empty': 2,
         'getrgba': 1,
@@ -2436,6 +2580,9 @@ def subcmd(raw_cmd: abc.Sequence):
     Return the result of the command, in whatever format is appropriate.
     Invalid or empty commands return None (and will be treated as false).
     '''
+    # The value we're going to return at the end
+    result = None
+
     if type(raw_cmd) == str:
         # If we're here, the command is passed in as a string something like 
         # "(empty,0,0,16,16)". We want to get rid of the parens at the
@@ -2493,7 +2640,6 @@ def subcmd(raw_cmd: abc.Sequence):
         # Subcommands existed starting in v4.1, but you couldn't nest them
         log_warning('Nested subcommands are only supported in v6.0.0 and later')
 
-    result = None
     # Main dictionary of subcommands (except noops)
     # No aliases included because those are already accounted for above
     if cmd[0] == 'eq':
@@ -2511,7 +2657,7 @@ def subcmd(raw_cmd: abc.Sequence):
     elif cmd[0] == 'cmp':
         result = cmp(cmd[0], cmd[1])
 
-    elif cmd[0] in ['or', 'and']:
+    elif cmd[0] in ['or', 'and', 'iif']:
         # These commands are already handled above but we need to check for 
         # them here too so we don't get false invalid-command errors
         pass
@@ -2534,6 +2680,8 @@ def subcmd(raw_cmd: abc.Sequence):
         result = mod(cmd)
     elif cmd[0] == 'pow':
         result = pow_(cmd)
+    elif cmd[0] == 'log':
+        result = log(cmd)
     elif cmd[0] == 'abs':
         result = abs(cmd[1])
     elif cmd[0] == 'floor':
@@ -2562,7 +2710,7 @@ def subcmd(raw_cmd: abc.Sequence):
     elif cmd[0] == 'count':
         result = py_method(cmd[0:3], 'count') # args: var + 1 extra
     elif cmd[0] == 'sort':
-        result = sorted(cmd[1])
+        result = sort(cmd)
     elif cmd[0] == 'reverse':
         result = cmd[1][::-1]
 
@@ -2616,6 +2764,8 @@ string repetition instead')
         result = hsl(cmd)
     elif cmd[0] == 'getpixel':
         result = getpixel(cmd, images['new'])
+    elif cmd[0] == 'pal.get':
+        result = pal_get(cmd, images['old'])
 
     # Before version 7, red/green/blue/alpha checked the new image.
     # In v7.0.0, this was changed to the old image because this was more useful
@@ -3023,6 +3173,39 @@ def pow_(i: list):
         log_warning(f'{i[0]}: couldn’t exponentiate {i[1]} and {i[2]}')
         return None
 
+def log(i: list):
+    '''
+    (log 42<x> 10[base])
+    
+    Logarithm of x. Defaults to a logarithm base of 10, i.e. 10^(ans) = x.
+
+    — OR —
+
+    (ln 42<x>) for natural logarithms
+    '''
+
+    x = i[1]
+    if x <= 0:
+        log_warning(f'{i[0]}: Logarithm must be of a positive number')
+        return None
+    if len(i) == 2:
+        if i[0] == 'ln': # special alias
+            i.append(math.e)
+        i.append(10)
+    base = i[2]
+    if base <= 1:
+        log_warning(f'{i[0]}: Logarithm base must be greater than 1')
+        return None
+
+    if base == 10:
+        return math.log10(x)
+    elif base == 2:
+        return math.log2(x)
+    elif base == math.e:
+        return math.log(x) # python's log defaults to ln
+    else:
+        return math.log(x, base)
+
 def min_(i: list):
     '''
     Return the smallest item passed to the subcommand.
@@ -3145,7 +3328,7 @@ def slice_(i: list):
 
 def find(i: list):
     '''
-    (find,"Hello"<seq>,"l"<item>,0[start],()[stop])
+    (find "Hello"<seq> "l"<item> 0[start] ()[stop])
     
     Return the index of the first occurrence of item/substring `item` in the 
     list/string `seq`. Return -1 if `item` couldn't be found anywhere in `seq`.
@@ -3153,15 +3336,46 @@ def find(i: list):
     '''
     seq : abc.Sequence = i[1]
     item : any = i[2]
-    start : int = i[3]
-    stop : int = i[4]
 
-    if len(i) >= 5:
-        return seq.find(item, start, stop)
-    elif len(i) == 4:
-        return seq.find(item, start)
-    else: # minimum 2 args (len==3)
-        return seq.find(item)
+    try:
+        if len(i) >= 5:
+            start : int = i[3]
+            stop : int = i[4]
+            return seq.index(item, start, stop)
+        elif len(i) == 4:
+            start : int = i[3]
+            return seq.index(item, start)
+        else: # minimum 2 args (len==3)
+            return seq.index(item)
+    except ValueError: # if not in list
+        if version_gte(8):
+            return None
+        else:
+            return -1
+
+def sort(i: list):
+    '''
+    (sort $l<list> ""[key] [keyArg2] [keyArg3]...)
+    
+    Returns a sorted version of the list l, in ascending order according to Python's built-in Timsort algorithm. The function will return a new list, and will not modify the contents of the last you pass in. 
+
+    The optional `key` argument lets you specify a subcommand to apply some 
+    operation to values before sorting them. For example, if key="lower" when 
+    sorting a list of strings, then the converter will sort alphabetically and 
+    ignore case (otherwise, it'll sort by Unicode codepoint, which may lead to 
+    unexpected results). And if key="lightness" for a list of colors, it'll 
+    sort from darkest to lightest.
+
+    The key function can even have multiple arguments; for example, if $l is a 
+    list of lists, (sort $l get 0) will sort by the first item of each sub-list.
+    '''
+    if version_gte(7,6) and isinstance(i[1], str):
+        log_warning('sort: Sorting strings is deprecated')
+
+    if len(i) >= 3 and i[2]: # 2 or more args + key arg doesn't eval to false
+        return sorted(i[1], key = lambda a: subcmd([i[2], a] + i[3:]))
+    else: # 1 arg
+        return sorted(i[1])
 
 # END SEQUENCE SUBCOMMANDS
 
@@ -3602,7 +3816,8 @@ def getpixel(i: list, base_image: PIL.Image.Image):
     '''
     getpixel,new[image],0<x>,0<y>
     
-    Returns Color object of the color at the given (x,y) position on the base image.
+    Returns Color object of the color at the given (x,y) position 
+    on the given image.
     '''
 
     # If image name is given at arg1, set base_image to that. 
@@ -3622,9 +3837,37 @@ def getpixel(i: list, base_image: PIL.Image.Image):
     x : int = i[2]
     y : int = i[3]
 
-    rgba_list = getrgba([i[0], i[1], x, y], base_image) # get RGBA list
+    rgba_list = getrgba([i[0], i[1], x, y], base_image) # get RGBA list -- TODO: hurts performance?
     return Color(rgba_list[0], rgba_list[1], rgba_list[2], 
                  rgba_list[3]) # create color type from that RGBA list
+
+def pal_get(i: list, base_image: PIL.Image.Image):
+    '''
+    pal.get 0[x] 0[y] 0[width] 0[height]
+    
+    Return a list of all colors in the area/image. Follows filter rules for 
+    omitted arguments.
+    '''
+    # For filters, if no x or y specified, apply filter to whole image
+    if len(i) <= 2: # number on the right should be equal to the index of y
+        i = [i[0], 0, 0, base_image.size[0], base_image.size[1]]
+    x = i[1]
+    y = i[2]
+
+    # If width/height specified, use those values.
+    # If neither is specified, use 16×16.
+    # If only width is specified, use that value for height too.
+    if len(i) == 3:
+        i += [16, 16]
+    width = i[3]
+    if len(i) == 4:
+        i += [width]
+    height = i[4]
+
+    region = base_image.crop((x, y, x+width, y+height))
+    rgba_list = [i[1] for i in region.getcolors()]
+    return [Color(rgba_list[i][0], rgba_list[i][1], rgba_list[i][2], 
+                  rgba_list[i][3]) for i in range(len(rgba_list))]
 
 # END COLOR TYPE SUBCOMMANDS
 
@@ -3632,7 +3875,7 @@ def getpixel(i: list, base_image: PIL.Image.Image):
 
 def empty(i: list, open_image: PIL.Image.Image):
     '''
-    (empty 0<x> 0<y> 16[width] 16[height]) 
+    (empty old[image] 0<x> 0<y> 16[width] 16[height]) 
 
     — OR —
 
@@ -4457,7 +4700,7 @@ def setup():
             simple_dialog('Warning', 
 ['While you can use the converter without downloading the images, some \
 conversions may not work properly.',
-'You can download the images at any time by going to Legacy/Custom → \
+'You can download the images at any time by going to Advanced/Custom → \
 Update Game Images from the main menu.'], icon='warning')
     # If no installation needed, proceed silently
 
@@ -4595,7 +4838,7 @@ def alias(cmd: list, is_subcmd: bool):
         return
 
     v7_cmd_aliases = {
-            'retsub': 'goback',
+            'goback': 'retsub',
             'else_if': 'elseif',
             ':=': 'set',
 
@@ -5016,9 +5259,10 @@ Please try again.''',
 
     # Variables will mostly be user-set but let's predefine some stuff...
     variables = {
-        # booleans
+        # booleans + null
         '$_true': True, '$_t': True,
         '$_false': False, '$_f': False,
+        '$_null': None, '$_0': None,
         # mathematical constants
         '$_pi': math.pi, '$_e': math.e,
         # system variables (can be accessed by scripts but not set directly)
@@ -5616,6 +5860,7 @@ def run_script(*, new_multi=False):
         loop_data.append({})
     # Each line will have the following associated keys: 
     # start_lines, end_lines, for_vars, for_stops, for_steps
+    # Note that start_lines and end_lines only concern loops (not if blocks)
 
     current_stack = []
     # Generate list of code lines, with "indentation" for each line
@@ -5802,12 +6047,12 @@ sure each block has an associated “end” command.', icon='error')
         for index in range(len(data)-1, -1, -1):
             item = data[index] # MANUAL ENUMERATE
 
-            if item[0] in block_ends:
+            if item[0] in block_ends and block_stacks[index][-1] != 'if':
                 current_end_lines.append(index)
 
             loop_data[index]['end_lines'] = current_end_lines.copy()
 
-            if item[0] in block_starts:
+            if item[0] in block_starts and block_stacks[index][-1] != 'if':
                 current_end_lines.pop()
 
     #### END SCRIPT INITIALIZATION ####
@@ -5983,7 +6228,7 @@ def process():
 
         # Uncomment this to print line-by-line output
         # p#rint(index, item, block_depths[index], block_stacks[index], 
-        #         break_depths[index], break_stacks[index])
+        #     break_depths[index], break_stacks[index])
 
         # Increment loop counter for the line
         loop_counter[index] += 1
@@ -6105,7 +6350,7 @@ or label (string)')
                     log_warning('gosub: Must go to a line number (integer) \
 or label (string)')
 
-            elif item[0] in ('goback', 'retsub'):
+            elif item[0] == 'retsub':
                 if len(substack) >= 1:
                     index = substack.pop()
                     set_ln(index)
@@ -6152,13 +6397,22 @@ Please use “if” instead.')
                 # the block (either elseif, else, or end)
                 while not cond_result:
                     index += 1
-                    item = process_line(data[index])
+                    set_ln(index)
+                    # Initially, we only want to get out the command name.
+                    # We'll come back to evaluate variables and subcommands
+                    # later if needed. If we processed them all at once,
+                    # that'd run the risk of e.g. getting variable-not-defined
+                    # errors because we haven't executed the line that defines
+                    # the variable yet. This bug was fixed in 7.6.0.
+                    item = data[index]
 
                     # Skip lines that don't match depth of original if line
                     if block_depths[index] != start_depth:
                         continue
 
                     if item[0] in ('elseif', 'else_if'):
+                        # Reprocess line with variables this time (see above)
+                        item = process_line(data[index])
                         # Try the condition for the elseif line
                         cond_result = bool(item[1])
                         # And if this is true, then we'll get out of the loop 
@@ -6337,25 +6591,31 @@ from a stack of {max_breaks} loops')
                 # Jump to the appropriate end line based on break count
                 index = loop_data[index]['end_lines'][-break_count] + 1
                 set_ln(index)
-                # Leave jumped set to False because we're at the last line now, 
-                # and we DON'T want to read that one because it'll jump us
-                # back to the start of the loop
+                jumped = True
 
             elif item[0] == 'for':
                 # Loop will always have ≥4 args (len≥5) after initialization
                 loopVar : SetVar = item[1]
                 start : int = item[2]
                 stop : int = item[3]
-                # step : int = item[4]
+                step : int = item[4]
 
-                # Initial setting of loop variable. (Works like set command.)
+                # Initial setting of loop variable
                 set_([item[0], loopVar, start], internal=False)
 
                 # First test of whether to break out of loop
-                if (variables[loopVar.name] >= stop \
+                time2stop = False
+                if step < 0:
+                    time2stop = (variables[loopVar.name] <= stop \
+                            and not flags['closed_ranges']) \
+                        or (variables[loopVar.name] < stop \
+                            and flags['closed_ranges'])
+                else:
+                    time2stop = (variables[loopVar.name] >= stop \
                             and not flags['closed_ranges']) \
                         or (variables[loopVar.name] > stop \
-                            and flags['closed_ranges']):
+                            and flags['closed_ranges'])
+                if time2stop:
                     index = loop_data[index]['end_lines'][-1] + 1
                     set_ln(index)
                     jumped = True
@@ -6389,10 +6649,18 @@ from a stack of {max_breaks} loops')
                 change([item[0], loopVar, '+', step])
 
                 # Check if it's time to stop
-                if (variables[loopVar.name] >= stop \
+                time2stop = False
+                if step < 0:
+                    time2stop = (variables[loopVar.name] <= stop \
+                            and not flags['closed_ranges']) \
+                        or (variables[loopVar.name] < stop \
+                            and flags['closed_ranges'])
+                else:
+                    time2stop = (variables[loopVar.name] >= stop \
                             and not flags['closed_ranges']) \
                         or (variables[loopVar.name] > stop \
-                            and flags['closed_ranges']):
+                            and flags['closed_ranges'])
+                if time2stop:
                     index = loop_data[index]['end_lines'][-1] + 1
                     set_ln(index)
                     jumped = True
@@ -6542,6 +6810,10 @@ default: Skipped because no “template” image was specified.')
                 move(item, images['new'])
             elif item[0] == 'swap':
                 swap(item, images['new'])
+            elif item[0] == 'over':
+                images['new'] = over(item, images['old'], images['new'])
+            elif item[0] == 'under':
+                images['new'] = under(item, images['old'], images['new'])
 
             # Advanced copying commands
             elif item[0] == 'tile':
@@ -6584,6 +6856,8 @@ default: Skipped because no “template” image was specified.')
             elif item[0] in ('2color', 'twocolor', 
                              'filter.2color', 'filter.twocolor'):
                 twocolor(item, images['new'])
+            elif item[0] == 'recolor':
+                recolor(item, images['new'])
             # Prefix-only filters
             elif item[0] == 'filter.hue':
                 hslfilter([item[0], item[1], 0, 0] + item[2:], images['new'])
@@ -6621,6 +6895,7 @@ is deprecated. Please use “filter.fill” instead.')
             # List commands
             elif item[0] == 'list.add':
                 py_method(item[0:3], 'append') # args: var + 1 extra
+
             elif item[0] == 'list.addall':
                 py_method(item[0:3], 'extend') # args: var + 1 extra
             elif item[0] == 'list.clear':

@@ -1,4 +1,4 @@
-version,7,5,5 # The version of the Converter app that this script is made for.
+version,7,6,0 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
@@ -90,6 +90,10 @@ move,0<oldX>,0<oldY>,0<newX>,0<newY>,16[width],16[height] # Cut an area on the N
 
 swap,0<x1>,0<y1>,16<x2>,0<y2>,16[width],16[height] # Swap the pixels contained in two different areas on the new image. The areas you want to swap must have the same width and height.
 
+over,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height],"old"[imageName] # Like copy, except overlay the copied area on top of the existing pixels (using alpha blending), instead of clearing them.
+
+under,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height],"old"[imageName] # Like copy, except place the copied area underneath the existing pixels (using alpha blending).
+
 
 
 # ADVANCED COPYING COMMANDS
@@ -162,6 +166,9 @@ selcolor,red<color>,0<hueAdjust: -180 to +180>,0<saturationAdjust: -100 to 100>,
 
 2color,0<hue>,100<saturation>,50<lightness>,0[x],0[y],16[width],16[height] # Simulates the effect of a two-color print job, where one of the colors is black. The hue/saturation/lightness arguments are for the second color. Unlike colorize, this is not recommended for use with black-and-white images, as the filter uses saturation data to determine how much color each pixel should have. (Alias: twocolor)
 
+recolor,()<oldColor>,$_fillcolor<newColor>,0[x],0[y],16[width],16[height] # Replace every pixel matching `oldColor` with `newColor`. If `oldColor` is null, recolor all non-transparent colors.
+recolor,(list,(color,"red"),(color,"yellow"))<oldColors>,(list,(color,"green") (color,"blue"))<newColors>,0[x],0[y],16[width],16[height] # You can also call `recolor` on two lists of equal length, in which case the first element of `oldColors` will be replaced by the first element of `newColors`, etc.
+
 
 
 # LIST COMMANDS
@@ -201,8 +208,6 @@ draw.fillcolor,(rgb,255,0,0)<color> # Set the fill color.
 
 draw.linecolor,(rgb,255,0,0)<color> # Set the outline color.
 
-draw.linewidth,1<width> # Set the outline stroke width.
-
 draw.alphablend,1<toggle> # Toggles alpha blending on (1) or off (0). If on, drawing partially transparent shapes will merge their colors with the existing pixels underneath. If off, the pixels underneath will by fully overwritten by the shapes. If this command is not called, alpha blending will be turned ON by default.
 
 
@@ -236,7 +241,7 @@ for,$i<loopVar>,0[start],10<stop>,1[step] # Create a loop based around increment
 
 break,1<numLoops> # Break out of the current loop. If numLoops >= 1, break out of that many levels of loops (assuming loop is nested).
 
-next # "continue" in C/Java/Python, but "next" is a better name because we're skipping to the next iteration of the loop.
+next # Same as "continue" in C/Java/Python, but "next" (as in BASIC) is a better name because we're skipping to the next iteration of the loop.
 
 foreach,$x[indexVar],$i<itemVar>,$l<seq> # Create a loop based around iterating through a list (Python-style for loop). If 2 arguments, the first one is for the current item and the last one is for the list you're iterating through. If 3 arguments, the first one is the current item, the second one is the current index, and the last one is the list.
 
@@ -267,7 +272,7 @@ const,$TAU<name>,6.283<value> # Set a constant value so you can refer back to it
 %=,$n,<x1>,[x2],... # (alias: imod)
 ^=,$n,<x1>,[x2],... # (alias: ipow)
 
-++,$n # Increments $n by 1. Shorthand for (+=,$n,1) and so on
+++,$n # Increments $n by 1. Shorthand for (+=,$n,1) and so on. Cannot be called as a subcommand (unlike in C++, etc.)
 --,$n # Decreases $n by 1.
 
 
@@ -362,8 +367,6 @@ const,$TAU<name>,6.283<value> # Set a constant value so you can refer back to it
 
 (count,"Hello"<seq>,"l"<sub>) # Counts the number of times the item/substring `sub` appears in the list/string `seq`.
 
-(sort,$s<seq>) # Returns a sorted version of list l, in ascending order according to Python's built-in Timsort algorithm. The value of the variable you pass in is not changed. Unlike Python, I only have one command for reversing and one command for sorting, because two felt like overkill, and I thought it was better to keep the one that also worked with strings.
-
 (reverse,$s<seq>) # Returns a reversed version of the list/string, so that the first item/char and the last item/char are swapped, the second and second-to-last are swapped, and so on. The contents of the variable you pass in is not changed.
 
 
@@ -373,6 +376,11 @@ const,$TAU<name>,6.283<value> # Set a constant value so you can refer back to it
 (list,x1,x2,x3,...) # Creates an editable, variable-length list with the given items.
 
 (range,0[start],10<stop>,1[step]) # Returns a list consisting of a sequence of numbers counting from `start` to `stop`, and counting up by `step` every time. Unlike Python's range function, any of the arguments can be floats too.
+
+(sort,$l<list>,""[key],[keyArg2],[keyArg3]...) # Returns a sorted version of the list l, in ascending order according to Python's built-in Timsort algorithm. The function will return a new list, and will not modify the contents of the last you pass in. 
+# The optional `key` argument lets you specify a subcommand to apply some operation to values before sorting them. For example, if key="lower" when sorting a list of strings, then the converter will sort alphabetically and ignore case (otherwise, it'll sort by Unicode codepoint, which may lead to unexpected results). And if key="lightness" for a list of colors, it'll sort from darkest to lightest.
+# The key function can even have multiple arguments; for example, if $l is a list of lists, (sort $l get 0) will sort by the first item of each sub-list. 
+# Using this function on strings is deprecated in v7.6, and it will be removed in v8.0.
 
 
 
@@ -450,7 +458,9 @@ const,$TAU<name>,6.283<value> # Set a constant value so you can refer back to it
 
 (hsla,0<hue: 0 to 359>,100<saturation: 0 to 100>,50<lightness: 0 to 100>,255[alpha: 0 to 255]) # Define a color based on the hue/saturation/lightness (or luminosity) model, plus optional alpha. (Alias: hsl)
 
-(getpixel,0<x>,0<y>) # Returns Color object of the color at the given (x,y) position on the base image.
+(getpixel,new[image],0<x>,0<y>) # Returns Color object of the color at the given (x,y) position on the given image.
+
+(pal.get,0[x],0[y],0[width],0[height]) # Return a list of all colors in the area/image. Follows filter rules for omitted arguments. (NOTE: More palette commands will be added in future updates; I just needed to add this to v7.6 because the existing workaround had poor performance.)
 
 
 

@@ -273,7 +273,6 @@ UNDER THE HOOD:
         "draw." prefix
       + draw.rect, draw.ellipse, and draw.line draw the respective shapes
       + draw.fillcolor and draw.linecolor to set the drawing colors
-      + draw.linewidth to set, you guessed it, the width of lines
       + draw.alphablend sets how transparency is handled
   + color data type
       * Represented under the hood as a Python object but it can be defined in
@@ -347,7 +346,7 @@ Version 7.1.0 (Nov. 26, 2023):
       * loop_limit is a flag now too
   + Added basic list functionality
       * Right now all you can do is get individual items and a list's length
-      * Use "get" to get an individual item, and "len" for length
+      * Use "get" to get an individual item, and "len" for length of a list/str
       * Both functions can also be used on strings
       * I needed to add them for the Deluxe->Legacy skin script but I wasn't
         originally planning on adding them in this update, so more list commands
@@ -360,11 +359,12 @@ Version 7.1.0 (Nov. 26, 2023):
       * No octal support though, lol
   + Continue a line of code by putting a backslash at the end of it
   + Added NES color palette as named colors
-      * For example, (color,n21) is that troublesome blue/purple SMB sky color
-      * Hex codes sourced from Nestopia's default "15° Canonical" palette
-        (a.k.a. "YUV-v1"; also the default Mesen palette)
-  + len command for length of a string/list
-  * Added equality testing for colors
+      * For example, (color,n21) is that troublesome blue/purple SMB1 sky color
+      * Hex codes sourced from Nestopia's default "Canonical" palette (AKA YUV)
+  + Added equality testing for colors
+  + [Null values are now an intentional feature]
+      * [Invalid subcommands have returned None (as opposed to False) since 
+        v6.0, but they raised a warning until now]
   * Tweaked the basic color name database: removed dark gray, renamed light
     gray to silver, increased saturation of peach, made pink have the same hue
     as magenta
@@ -397,6 +397,7 @@ Version 7.2.0 (Feb. 3, 2024):
   + Added copyscale command to scale portions of an image
       * Includes a variety of scaling algorithms (nearest-neighbor, 
         supersampling, bilinear, bicubic)
+  + [Added foreach loops (like Python for loops) for iterating thru lists]
   + Lots of new commands for general programming:
       * For lists: range, list.add, list.addall, list.clear, list.insert,
         list.remove, list.replace
@@ -423,7 +424,7 @@ Version 7.2.0 (Feb. 3, 2024):
       * warning command now accepts any data, not just strings
   * General code cleanup
       * Got the number of linter warnings below 100. I'm calling that progress
-  - Deprecated filter.fill, str+, and str*
+  - Deprecated use, filter.fill, str+, and str*
   - Removed code that disabled header commands with depth > 1
       * It wouldn't have fully worked as intended anyway
   - Removed last remnants of the compatibility checker & script variant picker
@@ -434,7 +435,7 @@ Version 7.2.1 (Feb. 29, 2024):
   + Augmented assignment operators (+=, -=, *=, /=, //=, %=, ^=)
   + Increment/decrement operators (++, --)
   + Logical "xor", because why not
-  + Multiline /* comments */
+  + Alternative /* comment */ syntax
   + Inline if subcommand (iif)
   + Assertions: display a warning if a condition is false
   + System variables $_linenumber and $_linecount (total # of lines in script)
@@ -521,7 +522,7 @@ Version 7.5.0 (Sep. 22, 2024):
 Version 7.5.1 (Sep. 28, 2024):
   * Fixed bug with L5->L7 conversion that put one column of swim sprites 
     2px too far to the right
-  - Removed all Replit-related code from offline version
+  - Removed all Replit-related code
 
 Version 7.5.2 (Oct. 19, 2024):
   * Fixed bugs with Dx32->L7 conversion script
@@ -544,3 +545,38 @@ Version 7.5.5 (Feb. 13, 2025):
     don't have the .s.txt extension)
   * Fixed some text getting cut off in Legacy5->Legacy7 conversion
   * Fixed the `reverse` command
+
+Version 7.6.0 (May XX, 2025):
+  + Added better Super Leaf transformation to Legacy5->Legacy7 script (REV-D)
+      * This was NOT an easy task
+  + Added commands to facilitate the above script improvement:
+    over, under, recolor, pal.get
+      * All of these could've been reimplemented from scratch using subroutines
+        and get/setpixel, but converting each image would've been slower and I
+        decided it would be easier to just implement the commands directly
+      * More palette-related commands will be added in the future
+  + Added $_null and $_0 as new aliases for (null)
+  + Updated Dx32->L7 script to REV-B
+      * Apparently this has been in the can since v7.5.2 but I forgot to put it
+        in the standard install
+  + "New" demos to generate NES(topia) palette and HSL spectrum
+      * Actually I've been sitting on these for a long time too
+  * Moved images that aren't UI and aren't game assets to sc_assets
+  * Increased default loop limit to 100,000 (was 10,000)
+      * Enough to loop thru each pixel of a 256×256 image
+  * Bug fixes:
+      * Fixed logic for `and`, `or`, and `iif` (broken since 7.5.4)
+      * Fixed `find` and `count` subcommands (broken since they were added)
+      * Fixed `break` and `next` commands (broken since 7.1)
+      * Colors are now deep-copied (like lists)
+      * Fixed line number display for script errors in `if` statements
+  - Deprecated `sort` command for strings
+  * We've now passed one year of v8.0.0 being in development, but here I am 
+    with another content update on the v7.x branch. Please resist the urge to 
+    make comparisons to GD 2.2, MR 7.0, or MR Remake. Thank you.
+      * WOW, the 7.x codebase is a huge mess.
+      * I long ago reached the point where the linter lagged to death,
+        but now typing itself is laggy too sometimes.
+      * I would apologize to VSCode for what I'm putting it through right now,
+        but it's an Electron app, so it did this to itself.
+        
