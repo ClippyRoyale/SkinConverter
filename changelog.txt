@@ -546,7 +546,7 @@ Version 7.5.5 (Feb. 13, 2025):
   * Fixed some text getting cut off in Legacy5->Legacy7 conversion
   * Fixed the `reverse` command
 
-Version 7.6.0 (May XX, 2025):
+Version 7.6.0 (May 18, 2025):
   + Added better Super Leaf transformation to Legacy5->Legacy7 script (REV-D)
       * This was NOT an easy task
   + Added commands to facilitate the above script improvement:
