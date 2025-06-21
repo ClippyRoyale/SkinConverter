@@ -59,7 +59,7 @@ ColorArray = abc.Sequence[Num]
 def cmp(x, y):
     '''three-way comparison operator'''
     return -1 if x < y else (1 if x > y else 0)
-def sign(x): 
+def sign(x):
     '''returns -1 for negative, 1 for positive, 0 for everything else
     (including invalid inputs)'''
     return cmp(x, 0)
@@ -225,7 +225,7 @@ colors = {
 }
 
 # Different platforms use different default font sizes.
-# Get this system's default size to use as a base. 
+# Get this system's default size to use as a base.
 # All other font sizes will be a multiple of it.
 def relative_font_size(multiple):
     base_font_size = tkfont.Font(font='TkDefaultFont').cget('size')
@@ -1219,7 +1219,7 @@ def crop(i:list, base_image:PIL.Image.Image):
 
     return resize([i[0], width, height, -x, -y], base_image)
 
-def scale(i:list):
+def scale(i:list, base_image):
     '''
     scale 256<newWidth> 256<newHeight> 1[algo]
     
@@ -1236,8 +1236,8 @@ def scale(i:list):
             f'{i[0]}: Must provide either width or height as a non-null value')
         return
 
-    oldWidth = images['new'].width
-    oldHeight = images['new'].height
+    oldWidth = base_image.width
+    oldHeight = base_image.height
 
     if rawWidth is None:
         # If we make it here, rawHeight is guaranteed to not be None
@@ -1250,7 +1250,7 @@ def scale(i:list):
     else:
         newHeight : int = rawHeight
 
-    images['new'] = resize([i[0], newWidth, newHeight], images['new'])
+    base_image = resize([i[0], newWidth, newHeight], base_image)
 
     copyscale([i[0], 0, 0, oldWidth, oldHeight, 0, 0, newWidth, newHeight, algo, 'new'])
 
