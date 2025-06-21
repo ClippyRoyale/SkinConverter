@@ -547,20 +547,18 @@ Version 7.5.5 (Feb. 13, 2025):
   * Fixed the `reverse` command
 
 Version 7.6.0 (May 18, 2025):
-  + Added better Super Leaf transformation to Legacy5->Legacy7 script (REV-D)
-      * This was NOT an easy task
-  + Added commands to facilitate the above script improvement:
+  + Better Super Leaf transformation to Legacy5->Legacy7 script (REV-D)
+  + Commands to facilitate the above script improvement:
     over, under, recolor, pal.get
       * All of these could've been reimplemented from scratch using subroutines
         and get/setpixel, but converting each image would've been slower and I
         decided it would be easier to just implement the commands directly
       * More palette-related commands will be added in the future
   + Added $_null and $_0 as new aliases for (null)
-  + Updated Dx32->L7 script to REV-B
-      * Apparently this has been in the can since v7.5.2 but I forgot to put it
-        in the standard install
+  + Added `log` command for logarithms
+      * I said previously that I'd never add it, but I did
   + "New" demos to generate NES(topia) palette and HSL spectrum
-      * Actually I've been sitting on these for a long time too
+      * Actually I've been sitting on these for a long time
   * Moved images that aren't UI and aren't game assets to sc_assets
   * Increased default loop limit to 100,000 (was 10,000)
       * Enough to loop thru each pixel of a 256×256 image
@@ -579,4 +577,18 @@ Version 7.6.0 (May 18, 2025):
         but now typing itself is laggy too sometimes.
       * I would apologize to VSCode for what I'm putting it through right now,
         but it's an Electron app, so it did this to itself.
-        
+
+Version 7.6.1 (Jun 20, 2025):
+  + Thermal camera simulation demo
+      * Performance isn't great because of its reliance on getpixel/setpixel...
+        I'd like to fix it but it won't happen until v8.x in the interest of 
+        keeping the v7.x codebase stable
+  + Added `scale` command that just does the scaling from `copyscale`
+    and not the copying
+  * `desc` is now a valid alias for `description`
+  * `tile` can now tile from the base image too
+  * Another big round of bug and linter fixes
+      * Warning when start/stop commands are used but open/save strings don't
+        contain any wildcards
+      * Many subcommand errors (hex colors, str_, over ...) return default
+        values instead of null

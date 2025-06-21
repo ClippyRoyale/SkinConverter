@@ -1,9 +1,9 @@
-version,7,6,0 # The version of the Converter app that this script is made for.
+version,7,6,1 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
 author,clippy
-description,The documentation for the skin converter.
+description,The documentation for the skin converter. (Alias: desc)
 
 open,smb_skin*.png # Path of the main image to open and copy from. 
 # Special options:
@@ -395,7 +395,7 @@ const,$TAU<name>,6.283<value> # Set a constant value so you can refer back to it
 (startswith,"Hello"<str>,"He"<substr>) # Returns true if str starts with substr; false otherwise.
 (endswith,"Hello"<str>,"lo"<substr>) # Returns true if str ends with substr; false otherwise.
 
-(join,(list,"Hello","World")<strList>,""[sep]) # Combine the contents of `strList` into one string, with each item separated by `sep` (or nothing, if no separator is given, as in the example).
+(join,(list,"Hello","World",123)<list>,""[sep]) # Combine the contents of `list` into one string, with each item separated by `sep` (or nothing, if no separator is given, as in the example).
 
 (split,"Hello World"<str>,""[sep],-1[maxSplit]) # Split the string `str` into a list of substrings. By default (or if `sep` is any empty string), the interpreter will split at every sequence of whitespace; otherwise, it will split every time the substring `sep` is reached. `maxSplit` is the maximum number of splits that will be done (i.e. the length of the resulting list will always be ≤ (maxSplit+1)); the default value -1 means no limit.
 
