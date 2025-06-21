@@ -4254,6 +4254,7 @@ def arg_check(cmd: list, is_subcmd: bool):
 
         'resize': 1,
         'crop': 4,
+        'scale': 2,
         'rotate': 1,
         'flip': 1,
 
@@ -6851,6 +6852,8 @@ default: Skipped because no “template” image was specified.')
                 images['new'] = resize(item, images['new'])
             elif item[0] == 'crop':
                 images['new'] = crop(item, images['new'])
+            elif item[0] == 'scale':
+                images['new'] = scale(item, images['new'])
             elif item[0] == 'rotate':
                 images['new'] = rotate(item, images['new'])
             elif item[0] == 'flip':
