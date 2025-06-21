@@ -6853,7 +6853,7 @@ default: Skipped because no “template” image was specified.')
             elif item[0] == 'crop':
                 images['new'] = crop(item, images['new'])
             elif item[0] == 'scale':
-                images['new'] = scale(item, images['new'])
+                scale(item, images['new'])
             elif item[0] == 'rotate':
                 images['new'] = rotate(item, images['new'])
             elif item[0] == 'flip':
