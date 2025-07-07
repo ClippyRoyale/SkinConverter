@@ -1,0 +1,53 @@
+version 7 6 0
+name "Legacy1 to Legacy5"
+author "Papyrus Semi"
+description "Papyrus, is everything okay? —Clippy"
+
+base	256  256 # The same size as the source, but it helps me sleep at night.
+
+# copying over what lines up
+copy	0    0      0    0      16   16
+copy    96   0      96   0      128  16
+copy    80   16     80   16     160  32
+
+# small swim
+copy    80   0      176  80     16   16
+copy    48   0      224  80     32   16
+copy    16   0      192  80     32   16
+
+# big swim
+copy    48   16     224  96     16   32
+copy    48   16     240  96     16   32
+copy    32   16     208  96     16   32
+copy    16   16     192  96     32   32
+copy    0    16     176  96     16   32
+copy    64   16     160  96     16   32
+
+
+# fire... oh no
+copy    208  48     192  48     32   32 # stand + transform
+copy    176  48     144  48     32   32 # crouch + walk 1
+copy    160  48     112  48     16   32 # walk 2
+copy    144  48     80   48     16   32 # walk 3
+copy    128  48     48   48     16   32 # skid
+copy    112  48     16   48     16   32 # jump
+copy    240  48     240  48     16   32 # shoot
+copy    80   48     48   16     32   32 # climb
+
+# fire swim
+copy    48   48     240  128    16   32
+copy    48   48     208  128    16   32
+copy    32   48     176  128    16   32
+copy    16   48     144  128    16   32
+copy    0    48     112  128    16   32
+copy    64   48     80   128    16   32
+
+# taunts
+copy    208   0     80   0      16   16
+copy    208  16     0   16      16   32
+copy    208  48     32  16      16   32
+
+# fireballs
+copy    0   208     16   0      64   16
+copy    64  208     224  0      32   16
+copy    96  208     240  16     16   16

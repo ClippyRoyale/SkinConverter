@@ -1,7 +1,7 @@
 version,7,3,0
-name,Deluxe32 to Legacy16 (Revision B)
+name,Deluxe32 to Legacy5 (Revision B)
 author,Clippy
-description,Converts a 32×32 Deluxe skin to Legacy format (also works in Remake). Warning: Many skins will not look good once converted, because Legacy has more restrictive sprite size limits. (Uses supersampling to downscale images.)
+description,Converts a 32×32 Deluxe skin to Legacy v5 format (also works in Remake). Warning: Many skins will not look good once converted, because Legacy has more restrictive sprite size limits. (Uses supersampling to downscale images.)
 
 base,256,256
 

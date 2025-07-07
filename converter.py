@@ -1,6 +1,6 @@
 '''
-MR Skin Converter 
-Version 7.6.1
+MR Skin Converter
+Version 7.6.2
 
 Copyright 2022–2025 ClippyRoyale
 
@@ -49,7 +49,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,6,1]
+app_version = [7,6,2]
 
 # For type hints
 Num = Union[int,float]
@@ -68,7 +68,7 @@ def app_version_str():
     return f'{app_version[0]}.{app_version[1]}.{app_version[2]}'
 
 def version_lt(major:int, minor=0, patch=0):
-    '''Returns True if the script's target version is LESS THAN 
+    '''Returns True if the script's target version is LESS THAN
     the given number, and False otherwise.'''
     if version[0] < major:
         return True
@@ -104,7 +104,7 @@ def version_gte(major:int, minor=0, patch=0):
     return False
 
 def version_gt(major:int, minor=0, patch=0):
-    '''Returns True if the script's target version is GREATER THAN 
+    '''Returns True if the script's target version is GREATER THAN
     the given number, and False otherwise.'''
     if version[0] > major:
         return True
@@ -231,85 +231,135 @@ def relative_font_size(multiple):
     base_font_size = tkfont.Font(font='TkDefaultFont').cget('size')
     return int(multiple * base_font_size)
 
-# f_italic = tkfont.Font(slant='italic')
+f_italic = tkfont.Font(slant='italic', size=relative_font_size(1))
 f_bold = tkfont.Font(weight='bold', size=relative_font_size(1))
 f_large = tkfont.Font(size=relative_font_size(1.5))
 f_heading = tkfont.Font(weight='bold', size=relative_font_size(1.5))
 
 footer_frame = LabelFrame(window, width=480, height=40, bg=colors['UI_BG'])
 footer = Label(footer_frame,
-        text='Skin Converter v%s — a Clippy production' % app_version_str(), 
+        text=f'Skin Converter v{app_version_str()} — a Clippy production',
         fg=colors['gray'], bg=colors['UI_BG'])
-back_btn = Button(footer_frame, text='Back to Menu', 
+back_btn = Button(footer_frame, text='Back to Menu',
         highlightbackground=colors['UI_BG'])
 
 main_frame = LabelFrame(window, width=480, height=320, bg=colors['UI_BG'])
 main_frame.grid_propagate(False)
 
-menu_heading = Label(main_frame, text='What do you want to convert?', 
+menu_heading = Label(main_frame, text='What do you want to convert?',
         font=f_heading, bg=colors['UI_BG'])
-menu_heading_adv = Label(main_frame, text='Advanced conversion options', 
+menu_heading_adv = Label(main_frame, text='Advanced conversion options',
         font=f_heading, bg=colors['UI_BG'])
 menu_spacer = Label(main_frame, bg=colors['UI_BG'])
 
-menu_btn_skin_l_l7 = Button(main_frame, 
+menu_btn_skin_l_l7 = Button(main_frame,
         text='Convert a Legacy5 skin to Legacy7',
         font=f_large, highlightbackground=colors['UI_BG'])
-menu_btn_skin_d_l7 = Button(main_frame, 
+menu_btn_skin_l_l7.bind('<ButtonRelease-1>',
+        lambda _: script_button('scripts/skin_L_to_L7.s.txt'))
+menu_btn_skin_d_l7 = Button(main_frame,
         text='Convert a Deluxe skin to Legacy7',
         font=f_large, highlightbackground=colors['UI_BG'])
-menu_btn_trans_bg = Button(main_frame, 
+menu_btn_skin_d_l7.bind('<ButtonRelease-1>',
+        lambda _: script_button('scripts/skin_Dx32_to_L7.s.txt'))
+menu_btn_trans_bg = Button(main_frame,
         text='Remove a partially transparent background',
-        highlightbackground=colors['UI_BG'])
-
-menu_btn_skin_p_l7 = Button(main_frame, 
-        text='Convert a Legacy3 32×32 proposal skin to Legacy7', highlightbackground=colors['UI_BG'])
-menu_btn_skin_d_l = Button(main_frame, text='Convert a Deluxe skin to Legacy5',
-        highlightbackground=colors['UI_BG'])
-menu_btn_skin_r_l = Button(main_frame, text='Convert a Remake skin to Legacy5',
-        highlightbackground=colors['UI_BG'])
-menu_btn_map_l_ln = Button(main_frame, 
-        text='Convert a Legacy map mod to Legacy map_new',
         highlightbackground=colors['UI_BG'])
 
 menu_btn_custom = Button(main_frame, text='Run a custom script',
         highlightbackground=colors['UI_BG'])
-menu_btn_submit = Button(main_frame, text='Submit your custom script',
+menu_btn_custom.bind('<ButtonRelease-1>',
+        lambda _: script_button(''))
+menu_btn_multi = Button(main_frame, text='Convert multiple images',
         highlightbackground=colors['UI_BG'])
-menu_btn_multi = Button(main_frame, text='Convert multiple images...',
-        highlightbackground=colors['UI_BG'])
+menu_btn_multi.bind('<ButtonRelease-1>',
+        lambda _: new_multi_event())
 menu_btn_assets = Button(main_frame, text='Update game images',
         highlightbackground=colors['UI_BG'])
+menu_btn_assets.bind('<ButtonRelease-1>',
+        lambda _: install_assets())
 
-menu_btn_page_next = Button(main_frame, text='Advanced/Custom...', 
+menu_btn_skin_p_l7 = Button(main_frame,
+        text='Convert a Legacy3 32×32 proposal skin to Legacy7',
         highlightbackground=colors['UI_BG'])
-menu_btn_page_prev = Button(main_frame, text='Back', 
+menu_btn_skin_p_l7.bind('<ButtonRelease-1>',
+        lambda _: script_button('scripts/skin_P32_to_L7.s.txt'))
+menu_btn_skin_d_l = Button(main_frame, text='Convert a Deluxe skin to Legacy5',
         highlightbackground=colors['UI_BG'])
-menu_btn_exit = Button(main_frame, text='Exit', 
+menu_btn_skin_d_l.bind('<ButtonRelease-1>',
+        lambda _: script_button('scripts/skin_Dx32_to_L.txt'))
+menu_btn_skin_r_l = Button(main_frame,
+        text='Convert a Remake/Legacy4 skin to Legacy5',
         highlightbackground=colors['UI_BG'])
+menu_btn_skin_r_l.bind('<ButtonRelease-1>',
+        lambda _: script_button('scripts/skin_R_to_L.txt'))
+menu_btn_map_l_ln = Button(main_frame,
+        text='Convert a Legacy map mod to Legacy map_new',
+        highlightbackground=colors['UI_BG'])
+menu_btn_map_l_ln.bind('<ButtonRelease-1>',
+        lambda _: script_button('scripts/map_new.txt'))
+
+menu_btn_page_next = Button(main_frame, text='Advanced...',
+        highlightbackground=colors['UI_BG'])
+menu_btn_page_next.bind('<ButtonRelease-1>',
+        lambda _: menu_p2())
+menu_btn_help = Button(main_frame, text='What version is my skin?',
+        font=f_italic, highlightbackground=colors['UI_BG'])
+menu_btn_help.bind('<ButtonRelease-1>',
+        lambda _: skin_version_help())
+menu_btn_exit = Button(main_frame, text='Exit',
+        highlightbackground=colors['UI_BG'])
+menu_btn_exit.bind('<ButtonRelease-1>',
+        lambda _: exit_app())
+
+menu_btns_old_row = Frame(main_frame)
+menu_btns_old_start = Label(menu_btns_old_row,
+        text='Convert skins from...', bg=colors['UI_BG'])
+menu_btns_old1 = Button(menu_btns_old_row, text='L1',
+        highlightbackground=colors['UI_BG'])
+menu_btns_old1.bind('<ButtonRelease-1>',
+        lambda _: script_button('scripts/skin_L1_to_L5.s.txt'))
+menu_btns_old2 = Button(menu_btns_old_row, text='L2',
+        highlightbackground=colors['UI_BG'])
+menu_btns_old2.bind('<ButtonRelease-1>',
+        lambda _: script_button('scripts/skin_L2_to_L5.s.txt'))
+menu_btns_old3 = Button(menu_btns_old_row, text='L3',
+        highlightbackground=colors['UI_BG'])
+menu_btns_old3.bind('<ButtonRelease-1>',
+        lambda _: script_button('scripts/skin_L3_to_L5.s.txt'))
+menu_btns_old_end = Label(menu_btns_old_row, text='...to Legacy5',
+        bg=colors['UI_BG'])
+menu_btns_old_list = [
+    menu_btns_old_start,
+    menu_btns_old1,
+    menu_btns_old2,
+    menu_btns_old3,
+    menu_btns_old_end
+]
+for iindex, iitem in enumerate(menu_btns_old_list):
+    iitem.grid(row=0, column=iindex)
 
 menu_btns_p1 = [
     menu_btn_skin_l_l7,
     menu_btn_skin_d_l7,
-    menu_btn_trans_bg,
     menu_spacer,
+    menu_btn_custom,
+    menu_btn_multi,
     menu_btn_page_next,
     menu_spacer,
     menu_btn_exit,
 ]
 
 menu_btns_p2 = [
+    menu_btn_trans_bg,
     menu_btn_skin_p_l7,
     menu_btn_skin_d_l,
     menu_btn_skin_r_l,
+    menu_btns_old_row,
     menu_btn_map_l_ln,
     menu_spacer,
-    menu_btn_custom,
-    #menu_btn_submit, # temporarily removed for space reasons
-    menu_btn_multi,
+    menu_btn_help,
     menu_btn_assets,
-    # menu_spacer,
-    menu_btn_page_prev,
 ]
 
 icons = {
@@ -339,7 +389,7 @@ legacy_multi : bool # Enabled within a script, with start and stop headers
     # new_multi is an argument, not a global var
 # Only for legacy multi:
 start_num : int
-stop_num : int 
+stop_num : int
 current_num : int
 # Only for new multi:
 multi_open_paths : List[str]
@@ -363,7 +413,7 @@ base_blank : Union[bool, Tuple[int,int]]
 space_sep : bool # COMING IN 8.0
 
 # Only used if draw commands are in script
-draw_obj : Optional[PIL.ImageDraw.ImageDraw] 
+draw_obj : Optional[PIL.ImageDraw.ImageDraw]
 
 # databases accessible by scripts while running them:
 images : Dict[str, PIL.Image.Image]
@@ -386,8 +436,8 @@ block_starts_ends = [
 block_starts = [
     'if', 'while', 'for', 'foreach',
     # RESERVED FOR FUTURE USE:
-    'func', 
-    # these probably won't be added any time soon 
+    'func',
+    # these probably won't be added any time soon
     # but I might as well reserve them:
     'switch', 'struct', 'enum', 'class',
 ] + block_starts_ends
@@ -403,8 +453,8 @@ breakable_blocks = [
 # List of header commands. These commands are typically located at the start
 # of the file. They aren't run as instructions; they contain metadata about
 # the script that is processed before running it.
-header_commands = ['mrconverter', 'version', 'flag', 'name', 'description', 
-        'desc', 'author', 'open', 'save', 'template', 'alt', 'base', 
+header_commands = ['mrconverter', 'version', 'flag', 'name', 'description',
+        'desc', 'author', 'open', 'save', 'template', 'alt', 'base',
         'start', 'stop', 'loop_limit', 'looplimit']
 
 # Commands used to set or change variables. The first argument of each of
@@ -414,7 +464,7 @@ set_commands = ['set', 'change', 'const', 'for', 'foreach',
                 'list.add', 'list.addall', 'list.clear', 'list.insert',
                 'list.remove', 'list.replace', 'list.swap',
                 # Augmented assignment
-                'iadd', 'isub', 'imul', 'itruediv', 
+                'iadd', 'isub', 'imul', 'itruediv',
                 'ifloordiv', 'imod', 'ipow',
                 # Augmented assignment aliases (needed because set_commands
                 # may be checked before alias() is called)
@@ -424,7 +474,7 @@ set_commands = ['set', 'change', 'const', 'for', 'foreach',
                 '+=',    '*=', '×=',    '/=', '÷=',    '//=', '÷÷=',
                 '%=',    '^=', '**=', '××=',
                 # inc/dec and aliases
-                'inc', '++', 
+                'inc', '++',
                 'dec', '--', # hyphen
                 '––', # en dash
                 '−−', # minus sign
@@ -462,7 +512,7 @@ class Color:
             and self.green == other.green \
             and self.blue == other.blue \
             and self.alpha == other.alpha
-    
+
     def __repr__(self):
         return f'<Color: \
 rgba({self.red}, {self.green}, {self.blue}, {self.alpha})>'
@@ -471,23 +521,25 @@ rgba({self.red}, {self.green}, {self.blue}, {self.alpha})>'
 class Var:
     def __init__(self, name:str):
         self.name = name
-    
+
     def __repr__(self):
         return f'<Var: {self.name}>'
 
 # Settable variable –– handled directly by commands that set or mutate vars
-class SetVar(Var):
-    # init is same
+class SetVar:
+    def __init__(self, name:str):
+        self.name = name
+
     def __repr__(self):
         return f'<SetVar: {self.name}>'
 
 class Subcommand:
     def __init__(self, content:list):
         self.content = content
-    
+
     def __repr__(self): # displayed in e.g. debug printouts
         return f'<Subcommand: {self.content}>'
-    
+
     def __str__(self): # displayed in e.g. assertion error messages
         return '(' + ','.join([str(i) for i in self.content]) + ')'
 
@@ -501,37 +553,37 @@ def warning(i: list):
     log_warning(f'warning: {i[1]}')
 
 # EXIT and ERROR are handled in the main command-checking loop
-    
+
 # USE has been removed
 
 ###########################################################################
-#### BASIC COPYING COMMANDS ###############################################
+#### DATA COMMANDS ########################################################
 ###########################################################################
 
 def set_(i: list, internal:bool=False):
     '''
-    set,$hello<name>,"Hello world"<value> 
+    set,$hello<name>,"Hello world"<value>
 
-    Set variable "hello" to the string "Hello world". Subcommands in second 
-    argument will be evaluated before setting the variable. Any value in double 
-    quotes will be treated as a string no matter what. If it's not in quotes 
-    and it can be parsed as an integer, the value will be an integer. Anything 
-    else will be treated as a string for legacy reasons, but watch out for 
+    Set variable "hello" to the string "Hello world". Subcommands in second
+    argument will be evaluated before setting the variable. Any value in double
+    quotes will be treated as a string no matter what. If it's not in quotes
+    and it can be parsed as an integer, the value will be an integer. Anything
+    else will be treated as a string for legacy reasons, but watch out for
     special characters! (Alias `:=`)
 
     If this function's "internal" argument is set to True, the normal
-    restrictions against setting variables starting with an underscore will 
-    be overridden. When this function is called by e.g. fillcolor, internal 
-    should always be set to True. When calling this function directly from a 
+    restrictions against setting variables starting with an underscore will
+    be overridden. When this function is called by e.g. fillcolor, internal
+    should always be set to True. When calling this function directly from a
     conversion script, internal should always be False.
     '''
-    
-    # This function accepts a SetVar or str, 
+
+    # This function accepts a SetVar or str,
     # so we may need to convert the name to a string
-    if type(i[1]) == SetVar:
+    if isinstance(i[1], SetVar):
         raw = i[1]
         name : str = i[1].name
-    elif type(i[1]) == str:
+    elif isinstance(i[1], str):
         name : str = i[1]
         raw = SetVar(name)
     else:
@@ -551,17 +603,17 @@ def const(i: list):
     '''
     const,$TAU<name>,6.283<value>
 
-    Set a constant value so you can refer back to it by a recognizable name 
-    later. Works the same as "set" but you can't go back and change the value 
+    Set a constant value so you can refer back to it by a recognizable name
+    later. Works the same as "set" but you can't go back and change the value
     the name refers to.
     '''
-    
-    # This function accepts a SetVar or str, 
+
+    # This function accepts a SetVar or str,
     # so we may need to convert the name to a string
-    if type(i[1]) == SetVar:
+    if isinstance(i[1], SetVar):
         raw = i[1]
         name : str = i[1].name
-    elif type(i[1]) == str:
+    elif isinstance(i[1], str):
         name : str = i[1]
         raw = SetVar(name)
     else:
@@ -580,36 +632,36 @@ Variable names must start with a dollar sign.')
 
 def change(i: list, internal=False):
     '''
-    change,$x<varName>,+<subcmdName>,10[arg2],... 
-    
-    Change the value of varName by applying the given subcommand to it. 
-    The variable will be the first argument to the command, and any argument 
-    after `subcmdName` will be passed as the subcommand's second, third, (etc.) 
-    arguments. 
-    
-    Example A: `change,$x,+,10,$y` will add (10 plus the value of $y) to $x; 
-    this is equivalent to `set,$x,(+,$x,10,$y)`. 
-    
-    Example B: `change,$x,*,2` will multiply $x's value by 2; 
-    this is equivalent to `set,$x,(*,$x,2)`. 
-    
-    Basically, it's nothing you can't already do with set; it just makes code 
+    change,$x<varName>,+<subcmdName>,10[arg2],...
+
+    Change the value of varName by applying the given subcommand to it.
+    The variable will be the first argument to the command, and any argument
+    after `subcmdName` will be passed as the subcommand's second, third, (etc.)
+    arguments.
+
+    Example A: `change,$x,+,10,$y` will add (10 plus the value of $y) to $x;
+    this is equivalent to `set,$x,(+,$x,10,$y)`.
+
+    Example B: `change,$x,*,2` will multiply $x's value by 2;
+    this is equivalent to `set,$x,(*,$x,2)`.
+
+    Basically, it's nothing you can't already do with set; it just makes code
     more readable.
     '''
-    
-    # This function accepts a SetVar or str, 
+
+    # This function accepts a SetVar or str,
     # so we may need to convert the name to a string
-    if type(i[1]) == SetVar:
+    if isinstance(i[1], SetVar):
         raw = i[1]
         varName : str = i[1].name
-    elif type(i[1]) == str:
+    elif isinstance(i[1], str):
         varName : str = i[1]
         raw = SetVar(varName)
     else:
         log_warning(f'{i[0]}: Invalid variable {i[1]}. \
 Variable names must start with a dollar sign.')
         return
-    
+
     subcmdName : str = i[2]
 
     if not var_check(raw, i[0], exists=True, internal=internal):
@@ -628,6 +680,10 @@ Variable names must start with a dollar sign.')
     # Now that we have the value, set the variable to it.
     # This ALSO relies on existing functionality.
     set_([i[0], raw, value], internal=internal)
+
+###########################################################################
+#### BASIC COPYING COMMANDS ###############################################
+###########################################################################
 
 # copy,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height]
 # Copy from old image to specified position in new image.
@@ -656,8 +712,8 @@ def copy(i, open_image, base_image):
     base_image.paste(region, (newX, newY, newX+width, newY+height))
 
 # copyfrom,old<imageName>,0[oldX],0[oldY],0[newX],0[newY],
-#   16[width],16[height] 
-# Copy from any image ("old", "alt", "template", or even "new") to specified 
+#   16[width],16[height]
+# Copy from any image ("old", "alt", "template", or even "new") to specified
 # position in new image. (Alias: copy_from)
 def copyfrom(i: list):
     if i[1] not in images:
@@ -668,7 +724,7 @@ def copyfrom(i: list):
 
     copy([i[0]]+i[2:], images[i[1]], images['new'])
 
-# default,0[x],0[y],16[width],16[height] 
+# default,0[x],0[y],16[width],16[height]
 # Copy from template image to same position in new image.
 def default(i, template_image, base_image):
     # COMPATIBILITY: In version 1.0, "default" took 6 arguments
@@ -698,7 +754,7 @@ def default(i, template_image, base_image):
     base_image.paste(region, (x, y, x+width, y+height))
 
 # defaultfrom,template<imageName>,0[x],0[y],16[width],16[height]
-# Copy from any image ("old", "alt", "template", or even "new") to same 
+# Copy from any image ("old", "alt", "template", or even "new") to same
 # position in new image. (Alias: default_from)
 def defaultfrom(i: list):
     if i[1] not in images:
@@ -709,8 +765,8 @@ def defaultfrom(i: list):
 
     default([i[0]]+i[2:], images[i[1]], images['new'])
 
-# clear,0[x],0[y],16[width],16[height] 
-# Clear area from new image. 
+# clear,0[x],0[y],16[width],16[height]
+# Clear area from new image.
 # Used to be called “delete” -- this still works for compatiblity reasons.
 def clear(i, base_image):
     # If no x or y specified, apply to whole image
@@ -759,9 +815,9 @@ def duplicate(i: list, base_image: PIL.Image.Image):
 
 def move(i: list, base_image: PIL.Image.Image):
     '''
-    move,0<oldX>,0<oldY>,0<newX>,0<newY>,16[width],16[height] 
+    move,0<oldX>,0<oldY>,0<newX>,0<newY>,16[width],16[height]
 
-    Cut an area on the NEW image, and paste it in another position on the 
+    Cut an area on the NEW image, and paste it in another position on the
     same canvas.
     '''
 
@@ -783,7 +839,7 @@ def move(i: list, base_image: PIL.Image.Image):
     # Copy the old area to the "clipboard"
     cut = base_image.crop((oldX, oldY, oldX+width, oldY+height))
 
-    # Clear the area on the image that was just copied, 
+    # Clear the area on the image that was just copied,
     # now that we've saved a copy
     empty_image = PIL.Image.new('RGBA', (width, height))
     base_image.paste(empty_image, (oldX, oldY, oldX+width, oldY+height))
@@ -795,7 +851,7 @@ def swap(i: list, base_image: PIL.Image.Image):
     '''
     swap,0<x1>,0<y1>,16<x2>,0<y2>,16[width],16[height]
 
-    Swap the pixels contained in two different areas on the new image. 
+    Swap the pixels contained in two different areas on the new image.
     The areas you want to swap must have the same width and height.
     '''
 
@@ -824,8 +880,8 @@ def swap(i: list, base_image: PIL.Image.Image):
 def over(i:list, open_image:PIL.Image.Image, base_image:PIL.Image.Image):
     '''
     over 0[oldX] 0[oldY] 0[newX] 0[newY] 16[width] 16[height] "old"[imageName]
-    
-    Like copy, except overlay the copied area on top of the existing pixels 
+
+    Like copy, except overlay the copied area on top of the existing pixels
     (using alpha blending), instead of clearing them.
     '''
 
@@ -866,8 +922,8 @@ def over(i:list, open_image:PIL.Image.Image, base_image:PIL.Image.Image):
 def under(i:list, open_image:PIL.Image.Image, base_image:PIL.Image.Image):
     '''
     under 0[oldX] 0[oldY] 0[newX] 0[newY] 16[width] 16[height] "old"[imageName]
-    
-    Like copy, except place the copied area underneath the existing pixels 
+
+    Like copy, except place the copied area underneath the existing pixels
     (using alpha blending).
     '''
 
@@ -912,7 +968,7 @@ def under(i:list, open_image:PIL.Image.Image, base_image:PIL.Image.Image):
 # tile,0<copyX>,0<copyY>,16<copyWidth>,16<copyHeight>,
 #   0<pasteStartX>,0<pasteStartY>,16<pasteCountHoriz>,16<pasteCountVert>,
 #   open[copySource: old, template, or alt]
-# Create a tile pattern on the new image using a part of the old image. 
+# Create a tile pattern on the new image using a part of the old image.
 # This command can be very useful but it’s not for beginners.
 def tile(i, base_image):
     copyX = i[1]; copyY = i[2]; copyWidth = i[3]; copyHeight = i[4]
@@ -939,14 +995,14 @@ def tile(i, base_image):
                 copy(['copy', copyX, copyY, pasteStartX+(copyWidth*x),
                         pasteStartY+(copyHeight*y), copyWidth, copyHeight],
                         images['old'], base_image)
-                
+
 def copyscale(i:list):
     '''
     copyscale 0<oldX> 0<oldY> 32<oldWidth> 32<oldHeight> 0<newX> 0<newY>
         16<newWidth> 16<newHeight> 1[algo] old[source]
-    
-    Copy from the old (or alternative source) image to the new image, 
-    while scaling the copied area to a new width/height. 
+
+    Copy from the old (or alternative source) image to the new image,
+    while scaling the copied area to a new width/height.
     '''
 
     oldX : int = i[1]
@@ -967,11 +1023,11 @@ def copyscale(i:list):
         i.append('old')
     source : str = i[10]
 
-    old_region : PIL.Image.Image = images[source].crop((oldX, oldY, 
+    old_region : PIL.Image.Image = images[source].crop((oldX, oldY,
             oldX+oldWidth, oldY+oldHeight)).convert('RGBa')
     new_region = PIL.Image.new('RGBa', (newWidth, newHeight))
     # Use premultiplied alpha (RGBa) instead of standard RGBA so I don't
-    # have to alpha-blend by hand 
+    # have to alpha-blend by hand
 
     new_rgba : ColorArray
     # new_data is the FLATTENED (1D) sequence of RGBA values that will be
@@ -999,9 +1055,9 @@ def copyscale(i:list):
                 #if ny == 0 and newWidth==newHeight:
                     #p#rint('(', newWidth/2, ')', nx >= newWidth/2, end=' ')
                     #p#rint('nx', nx, 'ox', ox_raw, '->', ox, end=' -- ')
-                
+
                 # Get RGBA data at the calculated pixel
-                new_rgba = safe_pil_getpixel(i[0], old_region, 
+                new_rgba = safe_pil_getpixel(i[0], old_region,
                                              (ox-oldX, oy-oldY))
 
                 # Finally, add the RGBA list to the flattened sequence
@@ -1009,15 +1065,15 @@ def copyscale(i:list):
         # The moment of truth: turn new_data into image
         new_region.putdata(new_data)
     elif algo in (2, 'linear', 'bilinear'):
-        new_region = old_region.resize((newWidth, newHeight), 
+        new_region = old_region.resize((newWidth, newHeight),
                                   PIL.Image.Resampling.BILINEAR)
     elif algo in (3, 'cubic', 'bicubic'):
-        new_region = old_region.resize((newWidth, newHeight), 
+        new_region = old_region.resize((newWidth, newHeight),
                                   PIL.Image.Resampling.BICUBIC)
     # No Lanczos -- looks terrible when scaling pixel art (too many artifacts)
     else:
         # Default scaling algorithm (basically supersampling).
-        # Delivers better results for pixel art, 
+        # Delivers better results for pixel art,
         # but it's slower than the others.
         if algo not in (1, 'default', 'average') \
                 and (not isinstance(algo, str) \
@@ -1032,7 +1088,7 @@ f'{i[0]}: unknown scaling algorithm value (defaulting to 1)'
 
         # Think of the old and new regions as two grids of boxes.
         # If the new grid's values are [0, 1, 2, ..., newWidth-1, newWidth],
-        # then the old grid's values are [0, 1*scale_factor_width, 
+        # then the old grid's values are [0, 1*scale_factor_width,
         # 2*scale_factor_width, ..., newWidth-scale_factor_width, newWidth]
         # Note that len(new_x_grid) = newWidth+1
         old_x_grid = []
@@ -1049,15 +1105,15 @@ f'{i[0]}: unknown scaling algorithm value (defaulting to 1)'
 
         # list is just [0,1,2…] so no diff. between range and range(len) here
         for ny in range(newHeight):
-            for nx in range(newWidth): 
-                # old_x_grid index of the first old-pixel that's factored into 
+            for nx in range(newWidth):
+                # old_x_grid index of the first old-pixel that's factored into
                 # the new-pixel (take new_x and round down)
                 l_index = 0
                 for s in range(oldWidth, -1, -1):
                     l_index = s
                     if old_x_grid[s] <= nx:
                         break
-                # old_x_grid index of the first old-pixel that's NOT factored 
+                # old_x_grid index of the first old-pixel that's NOT factored
                 # into the new-pixel (take new_x+1 and round up)
                 r_index = oldWidth
                 for s in range(0, oldWidth+1, +1):
@@ -1077,10 +1133,10 @@ f'{i[0]}: unknown scaling algorithm value (defaulting to 1)'
                     if old_y_grid[s] >= (ny+1):
                         break
 
-                # Find all horizontal and vertical "weights" (how much 
-                # of each old pixel should go into the current new pixel). 
-                    
-                # Only do edge weighting if axis has >1 block and the 
+                # Find all horizontal and vertical "weights" (how much
+                # of each old pixel should go into the current new pixel).
+
+                # Only do edge weighting if axis has >1 block and the
                 # first/last block has an old boundary going thru it
                 l_weight = 0.0
                 r_weight = 0.0
@@ -1108,9 +1164,9 @@ f'{i[0]}: unknown scaling algorithm value (defaulting to 1)'
                     b_weight = (ny + 1) - old_y_grid[b_index-1]
 
                 # Corner weights will be (edge1 * edge2)
-                # p#rint('xy', nx, ny, 'wgt', l_weight, r_weight, 
+                # p#rint('xy', nx, ny, 'wgt', l_weight, r_weight,
                 # t_weight, b_weight)
-                    
+
                 # Build separate arrays for weights on x and y axes
                 # Initially build it out with the axis's scale factor
                 # (for downscales) or 1.0 (for everything else)
@@ -1126,11 +1182,11 @@ f'{i[0]}: unknown scaling algorithm value (defaulting to 1)'
                     y_weights[0] = t_weight
                 if b_weight > 0.0:
                     y_weights[-1] = b_weight
-                # p#rint('new w/h', newWidth, newHeight, 'indices', l_index, 
+                # p#rint('new w/h', newWidth, newHeight, 'indices', l_index,
                 # r_index, t_index, b_index)
-                        
+
                 # Generate the full grid of weights for this pixel
-                # [0, 0] in this list corresponds to 
+                # [0, 0] in this list corresponds to
                 # [l_index, t_index] on old_grid
                 # This is a 2D array, with each element signifying a weight
                 # Outer array (y) has length = b_index - t_index
@@ -1139,32 +1195,32 @@ f'{i[0]}: unknown scaling algorithm value (defaulting to 1)'
                 weight_grid = []
                 for iy in y_weights:
                     weight_grid.append([ix*iy for ix in x_weights])
-                # Because we're multiplying x_weights and y_weights together, 
+                # Because we're multiplying x_weights and y_weights together,
                 # corners will be handled correctly
                 # (e.g. bottom right = b_weight * r_weight)
-                
-                #p#rint('new w/h', newWidth, newHeight, 
+
+                #p#rint('new w/h', newWidth, newHeight,
                 #       '1D', x_weights, y_weights, '2D', weight_grid)
-                        
+
                 # Get the pixels and do the actual weighting
                 new_rgba = [0,0,0,0]
                 for wy in range(len(weight_grid)):
                     for wx in range(len(weight_grid[0])):
-                        old_rgba = safe_pil_getpixel(i[0], 
+                        old_rgba = safe_pil_getpixel(i[0],
                                 old_region, (l_index+wx,t_index+wy))
                         # Update each r/g/b/a value based on weighted old value
                         for a in range(4):
                             new_rgba[a] += old_rgba[a] * weight_grid[wy][wx]
-                
+
                 # Round each element of new_rgba so it's an integer
                 for a in range(4):
                     new_rgba[a] = round(new_rgba[a])
 
                 # Finally, add the RGBA list to the flattened sequence
-                new_data.append((new_rgba[0], new_rgba[1], 
+                new_data.append((new_rgba[0], new_rgba[1],
                                  new_rgba[2], new_rgba[3]))
         # End of main scaling loop
-        
+
         # The moment of truth: turn new_data into image
         new_region.putdata(new_data)
 
@@ -1180,9 +1236,9 @@ f'{i[0]}: unknown scaling algorithm value (defaulting to 1)'
 def resize(i, base_image):
     '''
     resize,256<newWidth>,256[newHeight],0[xOffset],0[yOffset]
-    
-    Resize the new image's canvas. Does not perform any scaling. If no height 
-    given, create a square canvas. Anchor at top left by default, or move 
+
+    Resize the new image's canvas. Does not perform any scaling. If no height
+    given, create a square canvas. Anchor at top left by default, or move
     original image right by `offsetX` pixels and down by `offsetY` pixels.
     '''
 
@@ -1207,11 +1263,11 @@ def resize(i, base_image):
 def crop(i:list, base_image:PIL.Image.Image):
     '''
     crop,0<x>,0<y>,0<width>,0<height>
-    
-    Same functionality as resize, but in a way that makes more sense if you 
+
+    Same functionality as resize, but in a way that makes more sense if you
     want to make the image smaller.
     '''
-    
+
     x : int = i[1]
     y : int = i[2]
     width : int = i[3]
@@ -1222,8 +1278,8 @@ def crop(i:list, base_image:PIL.Image.Image):
 def scale(i:list, base_image):
     '''
     scale 256<newWidth> 256<newHeight> 1[algo]
-    
-    Scale the main canvas to the new width and height 
+
+    Scale the main canvas to the new width and height
     (same algorithms as copyscale)
     '''
 
@@ -1252,22 +1308,23 @@ def scale(i:list, base_image):
 
     base_image = resize([i[0], newWidth, newHeight], base_image)
 
-    copyscale([i[0], 0, 0, oldWidth, oldHeight, 0, 0, newWidth, newHeight, algo, 'new'])
+    copyscale([i[0], 0, 0, oldWidth, oldHeight,
+               0, 0, newWidth, newHeight, algo, 'new'])
 
 def rotate(i:list, base_image:PIL.Image.Image):
     '''
     rotate 90<degCW: multiple of 90> 0<x> 0<y> 16[size]
-    
-    Rotate the area clockwise, in place, on the new image. Unlike copy 
+
+    Rotate the area clockwise, in place, on the new image. Unlike copy
     commands, only 1 size argument is used, as the rotated area must be square.
-    If you want to rotate a rectangular area 180°, flip it horizontally then 
+    If you want to rotate a rectangular area 180°, flip it horizontally then
     vertically instead.
 
     — OR —
 
-    rotate 90<degCW: multiple of 90> 
-    
-    Rotate the full canvas of the new image. This may change the image's 
+    rotate 90<degCW: multiple of 90>
+
+    Rotate the full canvas of the new image. This may change the image's
     dimensions (e.g. rotating a 400×300 image by 90° will make it 300×400).
     '''
     degCW : int = i[1]
@@ -1276,7 +1333,7 @@ def rotate(i:list, base_image:PIL.Image.Image):
         log_warning(f'{i[0]}: \
 Rotating by a number not divisible by 90 may have unintended effects.')
 
-    if len(i) == 2: 
+    if len(i) == 2:
         # Special case to rotate entire image if x/y/w/h omitted
         rotated_image = base_image.rotate(
                 -degCW, # negated b/c PIL rotates counterclockwise
@@ -1286,7 +1343,7 @@ Rotating by a number not divisible by 90 may have unintended effects.')
     x : int = i[2]
     y : int = i[3]
 
-    # If size specified, use that value. If not, use 16. 
+    # If size specified, use that value. If not, use 16.
     # Remember: squares only.
     if len(i) == 4:
         i += [16]
@@ -1327,7 +1384,7 @@ def flip(i, base_image):
         region = PIL.ImageOps.mirror(region)
     if 'y' in direction or 'v' in direction:
         region = PIL.ImageOps.flip(region)
-    # Otherwise, if direction is invalid, do nothing (the goal is to make 
+    # Otherwise, if direction is invalid, do nothing (the goal is to make
     # it so the user CAN'T crash the program by mistake)
     base_image.paste(region, (x, y, x+width, y+height))
 
@@ -1335,7 +1392,7 @@ def flip(i, base_image):
 #### FILTER COMMANDS ######################################################
 ###########################################################################
 
-# grayscale,0[x],0[y],16[width],16[height] 
+# grayscale,0[x],0[y],16[width],16[height]
 # Converts the area to grayscale (AKA black-and-white). For the command that
 # literally makes the area only black and white (1-bit), use "threshold".
 def grayscale(i, base_image):
@@ -1361,8 +1418,8 @@ def grayscale(i, base_image):
 def invert(i, base_image):
     '''
     invert,0[x],0[y],16[width],16[height]
-    
-    Inverts the area. For example, black becomes white, and red becomes cyan. 
+
+    Inverts the area. For example, black becomes white, and red becomes cyan.
     Alpha levels will be unchanged.
     '''
     # For filters, if no x or y specified, apply filter to whole image
@@ -1389,18 +1446,18 @@ def invert(i, base_image):
             if rgba[3] == 0:
                 continue
 
-            region.putpixel((loop_x, loop_y), 
+            region.putpixel((loop_x, loop_y),
                     (255-rgba[0], 255-rgba[1], 255-rgba[2], rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
 
 def rgbfilter(i, base_image):
     '''
     rgbfilter,0<redAdjust: -255 to +255>,0<greenAdjust>,0<blueAdjust>,
-        0[x],0[y],16[width],16[height] 
-    
-    Adjusts the R/G/B color balance. You can use all three adjust arguments 
-    at the same time to adjust brightness. 
-    
+        0[x],0[y],16[width],16[height]
+
+    Adjusts the R/G/B color balance. You can use all three adjust arguments
+    at the same time to adjust brightness.
+
     (Aliases: colorfilter, color_filter)
     '''
     redAdjust = i[1]
@@ -1431,14 +1488,14 @@ def rgbfilter(i, base_image):
             if rgba[3] == 0:
                 continue
 
-            region.putpixel((loop_x, loop_y), 
-                    (rgba[0]+redAdjust, rgba[1]+greenAdjust, 
+            region.putpixel((loop_x, loop_y),
+                    (rgba[0]+redAdjust, rgba[1]+greenAdjust,
                     rgba[2]+blueAdjust, rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
 
 # opacity,0<adjust: -255 to +255>,0[x],0[y],
 #   16[width],16[height]
-# Adjusts the opacity (alpha) levels. 
+# Adjusts the opacity (alpha) levels.
 # Negative = more transparent, positive = more opaque.
 def opacity(i, base_image):
     adjust = i[1]
@@ -1463,7 +1520,7 @@ def opacity(i, base_image):
     for loop_x in range(width):
         for loop_y in range(height):
             rgba = safe_pil_getpixel(i[0], region, (loop_x, loop_y))
-            region.putpixel((loop_x, loop_y), 
+            region.putpixel((loop_x, loop_y),
                     (rgba[0], rgba[1], rgba[2], rgba[3]+adjust))
     base_image.paste(region, (x, y, x+width, y+height))
 
@@ -1471,7 +1528,7 @@ def hslfilter(i: list, base_image: PIL.Image.Image):
     '''
     hslfilter,0<hueAdjust: -180 to +180>,
         0<saturationAdjust: -100 to 100>,0<lightnessAdjust: -100 to 100>,
-        0[x],0[y],16[width],16[height] 
+        0[x],0[y],16[width],16[height]
 
     Adjusts hue, saturation, and lightness at the same time.
     '''
@@ -1482,7 +1539,7 @@ def hslfilter(i: list, base_image: PIL.Image.Image):
 
     # For filters, if no x or y specified, apply filter to whole image
     if len(i) <= 5: # number on the right should be equal to the index of y
-        i = [i[0], i[1], i[2], i[3], 
+        i = [i[0], i[1], i[2], i[3],
              0, 0, base_image.size[0], base_image.size[1]]
     x = i[4]
     y = i[5]
@@ -1511,12 +1568,12 @@ def hslfilter(i: list, base_image: PIL.Image.Image):
             hsla[2] += lightnessAdjust
             format_hsla(hsla)
             rgba = hsla_to_rgba(hsla)
-            region.putpixel((loop_x, loop_y), 
+            region.putpixel((loop_x, loop_y),
                     (rgba[0], rgba[1], rgba[2], rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
 
 # filter.fill,0<red: 0 to 255>,0<green: 0 to 255>,
-#   0<blue: 0 to 255>,255[alpha: 0 to 255],0[x],0[y],16[width],16[height] 
+#   0<blue: 0 to 255>,255[alpha: 0 to 255],0[x],0[y],16[width],16[height]
 # Fills the area with the selected color.
 def filter_fill(i, base_image: PIL.Image.Image):
     red = i[1]
@@ -1530,7 +1587,7 @@ def filter_fill(i, base_image: PIL.Image.Image):
 
     # For filters, if no x or y specified, apply filter to whole image
     if len(i) <= 6: # number on the right should be equal to the index of y
-        i = [i[0], i[1], i[2], i[3], i[4], 0, 0, base_image.size[0], 
+        i = [i[0], i[1], i[2], i[3], i[4], 0, 0, base_image.size[0],
                 base_image.size[1]]
     x = i[5]
     y = i[6]
@@ -1555,47 +1612,52 @@ def clip(n, minimum, maximum):
         n = maximum
     return n
 
-# contrast,0<adjust: -128 to 128>,0[x],0[y],16[width],16[height]
-# Adjusts the contrast. -128 will make all non-transparent pixels medium gray; 
-# +127 will make all RGB values either 0 or 255 (8 colors).
-def contrast(i, base_image):
-    adjust = clip(i[1], -128, 127.99) # Avoid dividing by 0
+def contrast(i:list, base_image:PIL.Image.Image):
+    '''
+    contrast 0<adjust: -128 to +128> 0[x] 0[y] 16[width] 16[height]
+
+    Adjusts the contrast. -128 will make all non-transparent pixels medium
+    gray; +128 will make all RGB values either 0 or 255 (8 colors).
+    '''
+
+    adjust : float = clip(i[1], -128, 127.99) # Avoid dividing by 0
 
     # For filters, if no x or y specified, apply filter to whole image
     if len(i) <= 3: # number on the right should be equal to the index of y
         i = [i[0], i[1], 0, 0, base_image.size[0], base_image.size[1]]
-    x = i[2]
-    y = i[3]
+    x : int = i[2]
+    y : int = i[3]
 
     # If width/height specified, use those values.
     # If neither is specified, use 16×16.
     # If only width is specified, use that value for height too.
     if len(i) == 4:
         i += [16, 16]
-    width = i[4]
+    width : int = i[4]
     if len(i) == 5:
         i += [width]
-    height = i[5]
+    height : int = i[5]
 
     region = base_image.crop((x, y, x+width, y+height))
     for loop_x in range(width):
         for loop_y in range(height):
-            rgba = safe_pil_getpixel(i[0], region, (loop_x, loop_y))
+            rgba : abc.Sequence = safe_pil_getpixel(i[0], region,
+                                                    (loop_x, loop_y))
             # Skip fully transparent pixels
             if rgba[3] == 0:
                 continue
 
             # Temporarily convert r/g/b
-            new_r = (rgba[0] - 127.5)
-            new_g = (rgba[1] - 127.5)
-            new_b = (rgba[2] - 127.5)
+            new_r = rgba[0] - 127.5
+            new_g = rgba[1] - 127.5
+            new_b = rgba[2] - 127.5
 
             # Adjust contrast
-            if (adjust < 0):
+            if adjust < 0:
                 new_r *= (adjust + 128)/128
                 new_g *= (adjust + 128)/128
                 new_b *= (adjust + 128)/128
-            elif (adjust > 0):
+            elif adjust > 0:
                 new_r *= 128/(-adjust+128)
                 new_g *= 128/(-adjust+128)
                 new_b *= 128/(-adjust+128)
@@ -1605,7 +1667,7 @@ def contrast(i, base_image):
             new_g = int(clip(new_g+127.5, 0, 255))
             new_b = int(clip(new_b+127.5, 0, 255))
 
-            region.putpixel((loop_x, loop_y), 
+            region.putpixel((loop_x, loop_y),
                     (new_r, new_g, new_b, rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
 
@@ -1614,9 +1676,9 @@ def colorize(i: list, base_image: PIL.Image.Image):
     180<hue: 0 to 359>,50<saturation: 0 to 100>,
         50<lightness: 0 to 100>,0[x],0[y],16[width],16[height]
 
-    Colorizes specified area in place. Converts area to B&W, treats L=127.5 as 
-    the specified HSL color, and interpolates the rest from there. Ex.: if the 
-    base color was coral [hsl(0,100,75)], it'll turn black->gray50->white to 
+    Colorizes specified area in place. Converts area to B&W, treats L=127.5 as
+    the specified HSL color, and interpolates the rest from there. Ex.: if the
+    base color was coral [hsl(0,100,75)], it'll turn black->gray50->white to
     red->coral->white.
     '''
 
@@ -1627,7 +1689,7 @@ def colorize(i: list, base_image: PIL.Image.Image):
 
     # For filters, if no x or y specified, apply filter to whole image
     if len(i) <= 5: # number on the right should be equal to the index of y
-        i = [i[0], i[1], i[2], i[3], 0, 0, 
+        i = [i[0], i[1], i[2], i[3], 0, 0,
                 base_image.size[0], base_image.size[1]]
     x = i[4]
     y = i[5]
@@ -1642,7 +1704,7 @@ def colorize(i: list, base_image: PIL.Image.Image):
         i += [width]
     height = i[7]
 
-    # First, convert the region to grayscale. 
+    # First, convert the region to grayscale.
     # We already have a function for this, so let’s use it.
     grayscale(['grayscale', x, y, width, height], base_image)
 
@@ -1675,12 +1737,12 @@ def colorize(i: list, base_image: PIL.Image.Image):
 
             format_hsla(hsla)
             rgba = hsla_to_rgba(hsla)
-            region.putpixel((loop_x, loop_y), 
+            region.putpixel((loop_x, loop_y),
                     (rgba[0], rgba[1], rgba[2], rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
 
-# sepia,0[x],0[y],16[width],16[height] 
-# Simplified colorize syntax for creating sepia-toned images. 
+# sepia,0[x],0[y],16[width],16[height]
+# Simplified colorize syntax for creating sepia-toned images.
 # Based on hex code #a08060 or HSL(30,25,50)
 def sepia(i, base_image):
     # For filters, if no x or y specified, apply filter to whole image
@@ -1705,10 +1767,10 @@ def threshold(i, base_image):
     '''
     threshold,128<minWhite: 0 to 256>,0[x],0[y],16[width],16[height]
 
-    Converts the image to 1-bit black & white based on a numeric lightness 
-    threshold, determined by grayscale (luma) value. Any number LESS THAN 
-    minWhite is black, any number GREATER or EQUAL is white. Set minWhite to 0 
-    to make everything white. Set minWhite to 256 to make everything black. 
+    Converts the image to 1-bit black & white based on a numeric lightness
+    threshold, determined by grayscale (luma) value. Any number LESS THAN
+    minWhite is black, any number GREATER or EQUAL is white. Set minWhite to 0
+    to make everything white. Set minWhite to 256 to make everything black.
     Alpha levels for each pixel will be unchanged.
     '''
     minWhite = i[1]
@@ -1740,7 +1802,7 @@ def threshold(i, base_image):
             if rgba[3] == 0:
                 continue
             # Otherwise, alpha will be preserved when filtering
-            # r/g/b will be the same because we converted the region to 
+            # r/g/b will be the same because we converted the region to
             # grayscale earlier
             luma = rgba[0]
 
@@ -1754,10 +1816,10 @@ def selcolor(i: list, base_image: PIL.Image.Image):
     '''
     selcolor,red<color>,0<hueAdjust: -180 to +180>,
         0<saturationAdjust: -100 to 100>,0<lightnessAdjust: -100 to 100>,
-        0<x>,0<y>,16<width>,16<height> 
+        0<x>,0<y>,16<width>,16<height>
 
-    Selective color: selects all pixels that have hues within a given sixth of 
-    the HSL color wheel (red, yellow, green, cyan, blue, magenta), and applies 
+    Selective color: selects all pixels that have hues within a given sixth of
+    the HSL color wheel (red, yellow, green, cyan, blue, magenta), and applies
     the HSL shift filter to each of those pixels.
     '''
 
@@ -1806,7 +1868,7 @@ def selcolor(i: list, base_image: PIL.Image.Image):
             format_hsla(hsla)
             rgba = hsla_to_rgba(hsla)
 
-            region.putpixel((loop_x, loop_y), 
+            region.putpixel((loop_x, loop_y),
                             (rgba[0], rgba[1], rgba[2], rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
 
@@ -1814,12 +1876,12 @@ def selcolor(i: list, base_image: PIL.Image.Image):
 # its performance are appreciated.
 def twocolor(i: list, base_image: PIL.Image.Image):
     '''
-    2color,0<hue>,100<saturation>,50<lightness>,0[x],0[y],16[width],16[height] 
+    2color,0<hue>,100<saturation>,50<lightness>,0[x],0[y],16[width],16[height]
 
-    Simulates the effect of a two-color print job, where one of the colors is 
-    black. The hue/saturation/lightness arguments are for the second color. 
-    Unlike colorize, this is not recommended for use with black-and-white 
-    images, as the filter uses saturation data to determine how much color each 
+    Simulates the effect of a two-color print job, where one of the colors is
+    black. The hue/saturation/lightness arguments are for the second color.
+    Unlike colorize, this is not recommended for use with black-and-white
+    images, as the filter uses saturation data to determine how much color each
     pixel should have. (Alias: twocolor)
     '''
 
@@ -1830,7 +1892,7 @@ def twocolor(i: list, base_image: PIL.Image.Image):
 
     # For filters, if no x or y specified, apply filter to whole image
     if len(i) <= 5: # number on the right should be equal to the index of y
-        i = [i[0], i[1], i[2], i[3], 0, 0, 
+        i = [i[0], i[1], i[2], i[3], 0, 0,
                 base_image.size[0], base_image.size[1]]
     x = i[4]
     y = i[5]
@@ -1848,7 +1910,7 @@ def twocolor(i: list, base_image: PIL.Image.Image):
     # Save the old saturation values before we make the region grayscale
     old_region = base_image.crop((x, y, x+width, y+height))
 
-    # First, convert the region to grayscale. 
+    # First, convert the region to grayscale.
     # We already have a function for this, so let’s use it.
     grayscale(['grayscale', x, y, width, height], base_image)
 
@@ -1895,20 +1957,21 @@ def twocolor(i: list, base_image: PIL.Image.Image):
                 rgba_color[3]
             ]
 
-            region.putpixel((loop_x, loop_y), 
+            region.putpixel((loop_x, loop_y),
                             (rgba[0], rgba[1], rgba[2], rgba[3]))
     base_image.paste(region, (x, y, x+width, y+height))
 
 def recolor(i:list, base_image:PIL.Image.Image):
     '''
     recolor ()<oldColor> $_fillcolor<newColor> 0[x] 0[y] 16[width] 16[height]
-    
-    Replace every pixel matching `oldColor` with `newColor`. If `oldColor` is 
+
+    Replace every pixel matching `oldColor` with `newColor`. If `oldColor` is
     null, recolor all non-transparent colors.
     '''
     oldColor = i[1]
     newColor = i[2]
-    if isinstance(oldColor, list) and isinstance(newColor, list) and len(oldColor) != len(newColor):
+    if isinstance(oldColor, list) and isinstance(newColor, list) \
+            and len(oldColor) != len(newColor):
         log_warning(f'{i[0]}: list lengths don’t match')
         return None
 
@@ -1931,23 +1994,23 @@ def recolor(i:list, base_image:PIL.Image.Image):
     region = base_image.crop((x, y, x+width, y+height))
     for loop_x in range(width):
         for loop_y in range(height):
-            oldRGBA : ColorArray = safe_pil_getpixel(i[0], region, (loop_x, loop_y))
+            oldRGBA = safe_pil_getpixel(i[0], region, (loop_x, loop_y))
             if isinstance(oldColor, list) and isinstance(newColor, list):
                 for j in range(len(oldColor)):
-                    if oldRGBA == (oldColor[j].red, oldColor[j].green, 
+                    if oldRGBA == (oldColor[j].red, oldColor[j].green,
                                         oldColor[j].blue, oldColor[j].alpha):
-                        region.putpixel((loop_x, loop_y), 
-                                (newColor[j].red, newColor[j].green, 
+                        region.putpixel((loop_x, loop_y),
+                                (newColor[j].red, newColor[j].green,
                                 newColor[j].blue, newColor[j].alpha))
             else:
                 # If oldColor is null, recolor all non-empty pixels;
                 # if not, check for color match
                 if (oldColor is None and oldRGBA[3] > 0) \
                         or (oldColor is not None and \
-                            oldRGBA == (oldColor.red, oldColor.green, 
+                            oldRGBA == (oldColor.red, oldColor.green,
                                         oldColor.blue, oldColor.alpha)):
-                    region.putpixel((loop_x, loop_y), 
-                                    (newColor.red, newColor.green, 
+                    region.putpixel((loop_x, loop_y),
+                                    (newColor.red, newColor.green,
                                     newColor.blue, newColor.alpha))
 
     base_image.paste(region, (x, y, x+width, y+height))
@@ -1959,16 +2022,16 @@ def recolor(i:list, base_image:PIL.Image.Image):
 def list_remove(i: list):
     '''
     list.remove,$l<listVar>,0<index>
-    
-    Remove the item at the given index from the list; shift the items after it 
-    to the left. Note that this is different from the Python method 
+
+    Remove the item at the given index from the list; shift the items after it
+    to the left. Note that this is different from the Python method
     `l.remove()` that removes based on value rather than index.
     '''
     if not var_check(i[1], i[0], exists=True):
         # var_check will generate its own warning if it fails, so no need
         # for another one here
         return
-    
+
     listVar : list = i[1]
     index : int = i[2]
 
@@ -1978,14 +2041,14 @@ def list_remove(i: list):
 def list_replace(i: list):
     '''
     list.replace,$l<listVar>,0<index>,"thing"<item>
-    
+
     Replace the contents of the given `index` of `listVar` with `item`.
     '''
     if not var_check(i[1], i[0], exists=True):
         # var_check will generate its own warning if it fails, so no need
         # for another one here
         return
-    
+
     listVar : list = i[1]
     index : int = i[2]
     item : Any = i[3]
@@ -1995,16 +2058,16 @@ def list_replace(i: list):
 
 def list_swap(i: list):
     '''
-    list.swap $l<listVar> 0<index1> 1<index2> 
-    
-    Swap the positions of the items of `listVar` at `index1` and `index2`  
+    list.swap $l<listVar> 0<index1> 1<index2>
+
+    Swap the positions of the items of `listVar` at `index1` and `index2`
     (eliminating the need to create a temporary variable).
     '''
     if not var_check(i[1], i[0], exists=True):
         # var_check will generate its own warning if it fails, so no need
         # for another one here
         return
-    
+
     listVar : list = i[1]
     index1 : int = i[2]
     index2 : int = i[3]
@@ -2019,7 +2082,7 @@ def list_swap(i: list):
 def setpixel(i: list):
     '''
     setpixel,0<x>,0<y>,(color,"red")<color>
-    
+
     Sets the color of the pixel at (x,y) on the base image.
     '''
 
@@ -2027,7 +2090,7 @@ def setpixel(i: list):
     y : int = i[2]
     color : Color = i[3]
 
-    images['new'].putpixel((x, y), 
+    images['new'].putpixel((x, y),
                            (color.red, color.green, color.blue, color.alpha))
 
 def draw_rect(i: list):
@@ -2058,17 +2121,17 @@ def draw_rect(i: list):
     lw = variables['$_linewidth']
 
     if outline == 0:
-        draw_obj.rectangle([x, y, x+width-1, y+height-1], 
+        draw_obj.rectangle([x, y, x+width-1, y+height-1],
                            fill=(fc.red, fc.green, fc.blue, fc.alpha),
                            outline=None,
                            width=lw)
     elif outline == 1:
-        draw_obj.rectangle([x, y, x+width-1, y+height-1], 
+        draw_obj.rectangle([x, y, x+width-1, y+height-1],
                            fill=None,
                            outline=(lc.red, lc.green, lc.blue, lc.alpha),
                            width=lw)
     elif outline == 2:
-        draw_obj.rectangle([x, y, x+width-1, y+height-1], 
+        draw_obj.rectangle([x, y, x+width-1, y+height-1],
                            fill=(fc.red, fc.green, fc.blue, fc.alpha),
                            outline=(lc.red, lc.green, lc.blue, lc.alpha),
                            width=lw)
@@ -2100,27 +2163,27 @@ def draw_ellipse(i: list):
     lw = variables['$_linewidth']
 
     if outline == 0:
-        draw_obj.ellipse([x, y, x+width-1, y+height-1], 
+        draw_obj.ellipse([x, y, x+width-1, y+height-1],
                            fill=(fc.red, fc.green, fc.blue, fc.alpha),
                            outline=None,
                            width=lw)
     elif outline == 1:
-        draw_obj.ellipse([x, y, x+width-1, y+height-1], 
+        draw_obj.ellipse([x, y, x+width-1, y+height-1],
                            fill=None,
                            outline=(lc.red, lc.green, lc.blue, lc.alpha),
                            width=lw)
     elif outline == 2:
-        draw_obj.ellipse([x, y, x+width-1, y+height-1], 
+        draw_obj.ellipse([x, y, x+width-1, y+height-1],
                            fill=(fc.red, fc.green, fc.blue, fc.alpha),
                            outline=(lc.red, lc.green, lc.blue, lc.alpha),
                            width=lw)
 
 def draw_line(i: list):
     '''
-    draw.line,0<x1>,0<y1>,16<x2>,16<y2> 
+    draw.line,0<x1>,0<y1>,16<x2>,16<y2>
 
-    Draw a line from (x1,y1) to (x2,y2). Note that this is different from the 
-    width/height system used for everything else. The example coordinates 
+    Draw a line from (x1,y1) to (x2,y2). Note that this is different from the
+    width/height system used for everything else. The example coordinates
     would have a width and height of 17 pixels.
     '''
     global draw_obj
@@ -2136,20 +2199,20 @@ def draw_line(i: list):
     lc = variables['$_linecolor']
     lw = variables['$_linewidth']
 
-    draw_obj.line([x1, y1, x2, y2], 
+    draw_obj.line([x1, y1, x2, y2],
             (lc.red, lc.green, lc.blue, lc.alpha),
             width=lw)
 
 def draw_fillcolor(i: list):
     '''
-    draw.fillcolor,(rgb,255,0,0)<color> 
+    draw.fillcolor,(rgb,255,0,0)<color>
 
     Set the fill color.
     '''
 
     color = i[1]
 
-    if type(color) != Color:
+    if not isinstance(color, Color):
         log_warning(f'{i[0]}: invalid color')
         return
 
@@ -2157,14 +2220,14 @@ def draw_fillcolor(i: list):
 
 def draw_linecolor(i: list):
     '''
-    draw.linecolor,(rgb,255,0,0)<color> 
+    draw.linecolor,(rgb,255,0,0)<color>
 
     Set the outline color.
     '''
 
     color = i[1]
 
-    if type(color) != Color:
+    if not isinstance(color, Color):
         log_warning(f'{i[0]}: invalid color')
         return
 
@@ -2172,14 +2235,14 @@ def draw_linecolor(i: list):
 
 def draw_alphablend(i: list):
     '''
-    
-    draw.alphablend,1<toggle> 
 
-    Toggles alpha blending on (1) or off (0). If on, drawing partially 
-    transparent shapes will merge their colors with the existing pixels 
-    underneath. If off, the pixels underneath will by fully overwritten by the 
-    shapes. If this command is not called, alpha blending will be turned ON by 
-    default. 
+    draw.alphablend,1<toggle>
+
+    Toggles alpha blending on (1) or off (0). If on, drawing partially
+    transparent shapes will merge their colors with the existing pixels
+    underneath. If off, the pixels underneath will by fully overwritten by the
+    shapes. If this command is not called, alpha blending will be turned ON by
+    default.
     TODO: add setting "2" that also alphablends the original copying commands?
     '''
 
@@ -2193,7 +2256,7 @@ def draw_alphablend(i: list):
 ###########################################################################
 #### SUBCOMMANDS ##########################################################
 ###########################################################################
-        
+
 def parse_subcmd(raw_cmd: str):
     '''Strip whitespace and opening/closing parentheses from a subcommand.'''
 
@@ -2208,11 +2271,15 @@ def parse_subcmd(raw_cmd: str):
     else:
         # Otherwise, there's something wrong with the input
         return None
-    
+
     # Parse the line to separate out the arguments
     cmd = parse_line(cmd_str)
     # Replace command aliases (in place)
     alias(cmd, is_subcmd=True)
+    # Make sure subcommand has right number of arguments,
+    # and noop it out (in place) if it doesn't
+    if version_lt(8):
+        arg_check(cmd, is_subcmd=True)
 
     return cmd
 
@@ -2225,17 +2292,17 @@ def subcmd(raw_cmd: abc.Sequence):
     # The value we're going to return at the end
     result = None
 
-    if type(raw_cmd) == str:
-        # If we're here, the command is passed in as a string something like 
+    if isinstance(raw_cmd, str):
+        # If we're here, the command is passed in as a string something like
         # "(empty,0,0,16,16)". We want to get rid of the parens at the
         # start and end (but keep any that are inside).
         cmd = parse_subcmd(raw_cmd)
         if cmd is None:
             # If None is returned, raw_cmd must be invalid
             # This *shouldn't* happen, but I'll plan for it just in case
-            log_warning('Invalid subcommand: %s' % raw_cmd)
+            log_warning('Invalid subcommand: {raw_cmd}')
             return None
-    elif type(raw_cmd) == list:
+    elif isinstance(raw_cmd, list):
         # This doesn't happen in normal parsing, but some advanced commands
         # (like change) build a subcommand in list form,
         # then pass it directly to this function. In this case,
@@ -2246,17 +2313,13 @@ def subcmd(raw_cmd: abc.Sequence):
     else:
         # If we don't get a list or str... we have no idea what to do.
         return None
-    
-    # Make sure subcommand has right number of arguments, 
-    # and noop it out if it doesn't
-    arg_check(cmd, is_subcmd=True)
-    
+
     # empty/noop commands can return null value before we bother to evaluate
     # variables or nested subcommands
     if cmd[0].strip() == '' or cmd[0] == 'null':
         return None
 
-    # Replace variable names with the variable's current value 
+    # Replace variable names with the variable's current value
     subst_all_vars(cmd)
 
     # Now that we've broken the command into the normal list format,
@@ -2275,7 +2338,7 @@ def subcmd(raw_cmd: abc.Sequence):
         # For all other subcommands, loop thru arguments, and if there are
         # any unevaluated subcommands, call subcmd() on them.
         for arg_n in range(1, len(cmd)):
-            if type(cmd[arg_n]) == Subcommand:
+            if isinstance(cmd[arg_n], Subcommand):
                 # Execute the command INSIDE the parens FIRST
                 cmd[arg_n] = subcmd(cmd[arg_n].content)
     else:
@@ -2300,7 +2363,7 @@ def subcmd(raw_cmd: abc.Sequence):
         result = cmp(cmd[0], cmd[1])
 
     elif cmd[0] in ['or', 'and', 'iif']:
-        # These commands are already handled above but we need to check for 
+        # These commands are already handled above but we need to check for
         # them here too so we don't get false invalid-command errors
         pass
     elif cmd[0] == 'not':
@@ -2463,7 +2526,7 @@ string repetition instead')
         result = height_(cmd)
 
     else:
-        log_warning('Invalid subcommand: %s' % raw_cmd)
+        log_warning(f'Invalid subcommand: {raw_cmd}')
         return None
 
     # Uncomment this line to print subcommand and its result, for debugging
@@ -2473,10 +2536,10 @@ string repetition instead')
 
 def iif(i: list):
     '''
-    (iif,<cond>,<ifTrue>,<ifFalse>) 
-    
-    Inline if, as found in functional programming. Returns `ifTrue` if 
-    `cond` evaluates to true, and `ifFalse` if `cond` evaluates to false. 
+    (iif,<cond>,<ifTrue>,<ifFalse>)
+
+    Inline if, as found in functional programming. Returns `ifTrue` if
+    `cond` evaluates to true, and `ifFalse` if `cond` evaluates to false.
     Uses short-circuiting so only one of the value branches will be evaluated.
     '''
 
@@ -2606,14 +2669,14 @@ def logic_or(i: list):
 
     short_circuit : bool = False
     for arg in i[1:]:
-        if type(arg) == Subcommand:
+        if isinstance(arg, Subcommand):
             # Execute subcommands one at a time, then check short-circuiting
             arg_result = subcmd(arg.content)
         else:
             arg_result = arg
 
         short_circuit = bool(short_circuit or arg_result)
-        if short_circuit == True:
+        if short_circuit is True:
             return True
     # If we make it to the end and none of the arguments were true (so we
     # didn't short-circuit), result must be False
@@ -2626,14 +2689,14 @@ def logic_and(i: list):
 
     short_circuit : bool = True
     for arg in i[1:]:
-        if type(arg) == Subcommand:
+        if isinstance(arg, Subcommand):
             # Execute subcommands one at a time, then check short-circuiting
             arg_result = subcmd(arg.content)
         else:
             arg_result = arg
 
         short_circuit = bool(short_circuit and arg_result)
-        if short_circuit == False:
+        if short_circuit is False:
             return False
     # If we make it to the end and all of the arguments were true (so we
     # didn't short-circuit), result must be True
@@ -2646,9 +2709,9 @@ def logic_and(i: list):
 def add(i: list):
     '''
     (+,x1,x2,...)
-    
-    Add two or more numbers. 
-    
+
+    Add two or more numbers.
+
     (Alias: add)
     '''
 
@@ -2662,15 +2725,15 @@ def sub(i: list):
     '''
     (-,x1,x2,...)
 
-    Subtract two or more numbers. 
+    Subtract two or more numbers.
 
     — OR —
 
     (-,x)
 
     Unary minus sign, negates x. Equivalent to (*, x, -1)
-    
-    (Aliases: sub, − [minus sign], or – [en dash]. 
+
+    (Aliases: sub, − [minus sign], or – [en dash].
     The symbol in the example is an ASCII hyphen.)
     '''
 
@@ -2684,8 +2747,8 @@ def sub(i: list):
 def mul(i: list):
     '''
     (*,x1,x2,...)
-    
-    Multiply two or more numbers. (Aliases: mul, × [multiplication sign, 
+
+    Multiply two or more numbers. (Aliases: mul, × [multiplication sign,
     not letter X])
     '''
 
@@ -2697,10 +2760,10 @@ def mul(i: list):
 def truediv(i: list):
     '''
     (/,x1,x2,...)
-    
-    Divide two or more numbers. Do not round the result. The result will 
-    always be a floating-point number. 
-    
+
+    Divide two or more numbers. Do not round the result. The result will
+    always be a floating-point number.
+
     (Aliases: truediv, ÷)
     '''
 
@@ -2717,10 +2780,10 @@ def truediv(i: list):
 def floordiv(i: list):
     '''
     (//,x1,x2,...)
-    
-    Integer division: divide two or more numbers, then round the result down 
-    to the nearest integer. 
-    
+
+    Integer division: divide two or more numbers, then round the result down
+    to the nearest integer.
+
     (Aliases: floordiv, div)
     '''
 
@@ -2738,8 +2801,8 @@ def mod(i: list):
     '''
     (%,x1,x2,...)
 
-    Modulo: divide two or more numbers and return the remainder. 
-    
+    Modulo: divide two or more numbers and return the remainder.
+
     (Alias: mod)
     '''
 
@@ -2757,9 +2820,9 @@ def pow_(i: list):
     '''
     (^,x1,x2,...)
 
-    Raise one number to the power of another. Technically you *can* add x3, x4, 
-    etc but it'll make the program crash/freeze VERY quickly. 
-    
+    Raise one number to the power of another. Technically you *can* add x3, x4,
+    etc but it'll make the program crash/freeze VERY quickly.
+
     (Aliases: pow, **)
     '''
 
@@ -2767,11 +2830,11 @@ def pow_(i: list):
         return i[1] ** i[2]
     # But if there are 3 or more arguments (x1, x2, x3)...
     return i[1] ** pow_([i[0]] + i[2:])
-    
+
 def log(i: list):
     '''
     (log 42<x> 10[base])
-    
+
     Logarithm of x. Defaults to a logarithm base of 10, i.e. 10^(ans) = x.
 
     — OR —
@@ -2820,25 +2883,25 @@ def max_(i: list):
         return max(i[1])
     else:
         return max(i[1:])
-    
+
 def round_(i: list):
     '''
-    (round,1.2<x>,$_false[decPlaces]) 
-    
-    Round using standard mathematical rules. This is a wrapper around Python's 
-    built-in function of the same name, so there may be some weird edge cases. 
-    If an int is given for decPlaces, return a float rounded to that many 
-    decimal places. (Negative integers allow you to round to higher place 
-    values; e.g. -1 = round to tens place). If decPlaces is not given or is 
+    (round,1.2<x>,$_false[decPlaces])
+
+    Round using standard mathematical rules. This is a wrapper around Python's
+    built-in function of the same name, so there may be some weird edge cases.
+    If an int is given for decPlaces, return a float rounded to that many
+    decimal places. (Negative integers allow you to round to higher place
+    values; e.g. -1 = round to tens place). If decPlaces is not given or is
     set to a non-integer value, return an int.
     '''
 
     decPlaces = i[2]
-    # Turn all non-int values for decPlaces into "None" 
+    # Turn all non-int values for decPlaces into "None"
     # so Python processes it correctly
     if not isinstance(decPlaces, int):
         decPlaces = None
-    
+
     return round(i[1], decPlaces)
 
 # END MATH SUBCOMMANDS
@@ -2849,12 +2912,12 @@ def get(i: list):
     '''
     (get,$x<seq>,0<index>)
 
-    Returns the item at index 0 of the given list/string. The first item has 
-    index 0, second item has index 1, etc., unless you change the index_from 
-    flag. In addition, index -1 is the last item, -2 is the second-to-last 
+    Returns the item at index 0 of the given list/string. The first item has
+    index 0, second item has index 1, etc., unless you change the index_from
+    flag. In addition, index -1 is the last item, -2 is the second-to-last
     item, etc.
     '''
-    
+
     seq = i[1]
     index = i[2]
 
@@ -2867,7 +2930,7 @@ def get(i: list):
         # else
         return seq[index]
     # elif index >= 0
-    # Adjust index based on index_from flag 
+    # Adjust index based on index_from flag
     # so it follows Python's index-from-0 rules
     normalized_index = index - flags['index_from']
     if normalized_index < 0 or normalized_index >= len(seq):
@@ -2881,9 +2944,9 @@ def get(i: list):
 def slice_(i: list):
     '''
     (slice,$s<seq>,0<start>,2[stop],1[step])
-    
-    Returns a sublist of the given list. Omitting the stop value 
-    means slice the entire rest of the list. Entering a step value 
+
+    Returns a sublist of the given list. Omitting the stop value
+    means slice the entire rest of the list. Entering a step value
     greater than 1 means only include every Xth item of the list.
     '''
     seq : abc.Sequence = i[0]
@@ -2906,7 +2969,7 @@ def slice_(i: list):
     if start >= 0:
         start -= flags['index_from']
     # Negative start values stay as is
-        
+
     # Normalize stop
     if stop is not None:
         if flags['closed_ranges']:
@@ -2924,8 +2987,8 @@ def slice_(i: list):
 def find(i: list):
     '''
     (find "Hello"<seq> "l"<item> 0[start] ()[stop])
-    
-    Return the index of the first occurrence of item/substring `item` in the 
+
+    Return the index of the first occurrence of item/substring `item` in the
     list/string `seq`. Return -1 if `item` couldn't be found anywhere in `seq`.
     Use `start` and `stop` arguments to only search a subset of the sequence.
     '''
@@ -2951,17 +3014,19 @@ def find(i: list):
 def sort(i: list):
     '''
     (sort $l<list> ""[key] [keyArg2] [keyArg3]...)
-    
-    Returns a sorted version of the list l, in ascending order according to Python's built-in Timsort algorithm. The function will return a new list, and will not modify the contents of the last you pass in. 
 
-    The optional `key` argument lets you specify a subcommand to apply some 
-    operation to values before sorting them. For example, if key="lower" when 
-    sorting a list of strings, then the converter will sort alphabetically and 
-    ignore case (otherwise, it'll sort by Unicode codepoint, which may lead to 
-    unexpected results). And if key="lightness" for a list of colors, it'll 
+    Returns a sorted version of the list l, in ascending order according to
+    Python's built-in Timsort algorithm. The function will return a new list,
+    and will not modify the contents of the last you pass in.
+
+    The optional `key` argument lets you specify a subcommand to apply some
+    operation to values before sorting them. For example, if key="lower" when
+    sorting a list of strings, then the converter will sort alphabetically and
+    ignore case (otherwise, it'll sort by Unicode codepoint, which may lead to
+    unexpected results). And if key="lightness" for a list of colors, it'll
     sort from darkest to lightest.
 
-    The key function can even have multiple arguments; for example, if $l is a 
+    The key function can even have multiple arguments; for example, if $l is a
     list of lists, (sort $l get 0) will sort by the first item of each sub-list.
     '''
     if version_gte(7,6) and isinstance(i[1], str):
@@ -2979,9 +3044,9 @@ def sort(i: list):
 def range_(i: list):
     '''
     (range,0[start],10<stop>,1[step])
-    
-    Returns a list consisting of a sequence of numbers counting from `start` 
-    to `stop`, and counting up by `step` every time. Unlike Python's range 
+
+    Returns a list consisting of a sequence of numbers counting from `start`
+    to `stop`, and counting up by `step` every time. Unlike Python's range
     function, any of the arguments can be floats too.
     '''
     if len(i) == 2:
@@ -2992,8 +3057,8 @@ def range_(i: list):
     start : Num = i[1]
     stop : Num = i[2]
     step : Num = i[3]
-    
-    # If start or step are floats, make every element of the returned list be 
+
+    # If start or step are floats, make every element of the returned list be
     # a float for consistency
     # (Don't care if stop is a float because it's just used in conditionals)
     if isinstance(start,float) or isinstance(step,float):
@@ -3002,12 +3067,12 @@ def range_(i: list):
         step = float(step)
 
     # Make sure stop is actually reachable.
-    # If the signs of (stop - start) and step are DIFFERENT, 
+    # If the signs of (stop - start) and step are DIFFERENT,
     # then stop is unreachable and we throw a warning.
     if (stop - start) * step < 0:
         log_warning('f{i[0]}: unreachable stop condition')
         return []
-        
+
     # Build out the list
     n = start
     l = []
@@ -3032,10 +3097,10 @@ def range_(i: list):
 def titlecase(i: list):
     '''
     (titlecase,"hello world"<str>)
-    
-    Convert string to title case (first letter of each word capitalized; 
-    rest of word lowercase). This isn't a "true" title case, because short 
-    words like "a", "of", or "the" are still capitalized. Python has a similar 
+
+    Convert string to title case (first letter of each word capitalized;
+    rest of word lowercase). This isn't a "true" title case, because short
+    words like "a", "of", or "the" are still capitalized. Python has a similar
     function, but it's buggy so I made my own.
     '''
     str__ = i[1]
@@ -3054,9 +3119,9 @@ def titlecase(i: list):
 
 def join(i: list):
     '''
-    (join (list "Hello" "World" 123)<list> ""[sep]) 
-    
-    Combine the contents of `list` into one string, with each item 
+    (join (list "Hello" "World" 123)<list> ""[sep])
+
+    Combine the contents of `list` into one string, with each item
     separated by `sep` (or nothing if no separator given, as in the example).
     '''
     strList : list = [str(j) for j in i[1]]
@@ -3067,13 +3132,13 @@ def join(i: list):
 
 def split(i: list):
     '''
-    (split,"Hello World"<str>,""[sep],-1[maxSplit]) 
-    
-    Split the string `str` into a list of substrings. By default (or if `sep` 
-    is an empty string), the interpreter will split at every sequence of 
-    whitespace; otherwise, it will split every time the substring `sep` is 
-    reached. `maxSplit` is the maximum number of splits that will be done 
-    (i.e. the length of the resulting list will always be ≤ (maxSplit+1)); 
+    (split,"Hello World"<str>,""[sep],-1[maxSplit])
+
+    Split the string `str` into a list of substrings. By default (or if `sep`
+    is an empty string), the interpreter will split at every sequence of
+    whitespace; otherwise, it will split every time the substring `sep` is
+    reached. `maxSplit` is the maximum number of splits that will be done
+    (i.e. the length of the resulting list will always be ≤ (maxSplit+1));
     the default value -1 means no limit.
     '''
     string : str = i[1]
@@ -3092,20 +3157,20 @@ def split(i: list):
 def int_(i: list):
     '''
     (int,1.5)
-    
+
     Convert a value to integer format, if possible.
 
     — OR —
 
     (int,"0f"<value>,16[base])
-    
-    Only for string values: you can specify the base the string is in 
+
+    Only for string values: you can specify the base the string is in
     (from 2-36), and it'll convert it correctly.
     '''
 
     try:
         # Special case: convert string in different base
-        if len(i) >= 2 and type(i[1]) == str:
+        if len(i) >= 2 and isinstance(i[1], str):
             return int(i[1], i[2])
         else:
             return int(i[1])
@@ -3126,7 +3191,7 @@ def float_(i: list):
         log_warning(f'{i[0]}: couldn’t convert {i[1]} to float type')
         return 0.0
 
-def str_(i: list): 
+def str_(i: list):
     '''
     (str,1)
 
@@ -3134,9 +3199,9 @@ def str_(i: list):
 
     (str,"Hello"<x1>,"World"[x2],1[x3],...)
 
-    Convert the argument(s) to a string. If more than one argument is passed 
+    Convert the argument(s) to a string. If more than one argument is passed
     in, they will each be converted to strings, then concatenated together.
-    The result of the example will be "HelloWorld1" (with no spaces in between 
+    The result of the example will be "HelloWorld1" (with no spaces in between
     because neither string had a space in it). (aliases: string, str+, str_add)
 
     This used to be two separate commands, str/string (for 1 arg) and
@@ -3179,10 +3244,10 @@ def bool_(i: list):
 def hex_(i: list):
     '''
     (hex 17<x> #_t[prefix])
-    
-    Return hexadecimal string representation of x. `prefix` determines whether 
-    to include the "0x" prefix at the start of the string. You can also set 
-    `prefix` to a string to add a custom prefix. 
+
+    Return hexadecimal string representation of x. `prefix` determines whether
+    to include the "0x" prefix at the start of the string. You can also set
+    `prefix` to a string to add a custom prefix.
     Ex: (hex 17) => "0x11", (hex 255 "#") => "#0000ff"
     '''
 
@@ -3191,7 +3256,7 @@ def hex_(i: list):
         prefix = True
     hex_str = hex(x)
 
-    if type(i[2]) == str:
+    if isinstance(i[2], str):
         prefix = i[2]
         return prefix+hex_str
     else:
@@ -3201,10 +3266,10 @@ def hex_(i: list):
 def bin_(i: list):
     '''
     (bin 7<x> #_t[prefix])
-    
-    Return binary string representation of x. `prefix` determines whether to 
-    include the "0b" prefix at the start of the string. You can also set 
-    `prefix` to a string to add a custom prefix. 
+
+    Return binary string representation of x. `prefix` determines whether to
+    include the "0b" prefix at the start of the string. You can also set
+    `prefix` to a string to add a custom prefix.
     Ex: (bin 7) => "0b111"
     '''
 
@@ -3213,7 +3278,7 @@ def bin_(i: list):
         prefix = True
     bin_str = bin(x)
 
-    if type(i[2]) == str:
+    if isinstance(i[2], str):
         prefix = i[2]
         return prefix+bin_str
     else:
@@ -3222,9 +3287,9 @@ def bin_(i: list):
 
 def type_(i: list):
     '''
-    (type,$x<data>) 
+    (type,$x<data>)
 
-    Returns the data type of the given variable (or literal), as a string. 
+    Returns the data type of the given variable (or literal), as a string.
     Possible types: "int", "float", "str", "bool", "list", "color", "null"
     '''
 
@@ -3256,8 +3321,8 @@ def color_(i: list):
     '''
     (color,"#ff0000"<hex>)
 
-    Define a color based on a *string* consisting of a "#" followed by 6 or 8 
-    hexademical numbers. Hex codes can be in the format #RRGGBB or #AARRGGBB 
+    Define a color based on a *string* consisting of a "#" followed by 6 or 8
+    hexademical numbers. Hex codes can be in the format #RRGGBB or #AARRGGBB
     (e.g. "#80ffff00" will be a 50% transparent yellow).
 
     — OR —
@@ -3268,8 +3333,8 @@ def color_(i: list):
 
     — OR —
 
-    (color,n00) 
-    
+    (color,n00)
+
     Define a color from the NES palette (Nestopia's 15° Canonical palette to
     be exact). Colors are numbered in hexadecimal from n00 to n3f.
     '''
@@ -3297,12 +3362,12 @@ def rgb(i: list):
 
     (rgba,(list,255,128,0[,255])<list>)
 
-    Returns a Color based on red, green, blue, and (optional) alpha values. 
+    Returns a Color based on red, green, blue, and (optional) alpha values.
     (alias: rgb)
     '''
 
     # Special case: first (and presumably only) argument has `list` type
-    if type(i[1]) == list:
+    if isinstance(i[1], list):
         if len(i[1]) == 3: # no alpha included
             return Color(i[1][0], i[1][1], i[1][2], 255)
         elif len(i[1]) >= 4:
@@ -3331,18 +3396,18 @@ more items')
 def hsl(i: list):
     '''
     (hsla,0<hue: 0 to 359>,100<saturation: 0 to 100>,50<lightness: 0 to 100>,
-        255[alpha: 0 to 255]) 
+        255[alpha: 0 to 255])
 
     — OR —
 
     (hsla,(list,255,128,0[,255])<list>)
 
-    Define a color based on the hue/saturation/lightness (or luminosity) model, 
+    Define a color based on the hue/saturation/lightness (or luminosity) model,
     plus optional alpha. (Alias: hsl)
     '''
 
     # Special case: first (and presumably only) argument has `list` type
-    if type(i[1]) == list:
+    if isinstance(i[1], list):
         if len(i[1]) == 3: # no alpha included
             rgba = hsla_to_rgba([i[1][0], i[1][1], i[1][2], 255])
             return Color(rgba[0], rgba[1], rgba[2], rgba[3])
@@ -3374,15 +3439,15 @@ more items')
 def getpixel(i: list, base_image: PIL.Image.Image):
     '''
     getpixel,new[image],0<x>,0<y>
-    
-    Returns Color object of the color at the given (x,y) position 
+
+    Returns Color object of the color at the given (x,y) position
     on the given image.
     '''
 
-    # If image name is given at arg1, set base_image to that. 
+    # If image name is given at arg1, set base_image to that.
     # Otherwise, keep base_image as is and insert an empty string so the
     # remaining arguments are in a consistent position.
-    if type(i[1]) == str:
+    if isinstance(i[1], str):
         if i[1] in images:
             base_image = images[i[1]]
         else:
@@ -3397,14 +3462,14 @@ def getpixel(i: list, base_image: PIL.Image.Image):
     y : int = i[3]
 
     rgba_list = getrgba([i[0], i[1], x, y], base_image)
-    return Color(rgba_list[0], rgba_list[1], rgba_list[2], 
+    return Color(rgba_list[0], rgba_list[1], rgba_list[2],
                  rgba_list[3]) # create color type from that RGBA list
 
 def pal_get(i: list, base_image: PIL.Image.Image):
     '''
     pal.get 0[x] 0[y] 0[width] 0[height]
-    
-    Return a list of all colors in the area/image. Follows filter rules for 
+
+    Return a list of all colors in the area/image. Follows filter rules for
     omitted arguments.
     '''
     # For filters, if no x or y specified, apply filter to whole image
@@ -3429,7 +3494,7 @@ def pal_get(i: list, base_image: PIL.Image.Image):
     all_colors : List[Tuple[int,ColorArray]] \
             = region.getcolors(maxcolors=width*height) # type:ignore
     rgba_list = [i[1] for i in all_colors]
-    return [Color(rgba_list[i][0], rgba_list[i][1], rgba_list[i][2], 
+    return [Color(rgba_list[i][0], rgba_list[i][1], rgba_list[i][2],
                   rgba_list[i][3]) for i in range(len(rgba_list))]
 
 # END COLOR TYPE SUBCOMMANDS
@@ -3438,21 +3503,21 @@ def pal_get(i: list, base_image: PIL.Image.Image):
 
 def empty(i: list, open_image: PIL.Image.Image):
     '''
-    (empty old[image] 0<x> 0<y> 16[width] 16[height]) 
+    (empty old[image] 0<x> 0<y> 16[width] 16[height])
 
     — OR —
 
     (empty (rgb 255 128 0)<color>)
-    
-    True if the area on the given image (by default "old") is completely empty 
+
+    True if the area on the given image (by default "old") is completely empty
     (every pixel is transparent), False otherwise.
 
-    Note that unlike the Color Info Subcommands, this defaults to the old 
+    Note that unlike the Color Info Subcommands, this defaults to the old
     image, not the new one.
     '''
 
     # Special case: first (and presumably only) argument has color type
-    if type(i[1]) == Color:
+    if isinstance(i[1], Color):
         return i[1].alpha == 0
 
     # If not special case, check arg count *again*
@@ -3461,10 +3526,10 @@ def empty(i: list, open_image: PIL.Image.Image):
 or x & y values')
         return
 
-    # If image name is given at arg1, set base_image to that. 
+    # If image name is given at arg1, set base_image to that.
     # Otherwise, keep base_image as is and insert an empty string so the
     # remaining arguments are in a consistent position.
-    if type(i[1]) == str:
+    if isinstance(i[1], str):
         if i[1] in images:
             open_image = images[i[1]]
         else:
@@ -3504,13 +3569,13 @@ def getrgba(i: list, base_image: PIL.Image.Image):
     — OR —
 
     (getrgba,(rgb,255,128,0)<color>)
-    
+
     Return a list consisting of the [red, green, blue, alpha] values of a
     Color object, pixel, or area of pixels.
     '''
 
     # Special case: first (and presumably only) argument has color type
-    if type(i[1]) == Color:
+    if isinstance(i[1], Color):
         return [i[1].red, i[1].green, i[1].blue, i[1].alpha]
 
     # If not special case, check arg count *again*
@@ -3519,10 +3584,10 @@ def getrgba(i: list, base_image: PIL.Image.Image):
 or x & y values.')
         return [0,0,0,0]
 
-    # If image name is given at arg1, set base_image to that. 
+    # If image name is given at arg1, set base_image to that.
     # Otherwise, keep base_image as is and insert an empty string so the
     # remaining arguments are in a consistent position.
-    if type(i[1]) == str:
+    if isinstance(i[1], str):
         if i[1] in images:
             base_image = images[i[1]]
         else:
@@ -3575,14 +3640,14 @@ def gethsla(i: list, base_image: PIL.Image.Image):
     — OR —
 
     (gethsla,(rgb,255,128,0)<color>)
-    
-    Return a list consisting of the [hue, saturation, lightness, alpha] values 
+
+    Return a list consisting of the [hue, saturation, lightness, alpha] values
     of a Color object or pixel. Does NOT support averaging an area of pixels
     because that concept simply doesn't make sense given that hue is a circle.
     '''
 
     # Special case: first (and presumably only) argument has color type
-    if type(i[1]) == Color:
+    if isinstance(i[1], Color):
         return [i[1].hue, i[1].saturation, i[1].lightness, i[1].alpha]
 
     # If not special case, check arg count *again*
@@ -3591,10 +3656,10 @@ def gethsla(i: list, base_image: PIL.Image.Image):
 or x & y values.')
         return
 
-    # If image name is given at arg1, set base_image to that. 
+    # If image name is given at arg1, set base_image to that.
     # Otherwise, keep base_image as is and insert an empty string so the
     # remaining arguments are in a consistent position.
-    if type(i[1]) == str:
+    if isinstance(i[1], str):
         if i[1] in images:
             base_image = images[i[1]]
         else:
@@ -3628,14 +3693,14 @@ def red_(i: list, base_image: PIL.Image.Image):
     '''
     (red,old[image],0<x>,0<y>,1[width],1[height])
 
-    Return the red value (from 0 to 255) of a single pixel. 
-    If width and height are given, take the average red value 
+    Return the red value (from 0 to 255) of a single pixel.
+    If width and height are given, take the average red value
     over the given rectangle.
     If a Color object is given, return its "red" attribute.
     '''
 
     # Special case: first (and presumably only) argument has color type
-    if type(i[1]) == Color:
+    if isinstance(i[1], Color):
         return i[1].red
 
     # If not special case, check arg count *again*
@@ -3644,10 +3709,10 @@ def red_(i: list, base_image: PIL.Image.Image):
 or x & y values.')
         return
 
-    # If image name is given at arg1, set base_image to that. 
+    # If image name is given at arg1, set base_image to that.
     # Otherwise, keep base_image as is and insert an empty string so the
     # remaining arguments are in a consistent position.
-    if type(i[1]) == str:
+    if isinstance(i[1], str):
         if i[1] in images:
             base_image = images[i[1]]
         else:
@@ -3687,14 +3752,14 @@ def green_(i: list, base_image: PIL.Image.Image):
     '''
     (green,old[image],0<x>,0<y>,1[width],1[height])
 
-    Return the green value (from 0 to 255) of a single pixel. 
-    If width and height are given, take the average green value 
+    Return the green value (from 0 to 255) of a single pixel.
+    If width and height are given, take the average green value
     over the given rectangle.
     If a Color object is given, return its "green" attribute.
     '''
 
     # Special case: first (and presumably only) argument has color type
-    if type(i[1]) == Color:
+    if isinstance(i[1], Color):
         return i[1].green
 
     # If not special case, check arg count *again*
@@ -3703,10 +3768,10 @@ def green_(i: list, base_image: PIL.Image.Image):
 or x & y values.')
         return
 
-    # If image name is given at arg1, set base_image to that. 
+    # If image name is given at arg1, set base_image to that.
     # Otherwise, keep base_image as is and insert an empty string so the
     # remaining arguments are in a consistent position.
-    if type(i[1]) == str:
+    if isinstance(i[1], str):
         if i[1] in images:
             base_image = images[i[1]]
         else:
@@ -3746,14 +3811,14 @@ def blue_(i: list, base_image: PIL.Image.Image):
     '''
     (blue,old[image],0<x>,0<y>,1[width],1[height])
 
-    Return the blue value (from 0 to 255) of a single pixel. 
-    If width and height are given, take the average blue value 
+    Return the blue value (from 0 to 255) of a single pixel.
+    If width and height are given, take the average blue value
     over the given rectangle.
     If a Color object is given, return its "blue" attribute.
     '''
 
     # Special case: first (and presumably only) argument has color type
-    if type(i[1]) == Color:
+    if isinstance(i[1], Color):
         return i[1].blue
 
     # If not special case, check arg count *again*
@@ -3762,10 +3827,10 @@ def blue_(i: list, base_image: PIL.Image.Image):
 or x & y values.')
         return
 
-    # If image name is given at arg1, set base_image to that. 
+    # If image name is given at arg1, set base_image to that.
     # Otherwise, keep base_image as is and insert an empty string so the
     # remaining arguments are in a consistent position.
-    if type(i[1]) == str:
+    if isinstance(i[1], str):
         if i[1] in images:
             base_image = images[i[1]]
         else:
@@ -3790,7 +3855,7 @@ Defaulting to “old”.')
     if width <= 1 and height <= 1:
         rgba = safe_pil_getpixel(i[0], base_image, (x, y))
         return rgba[2]
-    
+
     # else
     avg = 0 # Average BLUE value of region
 
@@ -3806,17 +3871,17 @@ def alpha_(i: list, base_image: PIL.Image.Image):
     '''
     (alpha,old[image],0<x>,0<y>,1[width],1[height])
 
-    Return the alpha value (from 0 to 255) of a single pixel. 
-    If width and height are given, take the average alpha value 
+    Return the alpha value (from 0 to 255) of a single pixel.
+    If width and height are given, take the average alpha value
     over the given rectangle.
     If a Color object is given, return its "alpha" attribute.
 
-    This is for GETTING the alpha/opacity value (from 0 to 255). 
+    This is for GETTING the alpha/opacity value (from 0 to 255).
     For applying a transparency filter, use "opacity".
     '''
 
     # Special case: first (and presumably only) argument has color type
-    if type(i[1]) == Color:
+    if isinstance(i[1], Color):
         return i[1].alpha
 
     # If not special case, check arg count *again*
@@ -3825,10 +3890,10 @@ def alpha_(i: list, base_image: PIL.Image.Image):
 or x & y values.')
         return
 
-    # If image name is given at arg1, set base_image to that. 
+    # If image name is given at arg1, set base_image to that.
     # Otherwise, keep base_image as is and insert an empty string so the
     # remaining arguments are in a consistent position.
-    if type(i[1]) == str:
+    if isinstance(i[1], str):
         if i[1] in images:
             base_image = images[i[1]]
         else:
@@ -3869,14 +3934,14 @@ def hue(i: list, base_image: PIL.Image.Image):
     '''
     (hue,old[image],0<x>,0<y>,1[width],1[height])
 
-    Return the hue value (from 0 to 359) of a single pixel. 
-    If width and height are given, take the average value 
+    Return the hue value (from 0 to 359) of a single pixel.
+    If width and height are given, take the average value
     over the given rectangle.
     If a Color object is given, return its "hue" attribute.
     '''
 
     # Special case: first (and presumably only) argument has color type
-    if type(i[1]) == Color:
+    if isinstance(i[1], Color):
         return i[1].hue
 
     # If not special case, check arg count *again*
@@ -3885,10 +3950,10 @@ def hue(i: list, base_image: PIL.Image.Image):
 or x & y values.')
         return
 
-    # If image name is given at arg1, set base_image to that. 
+    # If image name is given at arg1, set base_image to that.
     # Otherwise, keep base_image as is and insert an empty string so the
     # remaining arguments are in a consistent position.
-    if type(i[1]) == str:
+    if isinstance(i[1], str):
         if i[1] in images:
             base_image = images[i[1]]
         else:
@@ -3929,14 +3994,14 @@ def saturation(i: list, base_image: PIL.Image.Image):
     '''
     (saturation,old[image],0<x>,0<y>,1[width],1[height])
 
-    Return the HSL saturation value (from 0 to 100) of a single pixel. 
-    If width and height are given, take the average value 
+    Return the HSL saturation value (from 0 to 100) of a single pixel.
+    If width and height are given, take the average value
     over the given rectangle.
     If a Color object is given, return its "saturation" attribute.
     '''
 
     # Special case: first (and presumably only) argument has color type
-    if type(i[1]) == Color:
+    if isinstance(i[1], Color):
         return i[1].saturation
 
     # If not special case, check arg count *again*
@@ -3945,10 +4010,10 @@ def saturation(i: list, base_image: PIL.Image.Image):
 or x & y values.')
         return
 
-    # If image name is given at arg1, set base_image to that. 
+    # If image name is given at arg1, set base_image to that.
     # Otherwise, keep base_image as is and insert an empty string so the
     # remaining arguments are in a consistent position.
-    if type(i[1]) == str:
+    if isinstance(i[1], str):
         if i[1] in images:
             base_image = images[i[1]]
         else:
@@ -3989,14 +4054,14 @@ def lightness(i: list, base_image: PIL.Image.Image):
     '''
     (lightness,old[image],0<x>,0<y>,1[width],1[height])
 
-    Return the HSL lightness (luminosity) value (from 0 to 100) 
-    of a single pixel. If width and height are given, 
+    Return the HSL lightness (luminosity) value (from 0 to 100)
+    of a single pixel. If width and height are given,
     take the average value over the given rectangle.
     If a Color object is given, return its "lightness" attribute.
     '''
 
     # Special case: first (and presumably only) argument has color type
-    if type(i[1]) == Color:
+    if isinstance(i[1], Color):
         return i[1].lightness
 
     # If not special case, check arg count *again*
@@ -4005,10 +4070,10 @@ def lightness(i: list, base_image: PIL.Image.Image):
 or x & y values.')
         return
 
-    # If image name is given at arg1, set base_image to that. 
+    # If image name is given at arg1, set base_image to that.
     # Otherwise, keep base_image as is and insert an empty string so the
     # remaining arguments are in a consistent position.
-    if type(i[1]) == str:
+    if isinstance(i[1], str):
         if i[1] in images:
             base_image = images[i[1]]
         else:
@@ -4067,7 +4132,7 @@ def height_(i: list) -> int:
 ###########################################################################
 #### LANGUAGE HELPER FUNCTIONS ############################################
 ###########################################################################
-    
+
 def subst_all_vars(cmd: list):
     '''
     Substitute all variable names with their values, in a given command
@@ -4080,21 +4145,21 @@ def subst_all_vars(cmd: list):
 
 def subst_var(ref:Any, cmd_name='', mutable=False) -> Any:
     '''
-    Given a variable reference, return its value. If there is no 
+    Given a variable reference, return its value. If there is no
     variable with that name, log a warning and treat its value as `None`.
 
     The `cmd` argument is only used for error messages if the variable
     is not defined.
 
     By default, this function returns a COPY of lists, which is always the
-    intended behavior in `$var` calls in scripts. 
+    intended behavior in `$var` calls in scripts.
 
     However, certain list commands need an editable version of the list,
     so you can set the `mutable` argument to `True` to get that.
     In fact, this function will silently refuse to substitute SetVar objects
     unless you do that.
     '''
-    if type(ref) == Var or (type(ref) == SetVar and mutable):
+    if isinstance(ref, Var) or (isinstance(ref, SetVar) and mutable):
         var_name : str = ref.name
         if var_check(ref, cmd_name, exists=True):
             if (isinstance(variables[var_name], list) and not mutable) \
@@ -4113,11 +4178,11 @@ def subst_var(ref:Any, cmd_name='', mutable=False) -> Any:
     # if it's not a variable reference, just return the value passed in
     return ref
 
-def var_check(v: Union[Var, SetVar], cmd_name='Variable error', *, 
+def var_check(v: Union[Var, SetVar], cmd_name='Variable error', *,
               exists:Optional[bool]=None, internal=False):
     '''
     Variable name validity check for all commands that set or change variables.
-    
+
     Takes in a Var or SetVar. For Var, "valid" = "can access the variable".
     For SetVar, "valid" = "can access or set", unless internal is True,
     in which case "valid" = "can access".
@@ -4133,13 +4198,13 @@ def var_check(v: Union[Var, SetVar], cmd_name='Variable error', *,
     '''
 
     read_write = None
-    if type(v) is Var:
+    if isinstance(v, Var):
         read_write = False
         var_name = v.name
-    elif type(v) is SetVar:
+    elif isinstance(v, SetVar):
         read_write = True
         var_name = v.name
-    elif type(v) is str:
+    elif isinstance(v, str):
         var_name = v
     else:
         # If someone tries to set a number or something
@@ -4158,7 +4223,7 @@ Variable names must start with a dollar sign.')
         log_warning(f'{cmd_name}: Invalid variable name {var_name}. \
 Variable names must be at least 1 character long.')
         return False
-    
+
     # Cannot set constants (not even internally)
     if read_write and var_name in variables['$__constants']:
         log_warning(f'{cmd_name}: Cannot set {var_name}, as it has \
@@ -4187,7 +4252,7 @@ are private and cannot be accessed by scripts.')
             log_warning(f'{cmd_name}: Invalid variable name {var_name}. \
 Variable names can only contain ASCII letters, numbers, and underscores.')
             return False
-        
+
     # Existence check as appropriate
     if exists is True:
         return var_name in variables
@@ -4387,8 +4452,7 @@ def arg_check(cmd: list, is_subcmd: bool):
 
     # Same check for commands and subcommands
     if len(cmd) <= min_args:
-        log_warning('%s: command requires at least \
-%d arguments' % (cmd[0], min_args))
+        log_warning(f'{cmd[0]}: command requires at least {min_args} arguments')
         if is_subcmd:
             cmd = ['null'] + cmd
         elif cmd[0] in block_starts:
@@ -4402,9 +4466,9 @@ def py_method(i: list, method: str):
     '''
     Higher-order function that handles any command that's just a wrapper
     around some Python method, especially a method to mutate objects in place.
-    
+
     Note that the `method` argument must be a string. Only include the name
-    of the method, not the object. The method will be called on i[1]. 
+    of the method, not the object. The method will be called on i[1].
     If i[2] and i[3] exist, they will be passed as arguments to the method.
     (Examples: "append", "__iadd__" [i.e. +=])
 
@@ -4418,7 +4482,7 @@ def py_method(i: list, method: str):
         log_warning(f'{i[0]}: Need at least 1 argument (a variable) \
 to call a method on it')
         return
-    
+
     # else
     varRef = i[1]
     # Normally a SetVar but not always (`count` cmd is an exception)
@@ -4499,7 +4563,7 @@ def format_hsla(color: List[Num]):
     # to pass in an alpha — the function will still run.
     return color
 
-def safe_pil_getpixel(cmd_name:str, img:PIL.Image.Image, 
+def safe_pil_getpixel(cmd_name:str, img:PIL.Image.Image,
                       xy_tuple:Tuple[int,int]) -> ColorArray:
     """
     Basically calls PIL's getpixel and then does some type-checking, before
@@ -4531,7 +4595,7 @@ def cls():
         child.place_forget()
 
 def button_dialog(title:str, message:Union[str, List[str]],
-                  buttons:Tuple[str, ...]=('Cancel', 'Okay'), *, 
+                  buttons:Tuple[str, ...]=('Cancel', 'Okay'), *,
                   icon:Optional[str]=None):
     '''
     Displays a dialog box with one or more buttons to the user. Holds until the
@@ -4557,7 +4621,7 @@ def button_dialog(title:str, message:Union[str, List[str]],
 
     next_y = 0
     if title:
-        dialog_title = Label(main_frame, text=str(title), font=f_heading, 
+        dialog_title = Label(main_frame, text=str(title), font=f_heading,
                 justify='left', bg=colors['UI_BG'])
         dialog_title.place(x=0, y=0)
         # If there’s title text, leave space so msg_text doesn't cover it up
@@ -4565,20 +4629,23 @@ def button_dialog(title:str, message:Union[str, List[str]],
 
     dialog_message = []
     # Failsafe in case message is in an invalid format
-    if not isinstance(message, list) and not isinstance(message, str): 
+    if not isinstance(message, list) and not isinstance(message, str):
         message = str(message)
     # Convert to list if message is only one line / a string
-    if isinstance(message, str): 
+    if isinstance(message, str):
         message = [message]
 
     for index, item in enumerate(message):
-        dialog_message.append(Label(main_frame, text=item, justify='left', 
+        dialog_message.append(Label(main_frame, text=item, justify='left',
                 wraplength=470, bg=colors['UI_BG']))
 
-        # Apply bold styling as needed
+        # Apply styling as needed
         if item.startswith('<b>'):
-            dialog_message[-1].config(font=f_bold, 
+            dialog_message[-1].config(font=f_bold,
                                       text=item[3:]) # strip <b> tag
+        elif item.startswith('<i>'):
+            dialog_message[-1].config(font=f_italic,
+                                      text=item[3:]) # strip <i> tag
 
         # Shorten wrapping if dialog box has icon, so text doesn’t cover it
         if icon and next_y < 100:
@@ -4587,13 +4654,13 @@ def button_dialog(title:str, message:Union[str, List[str]],
         dialog_message[index].place(x=0, y=next_y)
         next_y += dialog_message[-1].winfo_reqheight() + 4
 
-    # Reworked dialogs don't support bottom text 
+    # Reworked dialogs don't support bottom text
     # (it adds unnecessary complexity).
 
     button_objs = []
     for index, item in enumerate(buttons):
         # Create new button object
-        new_btn = Button(main_frame, text=item, 
+        new_btn = Button(main_frame, text=item,
                 highlightbackground=colors['UI_BG'],
                 command=lambda c=index: button_event(c))
         # Add to button obj list
@@ -4608,13 +4675,13 @@ def button_dialog(title:str, message:Union[str, List[str]],
         next_button_x -= 10 # a little extra space between buttons
 
     # Wait for user to click a button
-    while button_clicked == None:
+    while button_clicked is None:
         window.update()
     # Once we get here, a button has been clicked, so return the button's name
     return button_clicked
 
 def bool_dialog(title:str, message:Union[str, List[str]],
-                  button1='Cancel', button2='Okay', *, 
+                  button1='Cancel', button2='Okay', *,
                   icon:Optional[str]=None):
     '''
     Simplified version of button_dialog() that only allows 2 buttons and returns
@@ -4639,18 +4706,12 @@ def yn_dialog(title:str, message:Union[str, List[str]],
     else:
         return False
 
-def simple_dialog(title:str, message:Union[str, List[str]], 
+def simple_dialog(title:str, message:Union[str, List[str]],
                   button='Okay', *, icon:Optional[str]=None):
     '''
     Single-button dialog. Returns None.
     '''
     button_dialog(title, message, (button,), icon=icon)
-    
-def the_W():
-    simple_dialog('There’s a new bird among us', 
-                  'We will only be adding the W.',
-                  'Clear cache', icon='info')
-    menu()
 
 def log_warning(warn:str):
     ln = variables['$_linenumber']
@@ -4685,12 +4746,27 @@ def menu_p2():
 
     main_frame.update_idletasks()
 
+def skin_version_help():
+    simple_dialog('What version is my skin?', [
+'• Legacy1 (1.0.0–2.0.1) skins were part of the object sheet. They had 16×32 \
+Fire sprites and unused swim sprites.',
+'• Legacy2 (2.0.2–2.1.8) skins made Fire sprites 32×32 and were still part of \
+the obj sheet.',
+'• Legacy3 (2.1.9–3.5.7) used the same sprite positions as Legacy2, but on a \
+separate image. No fireballs, taunts, or swimming yet.',
+'• Legacy4 (3.5.8–4.1.7) / Remake added separate fireballs for each skin.',
+'• Legacy5 (4.1.8–6.x) added swim and taunt sprites.',
+'• Legacy7 (7.0.0–) is the upcoming skin sheet redesign. It has 24×24 Small \
+sprites and 32×32 Super sprites, and it’s  v e r y  w i d e .',
+], icon='info')
+    menu_p2()
+
 # Update the user on the progress of a large conversion task.
 def update_subhead(subhead):
     rounded_pct = round(current_num/(stop_num-start_num)*100, 1)
 
-    subhead = Label(main_frame, 
-        text=f'Now converting: file {current_num} ({rounded_pct}%)', 
+    subhead = Label(main_frame,
+        text=f'Now converting: file {current_num} ({rounded_pct}%)',
         justify='left', bg=colors['UI_BG'])
     subhead.place(x=0, y=36)
 
@@ -4702,11 +4778,11 @@ def update_subhead(subhead):
 
 def setup():
     #### INITIAL GUI SETUP ####
-    # setup is a separate function from menu() 
+    # setup is a separate function from menu()
     # because we only need to do everything here once
 
     # Place frames
-    main_frame.place(x=0, y=0) 
+    main_frame.place(x=0, y=0)
     footer_frame.place(x=0, y=320)
     # Note that all object positions are RELATIVE to their parent frame
 
@@ -4715,20 +4791,22 @@ def setup():
     back_btn.place(x=470, y=15, anchor=E)
     back_btn.bind('<Button-1>', lambda _: menu())
 
-    # check message of the day
+    # Put window on top
+    window.focus_force()
+    # Check message of the day
     motd()
 
-    # check if we need to install assets
+    # Check if we need to install assets
     need_assets = check_assets()
     if need_assets:
-        confirm_assets = bool_dialog('Setup', 
+        confirm_assets = bool_dialog('Setup',
 ['The program will now download the needed game images from the internet.',
 'Is this okay?'],
                 icon='question')
         if confirm_assets:
             install_assets()
         else:
-            simple_dialog('Warning', 
+            simple_dialog('Warning',
 ['While you can use the converter without downloading the images, some \
 conversions may not work properly.',
 'You can download the images at any time by going to Advanced/Custom → \
@@ -4740,47 +4818,8 @@ Update Game Images from the main menu.'], icon='warning')
 def menu():
     #### STEP 1: SELECT SCRIPT ####
     cls()
-
-    # PAGE 1
-
-    menu_btn_skin_l_l7.bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/skin_L_to_L7.s.txt'))
-    menu_btn_skin_d_l7.bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/skin_Dx32_to_L7.s.txt'))
-
-    menu_btn_page_next.bind('<ButtonRelease-1>', 
-            lambda _: menu_p2())
-
-    menu_btn_exit.bind('<ButtonRelease-1>', 
-            lambda _: exit_app())
-
-    # PAGE 2
-
-    menu_btn_skin_p_l7.bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/skin_P32_to_L7.s.txt'))
-    menu_btn_skin_d_l.bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/skin_Dx32_to_L.txt'))
-    menu_btn_skin_r_l.bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/skin_R_to_L.txt'))
-    menu_btn_map_l_ln.bind('<ButtonRelease-1>', 
-            lambda _: script_button('scripts/map_new.txt'))
-
-    menu_btn_custom.bind('<ButtonRelease-1>', 
-            lambda _: script_button(''))
-    menu_btn_submit.bind('<ButtonRelease-1>', 
-            lambda _: the_W())
-    menu_btn_multi.bind('<ButtonRelease-1>', 
-            lambda _: new_multi_event())
-    menu_btn_assets.bind('<ButtonRelease-1>', 
-            lambda _: install_assets())
-
-    menu_btn_page_prev.bind('<ButtonRelease-1>', 
-            lambda _: menu_p1())
-
     menu_p1()
-
     window.update()
-
     window.mainloop()
 
 # EVENT HANDLER for most menu buttons
@@ -4792,8 +4831,8 @@ def script_button(script_file:str=''):
             run_result = run_script()
 
             # If no files converted (legacy multi only)
-            while legacy_multi and run_result < 1: 
-                try_new_folder = yn_dialog('Warning', 
+            while legacy_multi and run_result < 1:
+                try_new_folder = yn_dialog('Warning',
 ['The converter finished its task without any errors, but no files were \
 converted.',
 'Most likely this is because you ran a batch conversion on an \
@@ -4813,9 +4852,9 @@ icon='warning')
 
 # SPECIAL EVENT HANDLER for new batch conversion
 def new_multi_event():
-    confirm1 = bool_dialog('Batch Conversion - Step 1: Select Script', 
+    confirm1 = bool_dialog('Batch Conversion - Step 1: Select Script',
 ['Want to convert an entire folder of images? You’ve come to the right place!',
- 'First, you’ll need to select the script file you want to run.'], 
+ 'First, you’ll need to select the script file you want to run.'],
             'Cancel', 'Continue', icon='info')
     if confirm1:
         open_result = open_script()
@@ -4832,8 +4871,8 @@ def new_multi_event():
                     run_result = run_script(new_multi=True)
 
                     # If no files converted
-                    while run_result < 1: 
-                        try_new_folder = yn_dialog('Warning', 
+                    while run_result < 1:
+                        try_new_folder = yn_dialog('Warning',
 ['The converter finished its task without any errors, but no files were \
 converted.',
 'Most likely this is because you ran a batch conversion on an \
@@ -4852,17 +4891,17 @@ icon='warning')
     menu()
 
 def alias(cmd: list, is_subcmd: bool):
-    ''' 
+    '''
     Takes in a command (in list form). If the command name is in the alias
-    database, change it to the standard name (e.g. else_if to elseif, 
+    database, change it to the standard name (e.g. else_if to elseif,
     ceiling to ceil, < to lt)
 
     Changes the command in place and returns nothing.
 
     This only covers pure command aliases, i.e. where the only difference
-    is the name. It doesn't cover e.g. copyAlt now being equivalent to 
+    is the name. It doesn't cover e.g. copyAlt now being equivalent to
     copyFrom,alt under the hood.
-    ''' 
+    '''
 
     # So we only have to check length once
     if len(cmd) < 1:
@@ -4898,7 +4937,7 @@ def alias(cmd: list, is_subcmd: bool):
             'default_from': 'defaultfrom',
             'delete': 'clear', # deprecated in v6.0
             'dup': 'duplicate',
-            
+
             'filter.grayscale': 'grayscale',
             'filter.invert': 'invert',
             'colorfilter': 'rgbfilter',
@@ -4964,12 +5003,12 @@ def alias(cmd: list, is_subcmd: bool):
             'str*': 'str_mul',
             'uppercase': 'upper',
             'lowercase': 'lower',
-            
+
             'string': 'str',
             'str_add': 'str',
             'str+': 'str',
             'boolean': 'bool',
-            
+
             'rgb': 'rgba',
             'hsl': 'hsla',
 
@@ -4984,7 +5023,7 @@ def alias(cmd: list, is_subcmd: bool):
         if version_gte(7,2) and cmd[0] in ('str_add', 'str+'):
             log_warning(\
                 f'{cmd[0]}: Deprecated alias; please use {new_name} instead')
-            
+
         cmd[0] = new_name
     elif (not is_subcmd) and cmd[0] in v7_cmd_aliases:
         new_name = v7_cmd_aliases[cmd[0]]
@@ -4993,7 +5032,7 @@ def alias(cmd: list, is_subcmd: bool):
         if version_gte(6) and cmd[0] == 'delete':
             log_warning(\
                 f'{cmd[0]}: Deprecated alias; please use {new_name} instead')
-        if version_gte(7) and cmd[0] in ('hue', 'saturation', 
+        if version_gte(7) and cmd[0] in ('hue', 'saturation',
                                          'lightness', 'fill'):
             log_warning(\
                 f'{cmd[0]}: Deprecated alias; please use {new_name} instead')
@@ -5015,7 +5054,7 @@ def parse_line(line: str) -> list:
     # No-Split Commands are only a thing in comma-separated mode, where they
     # are supported for compatibility reasons (they were necessary before
     # quoted strings were added if you wanted to include commas in filenames,
-    # descriptions, etc.) Space-separated mode requires all strings to be 
+    # descriptions, etc.) Space-separated mode requires all strings to be
     # quoted, so there's no need for the concept.
 
     # Split line on commas
@@ -5035,7 +5074,7 @@ def parse_line(line: str) -> list:
         if not space_sep and char == ',' and paren_depth == 0 \
                 and not in_string and \
                 (len(output) == 1 or output[0] not in no_split_cmds):
-            # Split on commas if not inside parens, not inside a string, 
+            # Split on commas if not inside parens, not inside a string,
             # and command isn't in the list of no-split commands
             output.append('')
         elif space_sep and char.isspace() and paren_depth == 0 \
@@ -5043,7 +5082,7 @@ def parse_line(line: str) -> list:
             # If in space-separated mode, split on any whitespace character
             # (besides newlines of course)
             if output[-1] != '':
-                # ^ this makes it so you only split once for each sequence of 
+                # ^ this makes it so you only split once for each sequence of
                 # whitespace characters
                 output.append('')
         elif char == '#' and not in_string:
@@ -5061,17 +5100,17 @@ def parse_line(line: str) -> list:
             # Ignore backslashes unless there's two in a row
             pass
         elif char == 'n' and in_string and \
-                index >= 1 and line[index-1] == '\\': 
+                index >= 1 and line[index-1] == '\\':
             # \n -> newline
             output[-1] += '\n'
         elif char == 't' and in_string and \
-                index >= 1 and line[index-1] == '\\': 
+                index >= 1 and line[index-1] == '\\':
             # \t -> tab
             output[-1] += '\t'
         else: # All other characters get parsed normally
             output[-1] += char
 
-        # Separately from building the output list, 
+        # Separately from building the output list,
         # update paren_depth and in_string
         if char == '(' and not in_string:
             paren_depth += 1
@@ -5083,7 +5122,7 @@ def parse_line(line: str) -> list:
                 log_warning(f'\
 Syntax error: Too many closing parentheses. Skipping line: {line}')
                 return [''] # Return empty line so converter skips it
-        elif char == '"' and (index == 0 or line[index-1] != '\\'): 
+        elif char == '"' and (index == 0 or line[index-1] != '\\'):
             # Strings are only double-quotes, in case I want to add char later.
             # Even if I don't, it's easier if I only have one quote character
             # to worry about.
@@ -5091,9 +5130,9 @@ Syntax error: Too many closing parentheses. Skipping line: {line}')
             # If we're not in a string, get in.
             in_string = not in_string
 
-    # If file is space-separated, the loop we just exited may leave an empty 
+    # If file is space-separated, the loop we just exited may leave an empty
     # string at the end of a list if there's whitespace at the end of the line.
-    # (For example, if there's a comment at the end of the line) 
+    # (For example, if there's a comment at the end of the line)
     # We should remove this extra space because it can cause errors later.
     if space_sep and len(output) >= 2 and output[-1] == '':
         output.pop()
@@ -5126,7 +5165,7 @@ Syntax error: Line ended before string did. Skipping line: {line}')
 
         # If data is explicitly specified to be a string (with quotation marks),
         # leave it as a string and remove its quotation marks.
-        # No need to worry about escaped quotation marks because they've 
+        # No need to worry about escaped quotation marks because they've
         # already been dealt with.
         if version_gte(6) and output[arg_n].startswith('"') \
                 and output[arg_n].endswith('"') and len(output[arg_n]) >= 2:
@@ -5166,7 +5205,7 @@ Syntax error: Line ended before string did. Skipping line: {line}')
                 and (output[0] not in header_commands)  \
                 and var_check(output[arg_n]):
             output[arg_n] = Var(output[arg_n])
-        # Try to convert to numeric types (int or float), or leave it as a 
+        # Try to convert to numeric types (int or float), or leave it as a
         # string if that doesn't work
         else:
             try:
@@ -5192,16 +5231,16 @@ Syntax error: Line ended before string did. Skipping line: {line}')
                 else:
                     try:
                         # Okay then, how about a float? (v6.1.0 and later)
-                        # First, convert to lowercase 
+                        # First, convert to lowercase
                         processed_arg = output[arg_n].lower().strip()
                         # Don't convert words (inf, infinity, nan) to float.
                         # You can still force these to be read as float by
                         # using (float,inf) or (float,"nan") or similar.
                         if version_gte(6,1) and \
                                 processed_arg not in (
-                                    'inf', '-inf', '+inf', 
-                                    'infinity', '-infinity', '+infinity', 
-                                    'nan', '-nan', '+nan', 
+                                    'inf', '-inf', '+inf',
+                                    'infinity', '-infinity', '+infinity',
+                                    'nan', '-nan', '+nan',
                                 ):
                             output[arg_n] = float(processed_arg)
                     except ValueError:
@@ -5238,30 +5277,30 @@ def open_script(script_file=''):
         file_obj = open(script_file, 'r', encoding='utf-8')
         # Read script file line-by-line to reduce chance of memory issues
         lines = file_obj.readlines()
-        # readlines() will put a '\n' at the end of each line but this'll be 
+        # readlines() will put a '\n' at the end of each line but this'll be
         # dealt with when rstrip() is called on each line
         file_obj.close()
-    except FileNotFoundError: 
+    except FileNotFoundError:
         # If user somehow tries to run a nonexistent file
-        simple_dialog('Error', 
-            'Couldn’t find a file with that name. Please try again.', 
+        simple_dialog('Error',
+            'Couldn’t find a file with that name. Please try again.',
             'Back', icon='error')
         return False
-    except UnicodeDecodeError: 
+    except UnicodeDecodeError:
         # If user opens a “script” with weird characters
-        simple_dialog('Error', 
+        simple_dialog('Error',
             ['Couldn’t read the file with that name.',
                 'Are you sure it’s a conversion script?'],
             'Back', icon='error')
         return False
-    except IsADirectoryError: 
+    except IsADirectoryError:
         # If user opens a folder or Mac app bundle
-        simple_dialog('Error', 
-            '''That file is a folder or application. 
+        simple_dialog('Error',
+            '''That file is a folder or application.
 Please try again.''',
             'Back', icon='error')
         return False
-    
+
     # Determine whether file is comma-separated or space-separated
     space_sep = False
     if script_file.lower().endswith('.s.txt'):
@@ -5269,16 +5308,16 @@ Please try again.''',
 
     # Merge lines if the first line ends in a backslash
     # Start at len-2 and move up. This allows more than 2 lines to be merged.
-    # len-1 is the actual last line, but that shouldn't do anything if it ends 
+    # len-1 is the actual last line, but that shouldn't do anything if it ends
     # with a backslash because there's no next line to merge with.
     for i in range(len(lines)-2, -1, -1):
         if lines[i].rstrip().endswith('\\'):
             # Remove the actual backslash character
             # Add a space in between so words can't get smashed together
             lines[i] = lines[i].rstrip()[:-1] + ' ' + lines[i+1].lstrip()
-            # Blank out the line after instead of deleting it entirely, 
+            # Blank out the line after instead of deleting it entirely,
             # to preserve original line numbering for goto
-            lines[i+1] = '' 
+            lines[i+1] = ''
 
     # Add empty "line 0" to make goto more consistent
     lines.insert(0, '')
@@ -5308,19 +5347,19 @@ Please try again.''',
                             # These should be strings, e.g. ['$PI', '$DEBUG']
     }
 
-    # Images the converter can access, 
+    # Images the converter can access,
     # including 'old' (open), 'template', 'alt', and 'new' (save/base)
     # and any user-defined images
     images = {}
 
-    # Before we begin, we need to determine the script's target version 
+    # Before we begin, we need to determine the script's target version
     # and flags because they'll influence some aspects of how we parse code.
-    # This is actually going to be pretty close to how the parser worked in 
+    # This is actually going to be pretty close to how the parser worked in
     # very early versions, because the version command follows a simple,
     # predictable format.
 
     version = app_version.copy() # default if no version given in script
-    version_str = '(UNKNOWN; defaulting to %s)' % app_version_str()
+    version_str = f'(UNKNOWN; defaulting to {app_version_str()})'
 
     # SCRIPT FLAGS
     flags = {}
@@ -5330,11 +5369,11 @@ Please try again.''',
     # Optionally deviate from Python's standard handling of loop/list ranges
     flags['index_from'] = None
     flags['closed_ranges'] = None
-    
+
     # Reset the draw object so it won't point to an image that no longer exists
     # This was a bug before 7.3
     draw_obj = None
-    
+
     for raw_line in lines:
         line_no_cmt = raw_line.split('#')[0].rstrip()
         cmd : List[Any]
@@ -5367,15 +5406,15 @@ Please try again.''',
                 cmd.append(0)
 
             # Make sure version numbers are positive integers
-            if type(cmd[1]) == int and type(cmd[2]) == int \
-                    and type(cmd[3]) == int and \
+            if isinstance(cmd[1], int) and isinstance(cmd[2], int) \
+                    and isinstance(cmd[3], int) and \
                     cmd[1] >= 0 and cmd[2] >= 0 and cmd[3] >= 0:
                 version = cmd[1:4]
                 version_str = '.'.join([str(x) for x in version])
             else:
-                log_warning('Syntax warning: Invalid version')
-                version_str = '(INVALID; defaulting to %s)' % \
-                        app_version_str()
+                log_warning('version: Invalid version number(s)')
+                version = app_version.copy()
+                version_str = f'(INVALID; defaulting to {app_version_str()})'
             # If user didn't specify a version, assume it’s for the current
             # converter version (but display the version as unknown)
 
@@ -5383,7 +5422,7 @@ Please try again.''',
         if flags['loop_limit'] is None and \
                 (cmd[0] in ('looplimit', 'loop_limit')):
             if len(cmd) > 1:
-                if type(cmd[1]) == int and cmd[1] > 1:
+                if isinstance(cmd[1], int) and cmd[1] > 1:
                     flags['loop_limit'] = cmd[1]
                 else:
                     log_warning(f'{cmd[0]}: Invalid loop limit value \
@@ -5392,7 +5431,7 @@ Please try again.''',
                 log_warning(f'{cmd[0]}: Missing loop limit value')
         if cmd[0] == 'flag' and len(cmd) > 1 and cmd[1] == 'loop_limit':
             if len(cmd) > 2:
-                if type(cmd[2]) == int and cmd[2] > 1:
+                if isinstance(cmd[2], int) and cmd[2] > 1:
                     flags['loop_limit'] = cmd[2]
                 else:
                     log_warning('flag: Invalid loop_limit value \
@@ -5431,7 +5470,7 @@ Please try again.''',
     data = []
 
     for line_str in lines:
-        # Initial parsing of lines 
+        # Initial parsing of lines
         # (variable values and subcommands are parsed later)
         line_list : list = parse_line(line_str)
         # Replace command aliases (in place)
@@ -5467,16 +5506,16 @@ Please try again.''',
 
     # Warn if the “version” field is later than the current version
     # (unless it's just a newer release version)
-    # The compatibility checks are irrelevant for scripts made for newer 
+    # The compatibility checks are irrelevant for scripts made for newer
     # versions, because I can't predict the future.
     # Wait, no, I can predict the future: Chat will continue to be a mistake.
     if version_gt(app_version[0], app_version[1], app_version[2]):
-        conf = yn_dialog('Compatiblity warning', 
+        conf = yn_dialog('Compatiblity warning',
             ['This script was designed for a newer converter version.',
 'You can try to run it if you want, but we can’t guarantee it’ll work.',
 'We are not responsible for any damage to your files this may cause.',
 '',
-'Do you want to continue anyway?'], 
+'Do you want to continue anyway?'],
             icon='warning')
         if not conf:
             return False
@@ -5486,12 +5525,13 @@ Please try again.''',
     # Only show script info if it's a custom script, because default script
     # are assumed to work
     if custom_script:
-        confirm = bool_dialog('Loaded script: %s'%name, 
-                ['File path: %s'%script_file, 'By: %s'%author, 
-                    'Made for converter version %s'%version_str,
-                    'Description: %s'%description,
+        confirm = bool_dialog(f'Loaded script: {name}',
+                [f'File path: {script_file}',
+                    f'By: {author}',
+                    f'Made for converter version {version_str}',
+                    f'Description: {description}',
                     '',
-                    '<b>Do you want to run this script?'], 
+                    '<b>Do you want to run this script?'],
                 'Cancel', 'Continue', icon='question')
         return confirm # True if Continue clicked, False if Cancel clicked
     else:
@@ -5510,7 +5550,7 @@ def get_paths(*, new_multi=False):
 
     # Dictionary of labels and the index of `data` on which they were found.
     # Example: {'_start': 0}
-    # The user-facing line number will be 1 higher, 
+    # The user-facing line number will be 1 higher,
     # e.g. _start is actually on line 1 in this example.
     labels = {}
     for index, item in enumerate(data):
@@ -5518,17 +5558,16 @@ def get_paths(*, new_multi=False):
             if len(item) > 1:
                 if item[1] in labels:
                     log_warning(\
-'label: Duplicate label “%s” on line %d ignored' % (item[1], index))
-                elif type(item[1]) != str:
+f'label: Duplicate label “{item[1]}” ignored')
+                elif not isinstance(item[1], str):
                     log_warning(\
-'label: Label “%s” on line %d ignored because it’s not a string' % \
-(item[1], index))
+f'label: Label “{item[1]}” is not a string — ignoring')
                 else:
                     # If the label hasn't already been used, add it to the
                     # labels dictionary
                     labels[item[1]] = index
             else:
-                log_warning('label: empty label on line %d' % index)
+                log_warning(f'label: empty label on line {index}')
 
     # Load rest of header data
     # Remember, you can use int, float, and string literals here but NOT
@@ -5537,7 +5576,7 @@ def get_paths(*, new_multi=False):
     # IMAGE PATHS
 
     # New in v4.0: Default to user input if no path given
-    open_path = '.INPUT' 
+    open_path = '.INPUT'
     for cmd in data:
         if cmd[0] == 'open' and len(cmd) > 1:
             if isinstance(cmd[1], str):
@@ -5602,7 +5641,7 @@ def get_paths(*, new_multi=False):
             base_blank = True
             break
         elif cmd[0] == 'base' and len(cmd) > 2 \
-                and type(cmd[1]) == int and type(cmd[2]) == int:
+                and isinstance(cmd[1], int) and isinstance(cmd[2], int):
             # User-specified size for blank base
             base_blank = (cmd[1], cmd[2])
 
@@ -5611,7 +5650,7 @@ def get_paths(*, new_multi=False):
     for cmd in data:
         if cmd[0] == 'start' and len(cmd) > 1:
             # start number has to be an integer
-            if type(cmd[1]) != int:
+            if not isinstance(cmd[1], int):
                 log_warning('start: must be an integer')
                 break
             has_start_num = True
@@ -5623,7 +5662,7 @@ def get_paths(*, new_multi=False):
     for cmd in data:
         if cmd[0] == 'stop' and len(cmd) > 1:
             # stop number has to be an integer
-            if type(cmd[1]) != int:
+            if not isinstance(cmd[1], int):
                 log_warning('stop: must be an integer')
                 break
             has_stop_num = True
@@ -5634,7 +5673,7 @@ def get_paths(*, new_multi=False):
 
     # Determine whether script is converting 1 file (single-file mode)
     # or multiple files (multi-file mode)
-    # For a valid legacy multi-file conversion, open_path & save_path must have 
+    # For a valid legacy multi-file conversion, open_path & save_path must have
     # wildcards, and there must be start and stop numbers provided. Otherwise,
     # the script will be treated as a single-file conversion.
     legacy_multi = False # reset in case past conversions set this global var
@@ -5642,7 +5681,7 @@ def get_paths(*, new_multi=False):
             '*' in open_path and '*' in save_path:
         # Note that both open and save paths must have a * in them
         legacy_multi = True
-    # If a script is not a valid legacy multi-file conversion but it has start 
+    # If a script is not a valid legacy multi-file conversion but it has start
     # and stop numbers, throw a warning
     if (not legacy_multi) and (has_start_num or has_stop_num):
         log_warning('Script has start/stop numbers but is not a valid legacy \
@@ -5672,9 +5711,9 @@ converted.',
             if not open_path:
                 return False
 
-    # Only run the open-path existence check on single-file conversions. 
-    # For legacy multi-file conversions, existence will be checked file-by-file 
-    # in the main loop. 
+    # Only run the open-path existence check on single-file conversions.
+    # For legacy multi-file conversions, existence will be checked file-by-file
+    # in the main loop.
     # For new multi-file conversions, both error types should be moot.
     if not legacy_multi and not new_multi:
         try:
@@ -5685,10 +5724,10 @@ converted.',
         except FileNotFoundError:
             # This code will only be reached in legacy single-file mode because
             # the OS file selector shouldn't select a nonexistent file
-            choose_new_path = yn_dialog('File warning', 
+            choose_new_path = yn_dialog('File warning',
 ['The script tried to open the following file, but it does not exist.',
 f'<b>{open_path}',
-'Do you want to select a different file to open?'], 'Yes', 
+'Do you want to select a different file to open?'], 'Yes',
                     'No (back to menu)', icon='warning')
             if choose_new_path:
                 open_path = filedialog.askopenfilename(\
@@ -5699,11 +5738,11 @@ f'<b>{open_path}',
                     return False
             else:
                 return False
-        except IsADirectoryError: 
+        except IsADirectoryError:
             # If user opens a folder or Mac app bundle
-            choose_new_path = yn_dialog('File warning', 
+            choose_new_path = yn_dialog('File warning',
                     f'''The path {open_path} is a folder or application.
-Do you want to select a different file to open?''', 'Yes', 
+Do you want to select a different file to open?''', 'Yes',
                     'No (back to menu)', icon='error')
             if choose_new_path:
                 open_path = filedialog.askopenfilename(\
@@ -5721,8 +5760,8 @@ Do you want to select a different file to open?''', 'Yes',
         save_path = base_save_path
 
         n = 1
-        while os.path.exists(save_path): 
-            # If there's already a subfolder called _converted, 
+        while os.path.exists(save_path):
+            # If there's already a subfolder called _converted,
             # tack a number on the end
             save_path = base_save_path + str(n)
             n += 1
@@ -5744,35 +5783,35 @@ Do you want to select a different file to open?''', 'Yes',
             return False
         else:
             # The rest of this function is checking if the save path
-            # would overwrite any existing files, but we don't need 
-            # to check this ourselves here because the system dialog 
+            # would overwrite any existing files, but we don't need
+            # to check this ourselves here because the system dialog
             # handles it
             return True
     else: # Only for legacy scripts (single- and multi-file)
-        # Make sure parent directory of save_path exists, 
+        # Make sure parent directory of save_path exists,
         # if it's saving inside a directory
         parent_dir = os.sep.join(save_path.split(os.sep)[:-1])
         # “if parent_dir” => if there’s no parent directory because you’re
         # saving to the current working directory, skip the directory check
         if parent_dir and not os.path.exists(parent_dir):
-            choose_new_path = yn_dialog('Error', 
+            choose_new_path = yn_dialog('Error',
 ['The script is trying to save to a folder that doesn’t exist.',
-'The path that caused the error was:', 
+'The path that caused the error was:',
 f'<b>{parent_dir}',
-'Do you want to select a different location?'], 
+'Do you want to select a different location?'],
                 'Yes', 'Back to Menu', icon='error')
             if choose_new_path:
                 save_path = filedialog.asksaveasfilename(\
-                        title='Choose a location to save to', 
+                        title='Choose a location to save to',
                         defaultextension='.png',
                         filetypes=[('PNG image', '*.png')], initialdir='./')
                 # If save_path is still empty, user cancelled
                 if save_path == '':
                     return False
-                else: 
+                else:
                     # The rest of this function is checking if the save path
-                    # would overwrite any existing files, but we don't need 
-                    # to check this ourselves here because the system dialog 
+                    # would overwrite any existing files, but we don't need
+                    # to check this ourselves here because the system dialog
                     # handles it
                     return True
             else:
@@ -5790,14 +5829,12 @@ f'<b>{parent_dir}',
 
             if files_to_overwrite:
                 main_text = [
-                    'This script will overwrite:',
-                    '<b>%s' % files_to_overwrite[0],
-                    '<b>...and %i other files.' % (len(files_to_overwrite)-1),
+                    f'This script will overwrite {len(files_to_overwrite)} \
+files, from {files_to_overwrite[0]} to {files_to_overwrite[-1]}.',
                     'You can’t undo this action.',
-                    '\
-Please check the path %s (and replace * with any number from %i to %i) to see \
-what other files will be overwritten.' \
-    % (save_path, start_num, stop_num),
+                    f'\
+Please check the path {save_path} (and replace * with any number from \
+{start_num} to {stop_num}) to see what other files will be overwritten.',
                     'Only run scripts from users you trust!',
                 ]
             else:
@@ -5819,7 +5856,7 @@ Running the script will overwrite the file. You can’t undo this action.',
                 return True
 
         conf = yn_dialog('Warning', main_text + [
-                '', 
+                '',
                 'Do you want to run this script anyway?'
             ], icon='warning')
 
@@ -5836,11 +5873,11 @@ def run_script(*, new_multi=False):
     #### STEP 4: RUN SCRIPT ####
     cls()
 
-    # Set current_num after start_num is set but before the first 
+    # Set current_num after start_num is set but before the first
     # update_subhead call
     current_num = start_num
 
-    heading_text = Label(main_frame, text='Converting image...', 
+    heading_text = Label(main_frame, text='Converting image...',
         font=f_heading, bg=colors['UI_BG'])
     heading_text.place(x=0, y=0)
 
@@ -5848,20 +5885,20 @@ def run_script(*, new_multi=False):
     heading = Label(bg=colors['UI_BG'])
     subhead = Label(bg=colors['UI_BG'])
     if new_multi:
-        heading = Label(main_frame, 
-            text='Converting all images in the folder %s' % \
-                multi_open_paths[0].split(os.sep)[-2], 
+        dir_name = multi_open_paths[0].split(os.sep)[-2]
+        heading = Label(main_frame,
+            text=f'Converting all images in the folder {dir_name}',
             font=f_heading, bg=colors['UI_BG'])
         subhead = update_subhead(subhead)
     elif legacy_multi:
-        heading = Label(main_frame, 
-            text=f'Converting all images from {start_num} to {stop_num-1}', font=f_heading, 
-            bg=colors['UI_BG'])
+        heading = Label(main_frame,
+            text=f'Converting all images from {start_num} to {stop_num-1}',
+            font=f_heading, bg=colors['UI_BG'])
         subhead = update_subhead(subhead)
     else:
-        # For single-image conversions, set start/stop so the main loop will 
+        # For single-image conversions, set start/stop so the main loop will
         # only run once
-        heading = Label(main_frame, text='Converting 1 image...', 
+        heading = Label(main_frame, text='Converting 1 image...',
             font=f_heading, bg=colors['UI_BG'])
         start_num = 0
         stop_num = 1
@@ -5887,11 +5924,11 @@ def run_script(*, new_multi=False):
     break_stacks = [] # block_stacks but only blocks you can break from
     break_depths = []
 
-    loop_data = [] # Additional data associated with each block of code 
+    loop_data = [] # Additional data associated with each block of code
     # Each line gets its own dictionary in loop_data
     for _ in range(len(data)):
         loop_data.append({})
-    # Each line will have the following associated keys: 
+    # Each line will have the following associated keys:
     # start_lines, end_lines, for_vars, for_stops, for_steps
     # Note that start_lines and end_lines only concern loops (not if blocks)
 
@@ -5905,7 +5942,7 @@ def run_script(*, new_multi=False):
     current_start_lines = []
     current_end_lines = []
     current_for_vars = [] # None = this block is a while loop
-    # Don't need to save a "for_start" because we only need to check that 
+    # Don't need to save a "for_start" because we only need to check that
     # variable once (i.e. in the first iteration of the loop)
     current_for_stops = []
     current_for_steps = []
@@ -5914,14 +5951,14 @@ def run_script(*, new_multi=False):
     for index, item in enumerate(data):
         # len(item) will never be 0 because parse_line() returns [''] for
         # empty lines
-        
+
         # Check that the command has enough arguments (may change its contents)
         arg_check(item, is_subcmd=True)
 
         # Pre-process for loops (expand arguments) so we can build up loop_data
         # Make sure the command has enough arguments
         if item[0] == 'for':
-            if len(item) < 3: 
+            if len(item) < 3:
                 log_warning(f'{item[0]}: not enough arguments — need at least \
 a loop variable and a number to stop at')
                 # Neutralize block by making it always evaluate to false
@@ -5940,7 +5977,7 @@ a loop variable and a number to stop at')
                 if len(item) == 4: # for,var,start,stop -> append step
                     item.append(1)
 
-                # These don't get used right away but they will show up later 
+                # These don't get used right away but they will show up later
                 # in this function
                 # If we're here, item[1] must be SetVar, as it passed var_check
                 loopVar : SetVar = item[1]
@@ -5948,7 +5985,7 @@ a loop variable and a number to stop at')
                 stop : int = item[3]
                 step : int = item[4]
         elif item[0] == 'foreach':
-            if len(item) < 3: 
+            if len(item) < 3:
                 log_warning(f'{item[0]}: not enough arguments — need at least \
 a loop variable and a list to iterate on')
                 # Neutralize block by making it always evaluate to false
@@ -5978,11 +6015,11 @@ a loop variable and a list to iterate on')
 
             # If block depth is *ever* negative, that's an error
             if current_depth < 0:
-                simple_dialog('Syntax error', 
+                simple_dialog('Syntax error',
                     'This script’s block depth is imbalanced. Please check \
 to make sure it doesn’t have too many “end” commands.', icon='error')
                 return False
-        
+
             if current_stack[-1] in breakable_blocks:
                 current_break_depth -= 1
 
@@ -5997,7 +6034,7 @@ to make sure it doesn’t have too many “end” commands.', icon='error')
             else:
                 # Everything else gets added under the actual command name
                 current_stack.append(item[0])
-        
+
         if item[0] == 'for':
             need_reverse_search = True
             # Now that the loop has all its arguments, build up loop_data
@@ -6031,7 +6068,7 @@ to make sure it doesn’t have too many “end” commands.', icon='error')
         # Add the current line's depth to block_depths
         block_depths.append(current_depth)
         # and its stack to block_stacks
-        block_stacks.append(current_stack.copy()) 
+        block_stacks.append(current_stack.copy())
         # .copy() is important as otherwise every item of block_stacks would
         # point to the same list
 
@@ -6069,7 +6106,7 @@ to make sure it doesn’t have too many “end” commands.', icon='error')
 
     # if depth is positive at end of code, error
     if current_depth > 0:
-        simple_dialog('Syntax error', 
+        simple_dialog('Syntax error',
             'This script’s block depth is imbalanced. Please check to make \
 sure each block has an associated “end” command.', icon='error')
         return False
@@ -6099,7 +6136,7 @@ sure each block has an associated “end” command.', icon='error')
     except FileNotFoundError:
         log_warning('Couldn’t find a template file with the path '+\
             template_path+' — skipping')
-    except (AttributeError, PIL.UnidentifiedImageError): 
+    except (AttributeError, PIL.UnidentifiedImageError):
         # We opened something, but it's not an image
         log_warning('Couldn’t open the template file at ' + \
             template_path + '. Are you sure it’s an image? Skipping.')
@@ -6113,7 +6150,7 @@ sure each block has an associated “end” command.', icon='error')
     except FileNotFoundError:
         log_warning('Couldn’t find an alternate file with the path '+\
             alt_path+' — skipping')
-    except (AttributeError, PIL.UnidentifiedImageError): 
+    except (AttributeError, PIL.UnidentifiedImageError):
         # We opened something, but it's not an image
         log_warning('Couldn’t open the alternate file at ' + \
             alt_path + '. Are you sure it’s an image? Skipping.')
@@ -6124,10 +6161,10 @@ sure each block has an associated “end” command.', icon='error')
     # Main file-reading loop -- a different function does the actual processing
     # - For single-file conversion, start_num=0 and stop_num=1; this loop will
     #   only run once in these cases.
-    # - For new multi-file conversion, stop_num is the length of the list of 
-    #   files in the selected directory, and i is the list index for the 
+    # - For new multi-file conversion, stop_num is the length of the list of
+    #   files in the selected directory, and i is the list index for the
     #   filename currently being converted.
-    # - For legacy multi-file conversion, start_num and stop_num are pulled 
+    # - For legacy multi-file conversion, start_num and stop_num are pulled
     #   from the conversion script.
     for i in range(start_num, stop_num):
         current_num = i
@@ -6152,7 +6189,7 @@ sure each block has an associated “end” command.', icon='error')
                 # Read image based on the new open path
                 images['old'] = PIL.Image.open(open_path).convert('RGBA')
             elif legacy_multi:
-                images['old'] = PIL.Image.open(open_path.replace('*', 
+                images['old'] = PIL.Image.open(open_path.replace('*',
                     str(i))).convert('RGBA')
             else:
                 if open_path == '//NONE':
@@ -6168,7 +6205,7 @@ sure each block has an associated “end” command.', icon='error')
                 open_path.replace('*', str(i))+\
                 ' — skipping')
             continue
-        except (AttributeError, PIL.UnidentifiedImageError): 
+        except (AttributeError, PIL.UnidentifiedImageError):
             # We opened something, but it's not an image
             log_warning(f'Couldn’t open the file at {open_path}. Are you sure \
 it’s an image? Skipping.')
@@ -6179,7 +6216,7 @@ it’s an image? Skipping.')
 
         if base_blank:
             # Create a blank base if the script starts from that
-            if type(base_blank) == tuple and len(base_blank) >= 2: 
+            if isinstance(base_blank, tuple) and len(base_blank) >= 2:
                 # If base command contains a 2-tuple, make that the
                 # new image's width and height
                 w, h = base_blank
@@ -6207,7 +6244,8 @@ it’s an image? Skipping.')
         conv_count += 1
 
     t2 = time()
-    return pre_summary(t2-t1, conv_count, new_multi) # Return helper func's result
+    # Return helper func's result (i.e. number of files converted)
+    return pre_summary(t2-t1, conv_count, new_multi)
 
 def process_line(line: list):
     '''
@@ -6215,7 +6253,7 @@ def process_line(line: list):
     variable names for their associated values, then running any subcommands.
     This function does NOT execute the line's main command.
     '''
-    cmd = line.copy() 
+    cmd = line.copy()
 
     subst_all_vars(cmd)
 
@@ -6223,7 +6261,7 @@ def process_line(line: list):
         # Now that we've broken the command into the normal list format,
         # we need to check each argument of the command for parens and
         # recursively call this function as needed.
-        if type(cmd[arg_n]) == Subcommand:
+        if isinstance(cmd[arg_n], Subcommand):
             # Execute the command INSIDE the parens FIRST
             cmd[arg_n] = subcmd(cmd[arg_n].content)
 
@@ -6245,7 +6283,7 @@ def process():
     substack = []
 
     # MAIN LINE-PROCESSING LOOP
-    # Remember, each line has been parsed into list format already, 
+    # Remember, each line has been parsed into list format already,
     # but the subcommands have NOT been parsed
     index = 0 # START
     jumped = False # True if running the current line interrupted normal flow
@@ -6253,19 +6291,19 @@ def process():
         item = data[index] # MANUAL ENUMERATE
 
         # Uncomment this to print line-by-line output
-        # p#rint(index, item, block_depths[index], block_stacks[index], 
+        # p#rint(index, item, block_depths[index], block_stacks[index],
         #     break_depths[index], break_stacks[index])
 
         # Increment loop counter for the line
         loop_counter[index] += 1
         # If we hit the loop limit, stop the script to prevent infinite loops
         if loop_counter[index] >= flags['loop_limit']:
-            simple_dialog('Conversion error', 
+            simple_dialog('Conversion error',
                     [f'''Conversion stopped because the loop limit of \
 {flags['loop_limit']} was reached on line {index}.''',
 'Please check your code to make sure there isn’t an infinite loop.',
 '''If you meant to loop this many times, you can increase the loop limit \
-using the header command “flags,loop_limit,<NUMBER>”.'''], 
+using the header command “flags,loop_limit,<NUMBER>”.'''],
                     'Back to Menu', icon='error')
             menu()
 
@@ -6275,20 +6313,20 @@ using the header command “flags,loop_limit,<NUMBER>”.'''],
 
             jumped = False # Reset jumped flag for new line
 
-            if item[0].strip() == '' or item[0] in ('noop', 'label'): 
+            if item[0].strip() == '' or item[0] in ('noop', 'label'):
                 # Skip blank lines, noops, and labels
                 continue
-            elif item[0] == 'exit': 
-                # End the conversion early, but save the target file as is 
+            elif item[0] == 'exit':
+                # End the conversion early, but save the target file as is
                 # and exit properly.
                 break
             elif item[0] == 'skip':
-                # End the conversion early, without saving or displaying an 
+                # End the conversion early, without saving or displaying an
                 # error message. Intended for use in batch conversion where
                 # you want to flag only files that meet specific criteria.
                 return None
             elif item[0] == 'error':
-                # Stop conversion without saving, and optionally display a 
+                # Stop conversion without saving, and optionally display a
                 # message on the screen
                 if len(item) < 2: # If the script doesn't include error msg
                     item.append('The conversion script was stopped due to an \
@@ -6300,7 +6338,7 @@ unknown error.')
                 warning(item)
             elif item[0] == 'assert':
                 # Make sure the command has enough arguments
-                if len(item) < 2: 
+                if len(item) < 2:
                     log_warning(f'{item[0]}: missing assertion')
                     continue
 
@@ -6318,21 +6356,21 @@ scripts with draw commands. Simply call the draw commands on their own \
                 log_warning(f'{item[0]}: not a chance')
 
             # Control commands
-            elif item[0] == 'goto': 
+            elif item[0] == 'goto':
                 # Make sure the command has enough arguments
-                if len(item) < 2: 
+                if len(item) < 2:
                     log_warning('goto: missing line number or label')
                     continue
 
                 # OPTION 1: Go to line number
                 # Line numbers start counting from 1, even internally
-                if type(item[1]) == int:
+                if isinstance(item[1], int):
                     index = item[1]
                     set_ln(index)
                     jumped = True
                 # OPTION 2: Go to label
                 # This will jump to the line on which the label was declared.
-                elif type(item[1]) == str:
+                elif isinstance(item[1], str):
                     if item[1] in labels:
                         index = labels[item[1]]
                         set_ln(index)
@@ -6347,7 +6385,7 @@ or label (string)')
 
             elif item[0] == 'gosub':
                 # Make sure the command has enough arguments
-                if len(item) < 2: 
+                if len(item) < 2:
                     log_warning('gosub: missing line number or label')
                     continue
 
@@ -6357,13 +6395,13 @@ or label (string)')
 
                 # OPTION 1: Go to line number
                 # Line numbers start counting from 1, even internally
-                if type(item[1]) == int:
+                if isinstance(item[1], int):
                     index = item[1]
                     set_ln(index)
                     jumped = True
                 # OPTION 2: Go to label
                 # This will jump to the line on which the label was declared.
-                elif type(item[1]) == str:
+                elif isinstance(item[1], str):
                     if item[1] in labels:
                         index = labels[item[1]]
                         set_ln(index)
@@ -6386,7 +6424,7 @@ or label (string)')
             # One-line variant of if
             elif item[0] == 'if1':
                 # Make sure the command has enough arguments
-                if len(item) < 2: 
+                if len(item) < 2:
                     log_warning(f'{item[0]}: missing conditional statement')
                     continue
 
@@ -6407,11 +6445,11 @@ Please use “if” instead.')
 
             elif item[0] == 'if':
                 # Make sure the command has enough arguments
-                if len(item) < 2: 
+                if len(item) < 2:
                     log_warning(f'{item[0]}: missing conditional statement')
                     continue
 
-                # Save depth of if block so we can check it against the 
+                # Save depth of if block so we can check it against the
                 # elseif/else/end lines we're parsing later
                 start_depth = block_depths[index]
 
@@ -6419,7 +6457,7 @@ Please use “if” instead.')
                 # item[1] will already be processed by the subcmd call above
                 cond_result = bool(item[1])
 
-                # IF first conditional is FALSE, skip until we're out of 
+                # IF first conditional is FALSE, skip until we're out of
                 # the block (either elseif, else, or end)
                 while not cond_result:
                     index += 1
@@ -6441,20 +6479,20 @@ Please use “if” instead.')
                         item = process_line(data[index])
                         # Try the condition for the elseif line
                         cond_result = bool(item[1])
-                        # And if this is true, then we'll get out of the loop 
+                        # And if this is true, then we'll get out of the loop
                         # and run the code inside the elseif
                     elif item[0] == 'else':
-                        # If we make it down here, the code in here will 
+                        # If we make it down here, the code in here will
                         # run no matter what
                         break
-                        # Note we're breaking out from the inner `while` loop, 
+                        # Note we're breaking out from the inner `while` loop,
                         # not the main `for` loop
                     elif item[0] in ('end', 'endif'):
                         # And we're done
                         break
 
-                # IF we get past this point (conditional is True), 
-                # there's nothing more to do here. We're in the if block. 
+                # IF we get past this point (conditional is True),
+                # there's nothing more to do here. We're in the if block.
                 # Proceed as normal until we reach an "end" command.
 
             # Excluding "end"/"endif" here because if we reach there naturally,
@@ -6464,9 +6502,9 @@ Please use “if” instead.')
                     and len(block_stacks[index]) > 0 \
                     and block_stacks[index][-1] == 'if':
                 # if, elseif, and else are all added to block_stacks as "if".
-                # If we encounter elseif, else, end, etc. during the normal 
-                # line-reading cycle, then we've finished a block from a 
-                # condition that evaluated as true, so we're done with the 
+                # If we encounter elseif, else, end, etc. during the normal
+                # line-reading cycle, then we've finished a block from a
+                # condition that evaluated as true, so we're done with the
                 # whole if statement
 
                 # Jump down the lines until we reach an "end" command at the
@@ -6475,13 +6513,13 @@ Please use “if” instead.')
                 while True:
                     index += 1
                     if index >= len(data):
-                        # This should be impossible because if we end up at 
+                        # This should be impossible because if we end up at
                         # the end of the file while scanning, the blocks must
                         # be imbalanced. But this should eliminate any chance
                         # of crashes.
                         break
                     item = data[index]
-                    # No need to process arguments because we only need to 
+                    # No need to process arguments because we only need to
                     # check arg0 (command name) right now
                     if item[0] in ('end', 'endif') \
                             and block_depths[index] == start_depth:
@@ -6493,7 +6531,7 @@ Please use “if” instead.')
 
             elif item[0] == 'while':
                 # Make sure the command has enough arguments
-                if len(item) < 2: 
+                if len(item) < 2:
                     log_warning(f'{item[0]}: missing conditional statement')
                     continue
 
@@ -6502,7 +6540,7 @@ Please use “if” instead.')
                     item.append(0)
                 do = isinstance(item[2], int) and bool(item[2])
 
-                # Save depth of if block so we can check it against the 
+                # Save depth of if block so we can check it against the
                 # elseif/else/end lines we're parsing later
                 start_depth = block_depths[index]
 
@@ -6512,12 +6550,12 @@ Please use “if” instead.')
                 if not do:
                     cond_result = bool(item[1])
 
-                # IF condition is FALSE, skip until we're out of 
+                # IF condition is FALSE, skip until we're out of
                 # the block (either elseif, else, or end)
                 while not cond_result:
                     index += 1
                     item = data[index]
-                    # No need to process arguments because we only need to 
+                    # No need to process arguments because we only need to
                     # check arg0 (command name) right now
 
                     # Skip lines that don't match the depth of the original
@@ -6529,21 +6567,21 @@ Please use “if” instead.')
                     if item[0] == 'end':
                         break
 
-                # IF we get past this point (condition is True), 
-                # there's nothing more to do here. We're inside the loop. 
+                # IF we get past this point (condition is True),
+                # there's nothing more to do here. We're inside the loop.
                 # Proceed as normal until we reach an "end" command.
 
             elif (item[0] == 'end' and len(block_stacks[index]) > 0 and \
                     block_stacks[index][-1] == 'while'):
-                # If we reach an "end" when we're in a 
-                # while loop (but otherwise reading lines normally), 
+                # If we reach an "end" when we're in a
+                # while loop (but otherwise reading lines normally),
                 # then we've reached the end of the loop block,
                 # so we need to jump back up to continue the loop
 
                 start_line = index
                 start_depth = block_depths[index]
                 # Move up the lines until we reach a "while" command with
-                # depth equal to our current depth. 
+                # depth equal to our current depth.
                 # That'll be the line we want to jump to.
 
                 # Must move up at least 1 line so that the following while loop
@@ -6647,7 +6685,7 @@ from a stack of {max_breaks} loops')
                     jumped = True
 
                 # If we make it here, we're in the loop.
-                # Note: If you goto somewhere inside the loop and that means 
+                # Note: If you goto somewhere inside the loop and that means
                 # the loop variable is undefined, I can't help you with that.
                 # My brain hurts.
                 # Why did I add goto again?
@@ -6708,7 +6746,7 @@ from a stack of {max_breaks} loops')
                 start : int = flags['index_from']
                 # Only use internal override if indexVar is __indexN
                 set_(
-                    [item[0], indexVar, start], 
+                    [item[0], indexVar, start],
                     internal=(indexVar.name==f'$__index{block_depths[index]}')
                 )
                 set_([item[0], itemVar, seq[start]], internal=False)
@@ -6723,7 +6761,7 @@ from a stack of {max_breaks} loops')
                     jumped = True
 
                 # If we make it here, we're in the loop.
-                    
+
             elif (item[0] == 'end' and len(block_stacks[index]) > 0 and \
                     block_stacks[index][-1] == 'foreach'):
                 # Unlike for, everything we want is simply stored in for_vars
@@ -6864,7 +6902,7 @@ default: Skipped because no “template” image was specified.')
                 grayscale(item, images['new'])
             elif item[0] in ('invert', 'filter.invert'):
                 invert(item, images['new'])
-            elif item[0] in ('rgbfilter', 'color_filter', 
+            elif item[0] in ('rgbfilter', 'color_filter',
                              'colorfilter', 'filter.rgb'):
                 rgbfilter(item, images['new'])
             elif item[0] in ('opacity', 'filter.opacity'):
@@ -6881,7 +6919,7 @@ default: Skipped because no “template” image was specified.')
                 hslfilter(item, images['new'])
             elif item[0] in ('selcolor', 'filter.selcolor'):
                 selcolor(item, images['new'])
-            elif item[0] in ('2color', 'twocolor', 
+            elif item[0] in ('2color', 'twocolor',
                              'filter.2color', 'filter.twocolor'):
                 twocolor(item, images['new'])
             elif item[0] == 'recolor':
@@ -6893,7 +6931,7 @@ default: Skipped because no “template” image was specified.')
                 hslfilter([item[0], 0, item[1], 0] + item[2:], images['new'])
             elif item[0] == 'filter.lightness':
                 hslfilter([item[0], 0, 0, item[1]] + item[2:], images['new'])
-            elif item[0] == 'filter.fill': 
+            elif item[0] == 'filter.fill':
                 if version_gte(7,2):
                     log_warning('fill: This command is deprecated. \
 Please use “draw.rect” instead.')
@@ -6967,7 +7005,7 @@ is deprecated. Please use “filter.fill” instead.')
 
             # Just so it doesn't think header commands are unknown
             elif item[0] in header_commands:
-                # I always mess this particular command up so I'll just 
+                # I always mess this particular command up so I'll just
                 # hardcode in a note to self
                 if item[0] == 'template' and len(item) > 2:
                     log_warning('Clippy, you idiot, the command you’re looking \
@@ -6975,16 +7013,16 @@ for is “default”, not “template”')
                 # Otherwise, just skip the line since we've presumably already
                 # dealt with it
             else:
-                log_warning('Unknown command on line %i: %s' % (index, item[0]))
+                log_warning(f'Unknown command on line {index}: {item[0]}')
 
-        except Exception as e: 
+        except Exception as e:
             # Handle any errors in the command functions so they don’t bring
             # the whole program to a halt
             log_warning(f'{item[0]} command on line {index} \
 skipped due to error: {e}')
-            
-            # If error occurs at start of a block, skip to outside block. 
-            # Do this manually (like break,1 in 7.0) because loop_data 
+
+            # If error occurs at start of a block, skip to outside block.
+            # Do this manually (like break,1 in 7.0) because loop_data
             # doesn't include end lines for if statements
             if item[0] in block_starts:
                 start_depth = block_depths[index]
@@ -6999,7 +7037,7 @@ skipped due to error: {e}')
             if not jumped:
                 index += 1 # STEP
                 set_ln(index)
-    return images['new'] 
+    return images['new']
 
 # Returns number of files successfully converted.
 def pre_summary(conv_time:float, conv_count:int, new_multi:bool):
@@ -7020,8 +7058,8 @@ def summary(conv_time:float, conv_count:int, warning_page:int=0):
     if warning_page >= num_warn_pages:
         warning_page = 0
 
-    main_text = ['Converted %d file(s) in %s seconds' % 
-                 (conv_count, str(round(conv_time, 3)))]
+    main_text = \
+        [f'Converted {conv_count} file(s) in {round(conv_time, 3)} seconds']
     bottom_text = ''
 
     if warnings:
@@ -7029,7 +7067,7 @@ def summary(conv_time:float, conv_count:int, warning_page:int=0):
         # expect counting to start at 1
         bottom_text += f'CONVERTER WARNINGS: \
 (Page {warning_page+1} of {num_warn_pages})'
-        for i in range(warn_per_page*warning_page, 
+        for i in range(warn_per_page*warning_page,
                 warn_per_page*warning_page+warn_per_page):
             # If we’re out of warnings, break
             if i >= len(warnings):
@@ -7039,8 +7077,8 @@ def summary(conv_time:float, conv_count:int, warning_page:int=0):
 
         if num_warn_pages > 1:
             # Display dialog with extra button to go to next warning page
-            confirm_exit = button_dialog('Conversion complete!', 
-                    main_text + ['', bottom_text], ('More warnings', 'Okay'), 
+            confirm_exit = button_dialog('Conversion complete!',
+                    main_text + ['', bottom_text], ('More warnings', 'Okay'),
                     icon='warning')
             if confirm_exit == 'More warnings':
                 summary(conv_time, conv_count, warning_page+1) # next page
@@ -7049,7 +7087,7 @@ def summary(conv_time:float, conv_count:int, warning_page:int=0):
         else:
             # Display dialog with warnings but no extra button
             # if there's only 1 page worth of warnings
-            simple_dialog('Conversion complete!', 
+            simple_dialog('Conversion complete!',
                           main_text + ['', bottom_text], icon='warning')
             return
     else:
@@ -7061,13 +7099,13 @@ def summary(conv_time:float, conv_count:int, warning_page:int=0):
 # Only download images that a script actually uses
 install_list = [
     ['https://raw.githubusercontent.com/mroyale/assets-dx/main/img/game/\
-smb_obj.png', 
+smb_obj.png',
         'deluxe/smb_obj.png'],
     ['https://raw.githubusercontent.com/mroyale/assets-dx/main/img/game/\
-smb_mario.png', 
+smb_mario.png',
         'deluxe/smb_mario.png'],
     ['https://raw.githubusercontent.com/mroyale/assets/legacy/img/game/\
-smb_map_new.png', 
+smb_map_new.png',
         'legacy/smb_map_new.png'],
     ['https://raw.githubusercontent.com/mroyale/assets/v7/img/skins/\
 smb_skin0.png',
@@ -7077,7 +7115,7 @@ smb_skin0.png',
 # Check if assets need to be (re)installed
 def check_assets():
     for i in install_list:
-        if not os.path.isfile(f'assets/{i[1]}'): 
+        if not os.path.isfile(f'assets/{i[1]}'):
             # If a file in the install list is missing, we need to reinstall
             return True
 
@@ -7099,40 +7137,40 @@ def install_assets():
             urllib.request.urlretrieve(i[0], f'assets/{i[1]}')
         # Deal with connection errors
         except urllib.error.URLError:
-            simple_dialog('Connection error', 
-'Failed to download image %s. Check your internet connection and try again.' % \
-i[0], icon='error')
+            simple_dialog('Connection error',
+f'Failed to download image {i[0]}. \
+Check your internet connection and try again.', icon='error')
             menu()
         except Exception:
-            simple_dialog('Connection error', 
-'An unknown error occurred while downloading the image %s.' % \
-i[0], icon='error')
-            menu()
+            simple_dialog('Connection error',
+f'An unknown error occurred while downloading the image {i[0]}.', icon='error')
 
     simple_dialog('Success!', 'The images were successfully downloaded.',
                 icon='done')
     menu()
 
-# Download and display the online Message of the Day
-'''
-For each line, everything before the first space is the full list versions 
-that should show the message. The rest of the line is the message itself.
-The program displays a maximum of 1 MOTD -- the first that matches its version.
-
-EXAMPLE MOTD FORMAT:
-
-# This line is a comment and will be ignored.
-u_2.3.0 Deluxifier v3.0.0 is now available!^Click the "View Update" button \
-    to open Github and download the update.
-# Use caret (^) for newlines.
-2.2.1_2.2.2 WARNING: Please update your program to 2.3.0 or later. \
-    The version you're currently using has a bug that could damage your files.
-* We will only be adding the W.
-
-This version of the program would display "We will only be adding the W."
-because it doesn't match any of the versions specified for the warnings.
-'''
 def motd():
+    '''
+    Download and display the online Message of the Day.
+
+    For each line, everything before the first space is the full list versions
+    that should show the message. The rest of the line is the message itself.
+    The program displays *up to 1* MOTD (the first that matches its version).
+
+    EXAMPLE MOTD FORMAT:
+
+    # This line is a comment and will be ignored.
+    u_2.3.0 Converter v3.0.0 is now available!^Click the "View Update" button \
+        to open Github and download the update.
+    # Use caret (^) for newlines.
+    2.2.1_2.2.2 WARNING: Please update your program to 2.3.0 or later. \
+        Your current version has a bug that could damage your files.
+    * Chat was a mistake.
+
+    This version of the program would display "Chat was a mistake."
+    because it doesn't match any of the versions specified for the warnings.
+    '''
+
     motd_url = 'https://raw.githubusercontent.com/ClippyRoyale/\
 SkinConverter/main/motd.txt'
     try:
@@ -7156,7 +7194,7 @@ SkinConverter/main/motd.txt'
                     motd_buttons.insert(0, 'View Update')
                     motd_header = 'Update available'
 
-                motd_continue = button_dialog(motd_header, motd_text, 
+                motd_continue = button_dialog(motd_header, motd_text,
                                               tuple(motd_buttons))
                 if motd_continue == 'Exit':
                     exit_app()
@@ -7167,7 +7205,7 @@ SkinConverter/releases/latest')
                 else: # Continue
                     return
     except Exception:
-        # If the internet isn't cooperating or the MOTD file is malformed, 
+        # If the internet isn't cooperating or the MOTD file is malformed,
         # no big deal, just skip it
         pass
 
@@ -7177,10 +7215,10 @@ def crash(exctype=None, excvalue=None, _=None):
         window.iconphoto(False, bomb)
     finally:
         # Tkinter doesn't have a "public" way to show the error dialog I want,
-        # but the options are hidden under the hood. 
+        # but the options are hidden under the hood.
         # Code based on Tkinter messagebox.py
-        btn = messagebox._show('Error', '''An error has occurred.
-%s: %s''' % (str(exctype)[8:-2], excvalue), 
+        btn = messagebox._show('Error', f'''An error has occurred.
+{str(exctype)[8:-2]}: {excvalue}''',
 messagebox.ERROR, messagebox.ABORTRETRYIGNORE)
         # btn might be a Tcl index object, so convert it to a string
         btn = str(btn)
@@ -7201,7 +7239,7 @@ def exit_app():
 try:
     # Comment the next line out to print full crash messages to the console
     # Uncomment this line before releasing updates to the public
-    window.report_callback_exception = crash
+    # window.report_callback_exception = crash
 
     setup()
 

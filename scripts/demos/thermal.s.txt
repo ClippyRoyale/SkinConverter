@@ -1,0 +1,24 @@
+version 7 6 0
+flag loop_limit 1_000_000
+
+name "Thermal Camera Filter"
+description "Applies a filter to an image to simulate a thermal camera, mapping each pixel's luma to a hue."
+
+open 1
+save 1
+
+# Convert entire image to grayscale
+grayscale
+
+for $y (height "old")
+    for $x (width "new")
+        # Get lightness of individual pixel
+        set $oldL (lightness $x $y)
+        # Lightness is from 0-100 so we need to multiply it to be from 0-255
+        *= $oldL 2.55
+        # Convert to hue: red=lightest, violet=darkest
+        set $newHSL (hsl (- 255 $oldL) 100 50)
+        # Place the final pixel
+        setpixel $x $y $newHSL
+    end for
+end for

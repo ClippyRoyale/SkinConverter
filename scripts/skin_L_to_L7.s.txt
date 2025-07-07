@@ -1,16 +1,10 @@
 version 7 6 0
-name "Legacy16 to Legacy32 (REV-D)"
+name "Legacy5 to Legacy7 (REV-E)"
 author "Clippy"
-description "Convert a Mario Royale skin from the v4–v6 format (16×32 Super sprites) to the v7 format (32×32 Super sprites; 24×24 small sprites). New Pin-the-Tail-on-the-Character Edition!"
+description "Convert a Mario Royale skin from the v5 format (16×32 Super sprites) to the v7 format (32×32 Super sprites; 24×24 small sprites). Now with improved performance for skins with unreasonable numbers of colors!"
 
 template "sc_assets/leaf_template.png" # reorganize this for v8.0
 alt "sc_assets/skin_status.png"
-
-# Uncomment for testing
-#open "assets_full/legacy/smb_skin*.png"
-#save "conv_skin*.png"
-#start 0
-#stop 10
 
 # Final size will be 1056 × 136, but we need 32 more pixels to use as a workspace for recoloring the tails.
 base 1056 168
@@ -271,11 +265,11 @@ end if
 set $PAL_SIZE (len $pal)
 
 # Check whether the Super stand sprite has an outline:
-# 1. Make list (with repeats) of 
+# 1. Make list (with repeats) of every color on the edges of the stand sprite
 set $total_rows 0
 set $edge_colors (list)
 for $y 104 136
-    # First, check if the row is empty 
+    # First, check if the row is empty
     # (and if so, skip it and ignore it in our calculations)
     if (empty "new" 8 $y 16 1) # Note that we only need to check the 16×32 area
         next
@@ -308,7 +302,7 @@ end for
 set $OUTLINE $_f
 set $outline_color (color "transparent")
 set $outline_pct 0
-foreach $c $pal
+foreach $c $edge_colors
     set $temp_pct (/ (count $edge_colors $c) (* $total_rows 2))
     if (> $temp_pct 0.8)
         set $OUTLINE $_t
@@ -320,7 +314,7 @@ foreach $c $pal
         set $outline_pct $temp_pct
     end if
 end foreach
-# If the loop finishes and none of the edge colors pass the threshold, 
+# If the loop finishes and none of the edge colors pass the threshold,
 # it's not outlined
 
 # Copy correct tail into temp area, then recolor it
@@ -363,7 +357,7 @@ else # if no outline and 2-6 colors
     gosub best_medium_light
 
     recolor (list (color "n18") (color "n27")) \
-            (list $best_medium $best_light) \ 
+            (list $best_medium $best_light) \
             0 136   1056 32
 end if
 
@@ -389,14 +383,14 @@ if (< $right 23)
     for $x 0 1056 32
         if (not (in (list 672 800) $x)) # Exception: flipped spin sprites
             move $x 136  (+ $x (- $right 15)) 136 32 32
-        else 
+        else
             move $x 136  (- $x (- $right 15)) 136 32 32
         end if
     end for
 end if
 # Clear left 16px column, so tail doesn't appear on left side in really narrow skins
 for $x 0 1056 32
-    if (not (in (list 672 800) $x)) 
+    if (not (in (list 672 800) $x))
         clear $x 136 16 32
     else # flipped spin sprites
         clear (+ $x 16) 136 16 32
@@ -447,7 +441,7 @@ retsub
 label text_int
 if (= $text_n 0)
     copyfrom template 0 0 $text_x $text_y 8 8
-else 
+else
     set $digits (+ 1 (int (log $text_n)))
     += $text_x (* 8 (- $digits 1))
     for $i 0 $digits

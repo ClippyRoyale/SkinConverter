@@ -1,0 +1,40 @@
+version 7 6 0
+name "Legacy2 to Legacy5"
+author "Papyrus Semi"
+description "convert skins from the dmca royale object template (the one w/ mario) to v5. i did this because i love you and also i only need to change a few lines"
+
+# fireballs
+copy	192 176	16  0	64 16
+copy    64  208	224 0	32 16
+copy	96  208	240 16	16 16
+clear	240 32	16  16
+
+# small taunt
+copy	208 0	80 0	16 16
+# super taunt
+copy	208 16	0 16	16 32
+# fire taunt
+copy	176 48	16 16	32 32
+
+#small swim
+copy	128 0	176 80	16 16
+copy	128 0	192 80	16 16
+copy	128 0	208 80	16 16
+copy	128 0	224 80	16 16
+copy	128 0	240 80	16 16
+
+#super swim
+copy	112 16	160 96	16 32
+copy	112 16	176 96	16 32
+copy	112 16	192 96	16 32
+copy	112 16	208 96	16 32
+copy	112 16	224 96	16 32
+copy	112 16	240 96	16 32
+
+#fire swim
+copy	0 48	64 128	32 32
+copy	0 48	96 128	32 32
+copy	0 48	128 128	32 32
+copy	0 48	160 128	32 32
+copy	0 48	192 128	32 32
+copy	0 48	224 128	32 32

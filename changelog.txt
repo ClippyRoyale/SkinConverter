@@ -2,7 +2,7 @@ SKIN CONVERTER CHANGELOG
 
 Version 1.0 (Feb. 12, 2022): Launch
 
-Version 1.1 (Feb. 19, 2022): “default” command now only copies from same 
+Version 1.1 (Feb. 19, 2022): “default” command now only copies from same
     position in template vs. new; added compatibility check
 
 Version 1.2 (Feb. 21, 2022): Adds alternate image to copy from (“alt” and
@@ -27,16 +27,16 @@ NEW FEATURES:
     may have multiple arguments)
   + colorfilter command to adjust RGB color levels
 EASE OF USE:
-  + Compatibility check now automatically fixes problems on the fly with old 
+  + Compatibility check now automatically fixes problems on the fly with old
     scripts (without making permanent changes to the scripts)
   + Prints save path so user knows the file will be overwritten
   + Warning if file doesn't start with “mrconverter”
-  + Better error-catching: rejects commands if user doesn't provide enough 
+  + Better error-catching: rejects commands if user doesn't provide enough
     arguments
 UNDER THE HOOD:
   + Massive rewrite to improve code readability.
 
-Version 2.1 (Oct. 11, 2022): 
+Version 2.1 (Oct. 11, 2022):
   + Special “.INPUT” path for open and save commands
   + More instructions on scripts the user can run
   * Fixed error checking for alt and template
@@ -86,12 +86,12 @@ Version 4.0 (Feb. 2, 2023):
         without it being officially confirmed was a mistake to begin with.
         Speaking of Remake-related mistakes... chat.
       * I’m not going to write a DeluxeBeta -> Deluxe32 conversion script either
-        because it was always a possibility that the template could change 
+        because it was always a possibility that the template could change
         without warning (it was a beta, after all)
   + colorize and sepia filters
   + tile command for creating repeating backgrounds
   + Back to Menu button
-  + Improved dialog box code 
+  + Improved dialog box code
       * Text is less likely to overlap with icons or other text
       * Bottom text can now have paragraph spacing
   * Renamed most conversion scripts for consistency
@@ -100,7 +100,7 @@ Version 4.0 (Feb. 2, 2023):
       * If a script is missing either line, the converter defaults to “.INPUT”
         as the path (i.e. asking the user what image they want to use)
   * Writing “copy”, “copyalt”, or “default” on their own now copies the entire
-    source image onto the canvas. “clear” on its own clears the whole canvas. 
+    source image onto the canvas. “clear” on its own clears the whole canvas.
     “flip” on its own can be applied to the whole canvas, but not “rotate”
     because it expects a square area.
   - Deprecated Legacy Taunt script and Deluxe Beta scripts because they’re no
@@ -111,13 +111,13 @@ Version 4.0 (Feb. 2, 2023):
 Version 4.1 (Feb. 19, 2023):
   + "if" and "else" statements
       * Any code after an if command will be inside a block, until the converter
-        encounters an "endif" command. Blocks can be nested. 
+        encounters an "endif" command. Blocks can be nested.
       * No "else if" yet, sorry
   + "empty" conditional command, to be used inside if to check if an area on
     the old image is empty/transparent
   + "duplicate" command, to duplicate an area on the converted image
   * Updated Obj L->Dx script to also convert Remake obj mods
-      * The script uses if statements to automatically detect whether the 
+      * The script uses if statements to automatically detect whether the
         original mod is for Remake or Legacy
   * Updated all Skin->Dx32 conversion scripts to reflect latest templates
   * Rewrote parser to account for conditional commands
@@ -135,7 +135,7 @@ Version 5.0.0 (Mar. 18, 2023):
       * All buttons now fire on mouse button RELEASE instead of hold (more
         consistent with other apps)
   * Fixed obj conversion script to work with latest Deluxe obj
-  - Game assets are now installed on first run rather than being included with 
+  - Game assets are now installed on first run rather than being included with
     the program
       * This means if the game gets minor graphical updates, you won't have to
         wait for me to update the images. Of course if there's a larger update,
@@ -147,7 +147,7 @@ Version 5.0.0 (Mar. 18, 2023):
 
 Version 5.0.1 (Mar. 20, 2023 / ONLINE ONLY):
   * Changed UI background color
-  * Moving toward a shared UI codebase for this and Deluxifier 
+  * Moving toward a shared UI codebase for this and Deluxifier
   * Temp fix for crash bugs on repl.it
   * Requires Python 3.5 or later (type hinting)
 
@@ -167,7 +167,7 @@ Version 5.1.0 (Mar. 25, 2023):
     Replit for fullscreen
   * Readded union type hinting in a way that's compatible with Py3.5+
   * Fixed interface bug that was breaking dialog boxes
-  * Fixed bug in the compatibility checker that's been present for an 
+  * Fixed bug in the compatibility checker that's been present for an
     embarrassingly long time
   * Fixed opacity command calling the threshold function
   - Removed internal dialog() function (shouldn't cause any end-user change)
@@ -183,10 +183,10 @@ Version 5.2.0 (Apr. 13, 2023):
   * Fixed Remake skin conversion scripts (no longer missing small swim/taunt)
   - Removed Herobrine
 
-Version 5.2.1 (May 1, 2023): 
+Version 5.2.1 (May 1, 2023):
 Can now run conversion scripts going back to v1.0 without modification
 
-Version 5.2.2 (May 31, 2023): 
+Version 5.2.2 (May 31, 2023):
 Fixed crash bug that occurred when running any script that generates multiple pages of warnings
 
 Version 6.0.0 (Jul. 2, 2023):
@@ -194,8 +194,8 @@ Version 6.0.0 (Jul. 2, 2023):
       * Set them with `set,$<name>,<value>`
       * Supported types:
           * int - Integers: 0, 1, 42, -7
-          * str - Text strings: "hello", "21", world (double quote marks are 
-            supported now, but anything without them is still treated as a 
+          * str - Text strings: "hello", "21", world (double quote marks are
+            supported now, but anything without them is still treated as a
             string if it can't be parsed as something else)
           * bool - Boolean values: $_true and $_false (or $_t and $_f)
       * Get their values at any time with $<name>
@@ -207,7 +207,7 @@ Version 6.0.0 (Jul. 2, 2023):
       * EQUALITY: ==, !=, <, >, <=, >=
       * LOGIC: and, or, not
       * COLOR (return color value of a pixel or average for an area):
-        red, green, blue, alpha 
+        red, green, blue, alpha
   + goto command (go to a line number or a label set w/ the new label command)
   + while loops
       * “break” and “next” will be added later
@@ -219,7 +219,7 @@ Version 6.0.0 (Jul. 2, 2023):
         will be added in a future update
   + Updated Message of the Day to match revisions from Deluxifier 3, plus an
     "Update available" header for update news
-  + Updated Legacy Obj conversion script 
+  + Updated Legacy Obj conversion script
       + Thanks to variables, it can now convert Remake objs equally well
       - Deprecated the dedicated Remake Obj conversion script
         (still included in the “deprecated” folder, but no longer has a button
@@ -249,7 +249,7 @@ Version 6.1.0 (Sep. 4, 2023):
   aren't already installed on your computer
       * If you already have these modules installed, there's no need to update,
         as the program is otherwise unchanged
-      * The program should now run out of the box without needing to install 
+      * The program should now run out of the box without needing to install
         any modules manually. Please tell Clippy if you have any issues!
   * Requires Python 3.6 or later (f-strings)
 
@@ -292,8 +292,8 @@ UNDER THE HOOD:
   + skip command to stop converting without displaying an error message
     (intended for batch conversions)
   + For empty + any color-attribute subcommand, you can now specify the image
-    you want to check (old, new, template, alt) 
-      * red, green, blue, and alpha commands now default to checking the old 
+    you want to check (old, new, template, alt)
+      * red, green, blue, and alpha commands now default to checking the old
         image (instead of the new one)
         * This change only applies to scripts written for v7.0.0 or later
         * hue, saturation, and lightness didn't exist in previous versions
@@ -307,8 +307,8 @@ UNDER THE HOOD:
       * Previously, omitting any of them would copy the whole image to the same
         position it was in before, which didn't make any sense
   * Bug fixes:
-      * Fixed crash bugs with the "filter.fill" command, and fixed filling at 
-        any position other than x=0, y=0. (This bug has been present in the 
+      * Fixed crash bugs with the "filter.fill" command, and fixed filling at
+        any position other than x=0, y=0. (This bug has been present in the
         since the command was added in v2.2.0!)
       * Fixed "while" loop logic. These were added in v6.0.0 but were totally
         busted until now. This time I think I got it right.
@@ -327,19 +327,19 @@ UNDER THE HOOD:
   - Removed Herobrine
 
 Version 7.0.1 (Oct. 14, 2023 / ONLINE ONLY):
-  * Fixed crash bug by simplifying type hinting on two functions, because 
+  * Fixed crash bug by simplifying type hinting on two functions, because
     Replit is stuck on Python 3.8.12 (which doesn't support the syntax I used)
 
 Version 7.1.0 (Nov. 26, 2023):
   + Added script to convert Deluxe skins to Legacy format
-      * Any sprites that don’t fit into Legacy’s smaller boxes will be 
+      * Any sprites that don’t fit into Legacy’s smaller boxes will be
         automatically downscaled
       * The scaling algorithm doesn’t look *great* but I’ve been working on this
         update for a long time so I wanted to get it out the door first and
         worry about polishing it later
   + Added for loops
-      * For example: for,$i,0,10,1 starts with i = 0, stops BEFORE i = 10, 
-        and increases i by 1 after each loop. 
+      * For example: for,$i,0,10,1 starts with i = 0, stops BEFORE i = 10,
+        and increases i by 1 after each loop.
       * for,$i,10 would do the same thing
       * To start counting from 1, add "flag,index_from,1" to top of program
       * To include 10 in counting, add "flag,closed_range,1" to top of program
@@ -363,14 +363,14 @@ Version 7.1.0 (Nov. 26, 2023):
       * Hex codes sourced from Nestopia's default "Canonical" palette (AKA YUV)
   + Added equality testing for colors
   + [Null values are now an intentional feature]
-      * [Invalid subcommands have returned None (as opposed to False) since 
+      * [Invalid subcommands have returned None (as opposed to False) since
         v6.0, but they raised a warning until now]
   * Tweaked the basic color name database: removed dark gray, renamed light
     gray to silver, increased saturation of peach, made pink have the same hue
     as magenta
   * App icon is now less blurry
   * Tweaked the yellow "!" warning icon
-      * The other icons look the same but they've been losslessly compressed so 
+      * The other icons look the same but they've been losslessly compressed so
         they take up less space
   * Bug fixes:
       * Fixed parser so it no longer reads "0" (in quotes) as an int or
@@ -395,7 +395,7 @@ Version 7.2.0 (Feb. 3, 2024):
       * Since it's a subjective judgement call, I've left the old version of
         the script in the deprecated folder in case you like its sharper look.
   + Added copyscale command to scale portions of an image
-      * Includes a variety of scaling algorithms (nearest-neighbor, 
+      * Includes a variety of scaling algorithms (nearest-neighbor,
         supersampling, bilinear, bicubic)
   + [Added foreach loops (like Python for loops) for iterating thru lists]
   + Lots of new commands for general programming:
@@ -412,7 +412,7 @@ Version 7.2.0 (Feb. 3, 2024):
   * Added \n and \t escape characters in strings
   * Simplified error-checking for + and * so they can be used on strings & lists
   * Bug fixes:
-      * FIXED MENU RENDERING BUG ON MAC DATING BACK TO V3.0 (the one where 
+      * FIXED MENU RENDERING BUG ON MAC DATING BACK TO V3.0 (the one where
         there would be empty boxes where buttons should be)
       * Fixed crash bug when open/save/template/alt have a non-string argument
       * Fixed index_from and closed_ranges flags, which crashed scripts in 7.1
@@ -447,11 +447,11 @@ Version 7.2.1 (Feb. 29, 2024):
           * Except "opacity" because that would mess with its behavior
             (though it'll be changed in the next major version)
       * "and" & "or" commands now short-circuit properly
-      * subcommand "content" attribute stores a list instead of a string, 
+      * subcommand "content" attribute stores a list instead of a string,
         so the content doesn't have to be parsed repeatedly
       * STATS - Converting all Legacy skins to Deluxe: 30s before, 15s after
   * More code cleanup
-  * This will probably be the last version to include Deluxe conversions on the 
+  * This will probably be the last version to include Deluxe conversions on the
     title screen. The scripts will be deprecated or removed in future versions.
 
 Version 7.3.0 (Jun. 4, 2024):
@@ -464,7 +464,7 @@ Version 7.3.0 (Jun. 4, 2024):
   * Bug fixes:
       * Fixed draw commands so they no longer break after the first time you run
         a script that uses them
-      * Fixes default source image for hue/saturation/lightness subcommands 
+      * Fixes default source image for hue/saturation/lightness subcommands
         to be "old" instead of "new" (previously, the spec said "old" but the
         code used "new")
       * Fixed broken logic in Deluxe->Legacy16 conversion script
@@ -487,15 +487,15 @@ Version 7.3.2 (Jun. 17, 2024):
       * Fixed range command
       * Fixed infinite loops when placing `if` inside `for` loops
       * Fix default image on getpixel
-      * Fixed basically every color-related command 
+      * Fixed basically every color-related command
         (getpixel, getrgba, red, rgba, etc.)
 
 Version 7.4.0 (Jun. 29, 2024):
   + New script to convert Deluxe skins to Legacy v7 format
       * Requires SkinV7 template (can be downloaded through the setup dialog)
-      - Removed SkinFX.png file included with installation (superseded by 
+      - Removed SkinFX.png file included with installation (superseded by
         downloadable legacy7/smb_skin0.png)
-  + `titlecase` and `sentencecase` subcommands for strings 
+  + `titlecase` and `sentencecase` subcommands for strings
   * Reorganized main menu
       + Added button for the background-remover script from the last update
   * Bug fixes:
@@ -516,11 +516,11 @@ Version 7.5.0 (Sep. 22, 2024):
   + New commands: sum, list.swap, bin, hex
   * Bug fixes:
       * rgb+hsl now work with 3 arguments
-      * and+or once again work with literals and variables (they've only worked 
+      * and+or once again work with literals and variables (they've only worked
         with subcommands since 7.2.1)
 
 Version 7.5.1 (Sep. 28, 2024):
-  * Fixed bug with L5->L7 conversion that put one column of swim sprites 
+  * Fixed bug with L5->L7 conversion that put one column of swim sprites
     2px too far to the right
   - Removed all Replit-related code
 
@@ -529,7 +529,7 @@ Version 7.5.2 (Oct. 19, 2024):
 
 Version 7.5.3 (Nov. 1, 2024):
   * Fixed bug with installing Legacy7 skin template
-  * Updated title-screen p2 buttons to clarify which scripts convert to the 
+  * Updated title-screen p2 buttons to clarify which scripts convert to the
     Legacy5 format
 
 Version 7.5.4 (Nov. 29, 2024):
@@ -569,8 +569,8 @@ Version 7.6.0 (May 18, 2025):
       * Colors are now deep-copied (like lists)
       * Fixed line number display for script errors in `if` statements
   - Deprecated `sort` command for strings
-  * We've now passed one year of v8.0.0 being in development, but here I am 
-    with another content update on the v7.x branch. Please resist the urge to 
+  * We've now passed one year of v8.0.0 being in development, but here I am
+    with another content update on the v7.x branch. Please resist the urge to
     make comparisons to GD 2.2, MR 7.0, or MR Remake. Thank you.
       * WOW, the 7.x codebase is a huge mess.
       * I long ago reached the point where the linter lagged to death,
@@ -578,10 +578,10 @@ Version 7.6.0 (May 18, 2025):
       * I would apologize to VSCode for what I'm putting it through right now,
         but it's an Electron app, so it did this to itself.
 
-Version 7.6.1 (Jun 20, 2025):
+Version 7.6.1 (Jun. 20, 2025):
   + Thermal camera simulation demo
       * Performance isn't great because of its reliance on getpixel/setpixel...
-        I'd like to fix it but it won't happen until v8.x in the interest of 
+        I'd like to fix it but it won't happen until v8.x in the interest of
         keeping the v7.x codebase stable
   + Added `scale` command that just does the scaling from `copyscale`
     and not the copying
@@ -592,3 +592,16 @@ Version 7.6.1 (Jun 20, 2025):
         contain any wildcards
       * Many subcommand errors (hex colors, str_, over ...) return default
         values instead of null
+
+Version 7.6.2 (Jul. 6, 2025):
+  + Scripts to convert MR v1, v2, and v3 skins to the Legacy v5 format
+      * All scripts written by Papyrus Semi
+      * You can then use the L5->7 script if you want to bring them all the
+        way up to v7
+  * Improved performance of L5->L7 script
+      * Papyrus Semi's frog skin now takes 0.4 seconds to convert instead of
+        2 minutes
+  * Redesigned menu to accomodate new scripts
+      + Added a help dialog that explains all the Legacy skin versions
+  * More bug/linter fixes
+  - Removed dead memes
