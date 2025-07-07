@@ -7239,7 +7239,7 @@ def exit_app():
 try:
     # Comment the next line out to print full crash messages to the console
     # Uncomment this line before releasing updates to the public
-    # window.report_callback_exception = crash
+    window.report_callback_exception = crash
 
     setup()
 
