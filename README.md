@@ -1,6 +1,6 @@
 # MRoyale Skin Converter
 
-Source code and documentation copyright (C) 2022–2024 ClippyRoyale
+Source code and documentation copyright (C) 2022–2025 ClippyRoyale
 
 ## What is this?
 
@@ -30,18 +30,17 @@ Simple: use the skin converter! It’ll convert your old skins into files you ca
 5. Go to the Run menu and click Run Module.
 6. Enjoy!
 
-If you’re unable to install Python or download the source code (e.g. because you’re on a school computer), there is also a deprecated online version (based on v7.5.1) hosted on Replit. I am no longer updating it, but I’ve kept it online as a last-resort option. This program is provided AS IS. Please do not expect me to provide any troubleshooting or bug fixes. Link: https://replit.com/@WaluigiRoyale/MR-Converter-GUI (You’ll need to create a Replit account and click the Fork button. From there, follow the instructions that pop up when you run the program.)
+If you’re unable to install Python or download the source code (e.g. because you’re on a school computer), there is also a deprecated online version (based on v7.6.3) hosted on Replit. This version will not receive updates past v7.x, but I’ve kept it online as a last-resort option. This program is provided AS IS. Please do not expect me to provide any troubleshooting or bug fixes. Link: https://replit.com/@WaluigiRoyale/MR-Converter-GUI (You’ll need to create a Replit account and click the Fork button. From there, follow the instructions that pop up when you run the program.)
 
 ## System Requirements
 This program doesn't have a very attractive interface. This is because I'd rather spend my time making the program *work*. In fact, it'll work on basically any operating system released in the last 15 years.
 
-It should run on any operating system that can run Python 3.6 (though I've only tested it as far back as Python 3.7):
+It should theoretically run on any operating system that can run Python 3.6 (though I've only ever tested it as far back as Python 3.7):
 * MacOS 10.6 or later
-* Windows Vista or later
+* Windows Vista or later, if you're using the official Python installation
+  * If you're *really* crazy, there are various unofficial Python 3.7 releases for Windows XP — or you can use the deprecated online version via the Supermium browser.
 
 You should also be able to use it on Linux as well, but there are too many variations of that for me to provide any guarantees.
-
-The deprecated online version can also run on Windows XP via the Supermium browser.
 
 ## Troubleshooting
 
