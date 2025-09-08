@@ -1,6 +1,6 @@
 '''
 MR Skin Converter
-Version 7.6.3
+Version 7.7.0
 
 Copyright 2022–2025 ClippyRoyale
 
@@ -50,7 +50,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,6,3]
+app_version = [7,7,0]
 
 # For type hints
 Num = Union[int,float]

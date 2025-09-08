@@ -1,4 +1,4 @@
-version,7,6,3
+version,7,7,0
 name,Legacy7 to Legacy5 (Revision A)
 author,Clippy
 description,Converts a 32×32 Legacy v7 skin to Legacy v5 format (also works in Remake). Warning: Sprite quality may degrade, because of Legacy’s more restrictive sprite size limits.
