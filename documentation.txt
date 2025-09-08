@@ -1,11 +1,11 @@
-version,7,6,1 # The version of the Converter app that this script is made for.
+version,7,6,3 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
 author,clippy
 description,The documentation for the skin converter. (Alias: desc)
 
-open,smb_skin*.png # Path of the main image to open and copy from. 
+open,smb_skin*.png # Path of the main image to open and copy from.
 # Special options:
     # Skip the "open" line entirely if you want the user to select which image to open for conversion. If you want to be more explicit when writing your code, you can also enter the number 1 as the path. (For backwards compatibility, you can also trigger this behavior by entering ".INPUT" instead of a path. If for some reason you want to open a file with the name ".INPUT", entering the path as "./.INPUT" should work.)
     # If you don't want to open any existing image (for example, if you want to create an image completely from scratch), enter the number 0 as the path.
@@ -34,7 +34,7 @@ flag,index_from,0 # By default, loops start counting from 0. Setting this flag t
 flag,closed_ranges,0 # By default, loops use open ranges. For example "for,$i,0,10" runs for 0≤x<10. Enabling this flag makes it work like 0≤x≤10 instead. For backwards compatibility, the start/stop header commands will always use closed ranges.
 
 # Everything above this line is a header command.
-# Each one can only appear once. 
+# Each one can only appear once.
 # If you use the same header command more than once,
 # only the first instance will be used; the rest will be ignored.
 # Header commands cannot contain subcommands or references to variables.
@@ -70,7 +70,7 @@ assert,(=,$x,0)<cond> # Test that the condition `cond` is true. If it is false, 
 # For all commands in this section:
 # If you don’t give x or y, apply command to whole image: x=0, y=0, width and height are the same as the image's width and height.
 # If you give x and y but not width or height: width=16, height=16
-# If you give x, y, and width, but not height: height=width 
+# If you give x, y, and width, but not height: height=width
 
 copy,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height] # Copy from old image to specified position in new image.
 
@@ -101,12 +101,24 @@ under,0[oldX],0[oldY],0[newX],0[newY],16[width],16[height],"old"[imageName] # Li
 
 tile,0<copyX>,0<copyY>,16<copyWidth>,16<copyHeight>,0<pasteStartX>,0<pasteStartY>,16<pasteCountHoriz>,16<pasteCountVert>,open[copySource: old, template, or alt] # Create a tile pattern on the new image using a part of the old image.
 
-copyscale,0<oldX>,0<oldY>,32<oldWidth>,32<oldHeight>,0<newX>,0<newY>,16<newWidth>,16<newHeight>,1[algo],old[source] # Copy from the old (or alternative source) image to the new image, while scaling the copied area to a new width/height. 
+copyscale,0<oldX>,0<oldY>,32<oldWidth>,32<oldHeight>,0<newX>,0<newY>,16<newWidth>,16<newHeight>,1[algo],old[source] # Copy from the old (or alternative source) image to the new image, while scaling the copied area to a new width/height.
 # The following scaling algorithms are available in order of complexity:
 # 0 / nearest: Nearest-neighbor scaling, no interpolation. My implementation differs from PIL's in that it attempts to preserve symmetry in the original image/area. (When scaling from even to odd pixel sizes on a given axis, this is not possible, so I get as close as I can -- the middle will be off.)
 # 1 / default / super: Supersampling. This is more commonly used for rendering video game graphics, but it's pretty good for scaling pixel art too. When the scale factor is an integer, it'll look the same as nearest-neighbor.
 # 2 / bilinear / linear: Bilinear interpolation, the way many operating systems and web browsers scale images for preview purposes. Direct from PIL's implementation.
 # 3 / bicubic / cubic: Bicubic interpolation, the default interpolation in many image-editing programs' scaling commands. Direct from PIL's implementation.
+
+copyfit,0<oldX>,0<oldY>,16<oldWidth>,32<oldHeight>,center<scanHoriz:left|l,center|c,right|r>,middle<scanVert:top|t,middle|m,bottom|b>,0<newX>,0<newY>,16<newWidth>,24<newHeight>,1[algo],old[source]
+# Copies an area from the old image to the new image, while automatically downscaling the area the minimum amount necessary to fit in the new image. This functionality was previously implemented manually in many scripts.
+    # scanHoriz tells the converter how to scan for empty columns (to remove them).
+        # left: start scanning at relative x=0 and move right; stop when a non-empty column is reached, or when the remaining width ≤ newWidth.
+        # right: start scanning at relative x=(width-1) and move left; stop when a non-empty column is reached, or when the remaining width ≤ newWidth.
+        # center: scan from both sides; stop when a non-empty column is reached on BOTH sides, or when the remaining width ≤ newWidth.
+        # scanVert is similar.
+    # algo: see copyscale for details on accepted values
+    # If (newWidth > oldWidth) or (newHeight > oldHeight), the sprite will be aligned to the left and top edges as appropriate.
+copyfit,(list 0 16 32)<oldX>,(list 16 16 16)<oldY>,16<oldWidth>,32<oldHeight>,center<scanHoriz:left|l,center|c,right|r>,middle<scanVert:top|t,middle|m,bottom|b>,(list 64 128 192)<newX>,(list 32 32 32)<newY>,16<newWidth>,24<newHeight>,1[algo],old[source]
+    # You can also use lists of positions for the x and y arguments to account for multiple sprites while calculating the bounding box. If you do this, all x/y arguments must be lists of equal length.
 
 
 
@@ -122,7 +134,7 @@ flip,x<direction: x or y>,0[x],0[y],16[width],16[height]
 # Flip the area in place on the new image. Unlike rotation, width and height can be different here.
 # If you don’t give x or y, apply command to whole image: x=0, y=0, width and height are the same as the image's width and height.
 # If you give x and y but not width or height: width=16, height=16
-# If you give x, y, and width, but not height: height=width 
+# If you give x, y, and width, but not height: height=width
 
 
 
@@ -133,7 +145,7 @@ flip,x<direction: x or y>,0[x],0[y],16[width],16[height]
 # For all commands in this section:
 # If you don’t give x or y, apply command to whole image: x=0, y=0, width and height are the same as the image's width and height.
 # If you give x and y but not width or height: width=16, height=16
-# If you give x, y, and width, but not height: height=width 
+# If you give x, y, and width, but not height: height=width
 
 grayscale,0[x],0[y],16[width],16[height] # Converts the area to grayscale (AKA black-and-white). For the command that literally makes the area only black and white (1-bit), use "threshold".
 
@@ -153,7 +165,7 @@ filter.lightness,0<adjust: -100 to +100>,0[x],0[y],16[width],16[height] # Adjust
 
 filter.fill,0<red: 0 to 255>,0<green: 0 to 255>,0<blue: 0 to 255>,255[alpha: 0 to 255],0[x],0[y],16[width],16[height] # Fills the area with the selected color.
 
-contrast,0<adjust: -128 to 128>,0[x],0[y],16[width],16[height] # Adjusts the contrast. -128 will make all non-transparent pixels medium gray; +127 will make all RGB values either 0 or 255 (8 colors).
+contrast,0<adjust: -128 to 128>,0[x],0[y],16[width],16[height] # Adjusts the contrast. -128 will make all non-transparent pixels medium gray; +128 will make all RGB values either 0 or 255 (8 colors).
 
 colorize,180<hue: 0 to 359>,50<saturation: 0 to 100>,50<lightness: 0 to 100>,0[x],0[y],16[width],16[height] # Colorizes specified area in place. Converts area to B&W, treats L=127.5 as the specified HSL color, and interpolates the rest from there. Ex.: if the base color was coral [hsl(0,100,75)], it'll turn black->gray50->white to red->coral->white.
 
@@ -220,7 +232,7 @@ elseif,(empty,128,128,32,32)
     # Run the commands here if the first condition is false but the second condition is true
 else
     # Otherwise, run the commands here
-end 
+end
 # "end" is the preferred way to end blocks in 5.1+ but "endif" is supported for backwards compatibility
 
 if1,(...) # Like if, but rather than being the start of a block, you just execute the next line if the conditional is true, then continue with the program.
@@ -377,9 +389,9 @@ const,$TAU<name>,6.283<value> # Set a constant value so you can refer back to it
 
 (range,0[start],10<stop>,1[step]) # Returns a list consisting of a sequence of numbers counting from `start` to `stop`, and counting up by `step` every time. Unlike Python's range function, any of the arguments can be floats too.
 
-(sort,$l<list>,""[key],[keyArg2],[keyArg3]...) # Returns a sorted version of the list l, in ascending order according to Python's built-in Timsort algorithm. The function will return a new list, and will not modify the contents of the last you pass in. 
+(sort,$l<list>,""[key],[keyArg2],[keyArg3]...) # Returns a sorted version of the list l, in ascending order according to Python's built-in Timsort algorithm. The function will return a new list, and will not modify the contents of the last you pass in.
 # The optional `key` argument lets you specify a subcommand to apply some operation to values before sorting them. For example, if key="lower" when sorting a list of strings, then the converter will sort alphabetically and ignore case (otherwise, it'll sort by Unicode codepoint, which may lead to unexpected results). And if key="lightness" for a list of colors, it'll sort from darkest to lightest.
-# The key function can even have multiple arguments; for example, if $l is a list of lists, (sort $l get 0) will sort by the first item of each sub-list. 
+# The key function can even have multiple arguments; for example, if $l is a list of lists, (sort $l get 0) will sort by the first item of each sub-list.
 # Using this function on strings is deprecated in v7.6, and it will be removed in v8.0.
 
 

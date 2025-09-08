@@ -1,0 +1,200 @@
+version,7,6,3
+name,Legacy7 to Legacy5 (Revision A)
+author,Clippy
+description,Converts a 32×32 Legacy v7 skin to Legacy v5 format (also works in Remake). Warning: Sprite quality may degrade, because of Legacy’s more restrictive sprite size limits.
+
+base,256,256
+
+
+
+# SMALL
+
+# List of positions to check and copy FROM
+set,$old_x_list,\
+        (list,  0,  48, 72, 96, 264,120,312,336,24, 552,360,384,408,408,432)
+# KEY: /        stand   walk2   skid    climb1  taunt   swim1   swim3   swim5
+#      \            walk1   walk3   jump    climb2  dead    swim2   swim4
+set,$old_y_list,\
+        (list,  16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16 )
+
+# List of positions to copy TO
+set,$new_x_list,\
+        (list,  208,192,176,160,144,128,112,96, 80, 0,  240,224,208,192,176)
+# KEY: /        stand   walk2   skid    climb1  taunt   swim1   swim3   swim5
+#      \            walk1   walk3   jump    climb2  dead    swim2   swim4
+set,$new_y_list,\
+        (list,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  80, 80, 80, 80, 80 )
+
+# Scale and copy
+# Sprites will be downscaled on an individual basis if they exceed Legacy5 dimensions (i.e. if only the swim sprites go over, the others won't be affected)
+for,$i,0,(len,$old_x_list)
+    copyfit,(get,$old_x_list,$i), (get,$old_y_list,$i), 24,24, "center","top",\
+            (get,$new_x_list,$i), (get,$new_y_list,$i), 16,16, 0
+end,for
+
+
+
+# SUPER
+
+# List of positions to check and copy FROM
+set,$old_x_list,\
+    (list,  736,0,  384,64, 96, 128,352,160,416,448,32, 480,512,544,544,576,576)
+# KEY: /    trnsfrm crouch  walk2   skid    climb1  taunt   swim2   swim4  swim6
+#      \        stand   walk1   walk3   jump    climb2  swim1   swim3   swim5
+set,$old_y_list,\
+    (list,  40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40 )
+
+# List of positions to copy TO
+set,$new_x_list,\
+    (list,  224,208,192,176,160,144,128,112,96, 80, 0,  240,224,208,192,176,160)
+# KEY: /    trnsfrm crouch  walk2   skid    climb1  taunt   swim2   swim4  swim6
+#      \        stand   walk1   walk3   jump    climb2  swim1   swim3   swim5
+set,$new_y_list,\
+    (list,  16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 96, 96, 96, 96, 96, 96)
+
+# Scale and copy
+# Sprites will be downscaled on an individual basis if they exceed Legacy5 dimensions (i.e. if only the swim sprites go over, the others won't be affected)
+for,$i,0,(len,$old_x_list)
+    copyfit,(get,$old_x_list,$i), (get,$old_y_list,$i), 32,32, "center","top",\
+            (get,$new_x_list,$i), (get,$new_y_list,$i), 16,32, 0
+end,for
+
+
+
+# FIRE
+
+# List of positions to check and copy FROM (see exclusions below)
+set,$old_x_list,\
+        (list,  768,0,  64, 96, 128,352,160)
+# KEY: /            stand   walk2   skid
+#      \        attack  walk1   walk3   jump
+set,$old_y_list,\
+(list,          72, 72, 72, 72, 72, 72, 72 )
+
+# If we need to move, determine the boundaries
+set,$top,0
+set,$bottom,31
+gosub,bounds
+
+# List of positions to copy TO
+set,$new_x_list,\
+        (list,  224,176,128,96, 64, 32, 0  )
+# KEY: /            stand   walk2   skid
+#      \        attack  walk1   walk3   jump
+set,$new_y_list,\
+(list,          48, 48, 48, 48, 48, 48, 48)
+gosub,fire_shift
+
+
+
+# FIRE SWIM: handled separately because of the legs' tendency to stick out
+
+# List of positions to check and copy FROM
+set,$old_x_list,\
+        (list,  480,512,544,544,576,576)
+# KEY: /            swim2   swim4   swim6
+#      \        swim1   swim3   swim5
+set,$old_y_list,\
+(list,          72, 72, 72, 72, 72, 72 )
+
+# If we need to move, determine the boundaries
+set,$top,0
+set,$bottom,31
+gosub,bounds
+
+# List of positions to copy TO
+set,$new_x_list,\
+        (list,  224,192,160,128,96, 64 )
+# KEY: /            swim2   swim4   swim6
+#      \        swim1   swim3   swim5
+set,$new_y_list,\
+(list,          128,128,128,128,128,128)
+gosub,fire_shift
+
+
+
+# FIRE TAUNT: handled separately for the same reason
+
+set,$old_x_list, (list, 32)
+# KEY: /            stand   walk2   skid    taunt
+#      \        attack  walk1   walk3   jump
+set,$old_y_list, (list, 72)
+
+# If we need to move, determine the boundaries
+set,$top,0
+set,$bottom,31
+gosub,bounds
+
+# List of positions to copy TO
+set,$new_x_list, (list, 16)
+# KEY: /            stand   walk2   skid    taunt
+#      \        attack  walk1   walk3   jump
+set,$new_y_list, (list, 16)
+gosub,fire_shift
+
+
+
+# FIRE SPECIAL CASES: sprites that only have 16×32 space on Legacy
+
+# transform
+copyfit, 736,72, 32,32, "center","middle", 208,48, 16,32, 0
+# crouch
+copyfit, 384,72, 32,32, "center","middle", 160,48, 16,32, 0
+# climb1
+copyfit, 416,72, 32,32, "center","middle", 64,16, 16,32, 0
+# climb2
+copyfit, 448,72, 32,32, "center","middle", 48,16, 16,32, 0
+
+
+
+# FIREBALLS
+copy, 0,0, 16,0, 64,16
+
+# EXPLOSION
+copy, 64,0, 224,0, 32,16    # frames 1 & 2
+copy, 96,0, 240,16          # frame 3
+copy, 112,0, 240,32         # frame 4
+
+# Exit script so we don't hit the subroutines during normal execution.
+exit
+
+
+
+# SUBROUTINES
+
+# Get left/right scaling bounds for a 32×32 area.
+# Arguments: $old_x_list, $old_y_list
+label,bounds
+set,$left,8
+set,$right,23
+for,$i,(len,$old_x_list) # i is looping thru the position lists
+    for,$j,0,8 # j is looping thru the pixel columns of each sprite
+        if,(not,(empty,(+,$j,(get,$old_x_list,$i)),(get,$old_y_list,$i),1,32))
+            set,$left,(min,$j,$left)
+            break
+        end,if
+    end,for
+    for,$j,0,8
+        if,(not,(empty,(+,(get,$old_x_list,$i),(-,31,$j)),(get,$old_y_list,$i),1,32))
+            set,$right,(max,(-,31,$j),$right)
+            break
+        end,if
+    end,for
+end,for
+goback
+
+# Based on the $right value calculated above, get the sprites as far to the right as possible without them jumping from frame to frame. This is how to make the hitboxes work the best
+# $right <= 23 -> place at x=8, shift 0px left from original position
+# $right = 31 -> place at x=0, shift 8px left
+# Arguments: $right, $old_x_list, $old_y_list, $new_x_list, $new_y_list
+label,fire_shift
+if,(<,$right,23)
+    set,$new_x,8
+else
+    set,$new_x,(-,31,$right)
+end,if
+# Copy sprites into full 32×32 space (no scaling)
+for,$i,(len,$old_x_list)
+    copy,(get,$old_x_list,$i),(get,$old_y_list,$i),(+,$new_x,(get,$new_x_list,$i)),(get,$new_y_list,$i),32,32
+end,for
+goback

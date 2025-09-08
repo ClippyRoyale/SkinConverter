@@ -601,7 +601,18 @@ Version 7.6.2 (Jul. 6, 2025):
   * Improved performance of L5->L7 script
       * Papyrus Semi's frog skin now takes 0.4 seconds to convert instead of
         2 minutes
-  * Redesigned menu to accomodate new scripts
+  * Redesigned menu to accommodate new scripts
       + Added a help dialog that explains all the Legacy skin versions
   * More bug/linter fixes
   - Removed dead memes
+  * EDIT: Only compatible with Python 3.9 and later (due to f-string syntax
+    on e.g. line 2773)
+
+Version 7.6.3 (Sep. 9, 2025):
+  + Script to downgrade Legacy v7 skins to v5/v6
+  + copyfit command, to simplify the downscaling code I was having to rewrite
+    over and over
+  * Fixed background-remover button
+      * Actually, that button's been nonfunctional ever since it was added in
+        v7.4. Whoops!
+  * Restored compatiblity with Python 3.6 or later

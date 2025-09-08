@@ -1,6 +1,6 @@
 '''
 MR Skin Converter
-Version 7.6.2
+Version 7.6.3
 
 Copyright 2022–2025 ClippyRoyale
 
@@ -19,12 +19,13 @@ along with this program (see the file license.txt).
 If not, see <https://www.gnu.org/licenses/>.
 '''
 
+import colorsys
+import functools
 import math
 import os
 import sys
-import colorsys
-import urllib.request
 import webbrowser # for installing assets
+import urllib.request
 from collections import abc
 from copy import deepcopy
 from glob import glob
@@ -49,11 +50,11 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,6,2]
+app_version = [7,6,3]
 
 # For type hints
 Num = Union[int,float]
-ColorArray = abc.Sequence[Num]
+ColorArray = Sequence[Num]
 
 # Why does Python not have this built in anymore???
 def cmp(x, y):
@@ -262,9 +263,11 @@ menu_btn_skin_d_l7 = Button(main_frame,
         font=f_large, highlightbackground=colors['UI_BG'])
 menu_btn_skin_d_l7.bind('<ButtonRelease-1>',
         lambda _: script_button('scripts/skin_Dx32_to_L7.s.txt'))
-menu_btn_trans_bg = Button(main_frame,
-        text='Remove a partially transparent background',
+menu_btn_skin_l7_l5 = Button(main_frame,
+        text='Backport a Legacy7 skin to Legacy5',
         highlightbackground=colors['UI_BG'])
+menu_btn_skin_l7_l5.bind('<ButtonRelease-1>',
+        lambda _: script_button('scripts/skin_L7_to_L5.txt'))
 
 menu_btn_custom = Button(main_frame, text='Run a custom script',
         highlightbackground=colors['UI_BG'])
@@ -279,6 +282,11 @@ menu_btn_assets = Button(main_frame, text='Update game images',
 menu_btn_assets.bind('<ButtonRelease-1>',
         lambda _: install_assets())
 
+menu_btn_trans_bg = Button(main_frame,
+        text='Remove a partially transparent background',
+        highlightbackground=colors['UI_BG'])
+menu_btn_trans_bg.bind('<ButtonRelease-1>',
+        lambda _: script_button('scripts/transparent_bg.s.txt'))
 menu_btn_skin_p_l7 = Button(main_frame,
         text='Convert a Legacy3 32×32 proposal skin to Legacy7',
         highlightbackground=colors['UI_BG'])
@@ -312,7 +320,7 @@ menu_btn_exit = Button(main_frame, text='Exit',
 menu_btn_exit.bind('<ButtonRelease-1>',
         lambda _: exit_app())
 
-menu_btns_old_row = Frame(main_frame)
+menu_btns_old_row = Frame(main_frame, bg=colors['UI_BG'])
 menu_btns_old_start = Label(menu_btns_old_row,
         text='Convert skins from...', bg=colors['UI_BG'])
 menu_btns_old1 = Button(menu_btns_old_row, text='L1',
@@ -342,11 +350,12 @@ for iindex, iitem in enumerate(menu_btns_old_list):
 menu_btns_p1 = [
     menu_btn_skin_l_l7,
     menu_btn_skin_d_l7,
+    menu_btn_skin_l7_l5,
     menu_spacer,
     menu_btn_custom,
     menu_btn_multi,
     menu_btn_page_next,
-    menu_spacer,
+    #menu_spacer,
     menu_btn_exit,
 ]
 
@@ -1017,7 +1026,7 @@ def copyscale(i:list):
 
     if len(i) == 9:
         i.append(1)
-    algo : int = i[9]
+    algo : Union[int,str] = i[9]
 
     if len(i) == 10:
         i.append('old')
@@ -1229,6 +1238,268 @@ f'{i[0]}: unknown scaling algorithm value (defaulting to 1)'
 
     images['new'].paste(new_region, (newX, newY, newX+newWidth, newY+newHeight))
 
+def copyfit(i:list):
+    '''
+    copyfit 0<oldX> 0<oldY> 16<oldWidth> 32<oldHeight>
+        all<scanX:left|l,center|c,right|r,all|a>
+        all<scanY:top|t,middle|m,bottom|b,all|a>
+        0<newX> 0<newY> 16<newWidth> 24<newHeight> 1[algo] old[source]
+
+    Copies an area from the old image to the new image, while automatically
+    downscaling the area the minimum amount necessary to fit in the new image.
+    This functionality was previously implemented manually in many scripts.
+
+    * scanHoriz tells the converter how to scan for & remove empty columns.
+        * left: start scanning at relative x=0 and move right; stop when a
+        non-empty column is reached, or when the remaining width ≤ newWidth.
+        * right: start scanning at relative x=(width-1) and move left; stop
+        when a non-empty column is reached, or when remaining width ≤ newWidth.
+        * center: scan from both sides; stop when a non-empty column is reached
+        on EITHER side, or when the remaining width ≤ newWidth.
+        * all: scan from both sides; stop when a non-empty column is reached on
+        BOTH sides, or when the remaining width ≤ newWidth.
+        * scanVert is similar.
+    * algo: see copyscale for details on accepted values
+
+    If (newWidth > oldWidth) or (newHeight > oldHeight), the sprite will be
+    aligned to the left and top edges as appropriate.
+
+    — OR —
+
+    copyfit (list 0 16 32)<oldX> (list 16 16 16)<oldY> 16<oldWidth>
+        32<oldHeight> all<scanHoriz:left|l,center|c,right|r>
+        all<scanVert:top|t,middle|m,bottom|b> (list 64 128 192)<newX>
+        (list 32 32 32)<newY> 16<newWidth> 24<newHeight> 1[algo]
+
+    You can also use lists of positions for the x and y arguments to account for multiple sprites while calculating the bounding box. If you do this, all x/y arguments must be lists of equal length.
+    '''
+
+    oldXRaw : Union[int,List[int]] = i[1]
+    oldX : List[int] = [-1]
+    oldYRaw : Union[int,List[int]] = i[2]
+    oldY : List[int] = [-1]
+    oldWidth : int = i[3]
+    oldHeight : int = i[4]
+
+    scanHoriz : str = i[5]
+    scanVert : str = i[6]
+
+    newXRaw : Union[int,List[int]] = i[7]
+    newX : List[int] = [-1]
+    newYRaw : Union[int,List[int]] = i[8]
+    newY : List[int] = [-1]
+    newWidth : int = i[9]
+    newHeight : int = i[10]
+
+    if isinstance(oldXRaw, int) and isinstance(oldYRaw, int) \
+            and isinstance(newXRaw, int) and isinstance(newYRaw, int):
+        oldX = [oldXRaw]
+        oldY = [oldYRaw]
+        newX = [newXRaw]
+        newY = [newYRaw]
+    elif isinstance(oldXRaw, list) and isinstance(oldYRaw, list) \
+            and isinstance(newXRaw, list) and isinstance(newYRaw, list):
+        if not (len(oldXRaw) == len(oldYRaw) == len(newXRaw) == len(newYRaw)):
+            log_warning(f'{i[0]}: coordinate lists must be equal length')
+            return
+        else:
+            oldX = oldXRaw
+            oldY = oldYRaw
+            newX = newXRaw
+            newY = newYRaw
+    else:
+        log_warning(f'{i[0]}: coordinates must either be all ints or all \
+lists (no mixing types)')
+        return
+
+    if newWidth > oldWidth:
+        log_warning(f'{i[0]}: newWidth ({newWidth}) is greater than \
+oldWidth ({oldWidth})')
+        newWidth = oldWidth
+    if newHeight > oldHeight:
+        log_warning(f'{i[0]}: newHeight ({newHeight}) is greater than \
+oldHeight ({oldHeight})')
+        newHeight = oldHeight
+
+    if len(i) == 11:
+        i.append(1)
+    algo : Union[int,str] = i[11]
+
+    if len(i) == 12:
+        i.append('old')
+    source : str = i[12]
+
+    # These positions will be relative to the old/new x positions
+    # right and bottom are inclusive because it makes things easier when we're
+    # checking the individual columns of pixels.
+    left = 0
+    top = 0
+    right = oldWidth - 1
+    bottom = oldHeight - 1
+
+    # Determine actual left/right values
+    if oldWidth == newWidth:
+        pass # intentional pass if old/new dimensions match
+    elif scanHoriz in ('left', 'l'):
+        # If all the checked columns are empty, set to the loop's stop value
+        left = oldWidth-newWidth
+        for j in range(0, oldWidth-newWidth):
+            empty_list = [empty(['copyfit', oldX[k]+j,oldY[k],1,oldHeight],
+                    images[source]) for k in range(len(oldX))]
+            all_empty = functools.reduce(lambda a,b: a and b, empty_list, True)
+            if not all_empty:
+                left = j
+                break
+    elif scanHoriz in ('right', 'r'):
+        # If all the checked columns are empty, set to the loop's stop value
+        right = newWidth-1
+        for j in range(oldWidth-1, newWidth-1, -1):
+            empty_list = [empty(['copyfit', oldX[k]+j,oldY[k],1,oldHeight],
+                    images[source]) for k in range(len(oldX))]
+            all_empty = functools.reduce(lambda a,b: a and b, empty_list, True)
+            if not all_empty:
+                right = j
+                break
+    elif scanHoriz in ('center', 'c'):
+        jj = 0
+        stopSide = None # False<=>left, True<=>right
+        # First pass: Check both sides at once for emptiness
+        while jj < oldWidth-newWidth:
+            emptyL_list = [empty(['copyfit', oldX[k]+left, oldY[k],
+                    1,oldHeight],images[source]) for k in range(len(oldX))]
+            all_emptyL = functools.reduce(lambda a,b: a and b,
+                    emptyL_list, True)
+            emptyR_list = [empty(['copyfit', oldX[k]+right, oldY[k],
+                    1,oldHeight],images[source]) for k in range(len(oldX))]
+            all_emptyR = functools.reduce(lambda a,b: a and b,
+                    emptyR_list, True)
+            if all_emptyL and all_emptyR:
+                jj += 2
+                left += 1
+                right -= 1
+            elif not all_emptyL:
+                stopSide = False
+                break
+            elif not all_emptyR:
+                stopSide = True
+                break
+
+        # Second pass: when one side is found non-empty,
+        # just search the side that's still empty, if there is one.
+        if stopSide is False: # stopped at left, check right
+            start = right
+            stop = newWidth-1+jj//2
+            # If all the checked rows are empty, set to the loop's stop value
+            right = stop
+            for j in range(start, stop, -1):
+                emptyL_list = [empty(['copyfit', oldX[k]+j, oldY[k],
+                        1,oldHeight],images[source]) for k in range(len(oldX))]
+                all_emptyL = functools.reduce(lambda a,b: a and b,
+                        emptyL_list, True)
+                if not all_emptyL:
+                    right = j
+                    break
+        elif stopSide is True: # stopped at right, check left
+            start = left
+            stop = (oldWidth-newWidth)-jj//2
+            # If all the checked rows are empty, set to the loop's stop value
+            left = stop
+            for j in range(start, stop):
+                emptyR_list = [empty(['copyfit', oldX[k]+j, oldY[k],
+                        1,oldHeight],images[source]) for k in range(len(oldX))]
+                all_emptyR = functools.reduce(lambda a,b: a and b,
+                        emptyR_list, True)
+                if not all_emptyR:
+                    left = j
+                    break
+    else:
+        log_warning(f'{i[0]}: Unrecognized scanHoriz value “{scanHoriz}”')
+        return None
+
+    # Determine actual top/bottom values
+    if oldHeight == newHeight:
+        pass # intentional pass if old/new dimensions match
+    elif scanVert in ('top', 't'):
+        # If all the checked rows are empty, set to the loop's stop value
+        top = oldHeight-newHeight
+        for j in range(0, oldHeight-newHeight):
+            empty_list = [empty(['copyfit', oldX[k],oldY[k]+j,oldWidth,1],
+                    images[source]) for k in range(len(oldX))]
+            all_empty = functools.reduce(lambda a,b: a and b, empty_list, True)
+            if not all_empty:
+                top = j
+                break
+    elif scanVert in ('bottom', 'b'):
+        # If all the checked rows are empty, set to the loop's stop value
+        bottom = newHeight-1
+        for j in range(oldHeight-1, newHeight-1, -1):
+            empty_list = [empty(['copyfit', oldX[k],oldY[k]+j,oldWidth,1],
+                    images[source]) for k in range(len(oldX))]
+            all_empty = functools.reduce(lambda a,b: a and b, empty_list, True)
+            if not all_empty:
+                bottom = j
+                break
+    elif scanVert in ('middle', 'm'):
+        jj = 0
+        stopSide = None # False<=>top, True<=>bottom
+        # First pass: Check both sides at once for emptiness
+        while jj < oldHeight-newHeight:
+            emptyT_list = [empty(['copyfit', oldX[k], oldY[k]+top,
+                    oldWidth, 1], images[source]) for k in range(len(oldX))]
+            all_emptyT = functools.reduce(lambda a,b: a and b,
+                    emptyT_list, True)
+            emptyB_list = [empty(['copyfit', oldX[k], oldY[k]+bottom,
+                    oldWidth, 1], images[source]) for k in range(len(oldX))]
+            all_emptyB = functools.reduce(lambda a,b: a and b,
+                    emptyB_list, True)
+            if all_emptyT and all_emptyB:
+                jj += 2
+                left += 1
+                right -= 1
+            elif not all_emptyT: # top not empty
+                stopSide = False
+                break
+            elif not all_emptyB: # bottom not empty
+                stopSide = True
+                break
+
+        # Second pass: when one side is found non-empty,
+        # just search the side that's still empty, if there is one.
+        if stopSide is False: # stopped at top, check bottom
+            start = bottom
+            stop = newHeight-1+jj//2
+            # If all the checked rows are empty, set to the loop's stop value
+            bottom = stop
+            for j in range(start, stop, -1):
+                emptyT_list = [empty(['copyfit', oldX[k], oldY[k]+j,
+                        oldWidth, 1], images[source]) for k in range(len(oldX))]
+                all_emptyT = functools.reduce(lambda a,b: a and b,
+                        emptyT_list, True)
+                if not all_emptyT:
+                    bottom = j
+                    break
+        elif stopSide is True: # stopped at bottom, check top
+            start = top
+            stop = (oldHeight-newHeight)-jj//2
+            # If all the checked rows are empty, set to the loop's stop value
+            top = stop
+            for j in range(start, stop):
+                emptyB_list = [empty(['copyfit', oldX[k], oldY[k]+j,
+                        oldWidth, 1], images[source]) for k in range(len(oldX))]
+                all_emptyB = functools.reduce(lambda a,b: a and b,
+                        emptyB_list, True)
+                if not all_emptyB:
+                    top = j
+                    break
+    else:
+        log_warning(f'{i[0]}: Unrecognized scanVert value “{scanVert}”')
+        return None
+
+    for k in range(len(oldX)):
+        copyscale(['copyfit', oldX[k]+left, oldY[k]+top,
+                right-left+1, bottom-top+1,
+                newX[k], newY[k], newWidth, newHeight, algo, source])
+
 ###########################################################################
 #### TRANSFORMATION COMMANDS ##############################################
 ###########################################################################
@@ -1285,7 +1556,7 @@ def scale(i:list, base_image):
 
     rawWidth : int = i[1]
     rawHeight : int = i[2]
-    algo : str = i[3]
+    algo : Union[int,str] = i[3]
 
     if rawWidth is None and rawHeight is None:
         log_warning(
@@ -2770,7 +3041,7 @@ def truediv(i: list):
     # Check for division by 0
     for n in i[2:]:
         if n == 0:
-            log_warning(f'{i[0]}: Division by zero ({'÷'.join(i[1:])})')
+            log_warning(f'{i[0]}: Division by zero ({"÷".join(i[1:])})')
 
     if len(i) == 3: # If 2 arguments
         return i[1] / i[2]
@@ -2790,7 +3061,7 @@ def floordiv(i: list):
     # Check for division by 0
     for n in i[2:]:
         if n == 0:
-            log_warning(f'{i[0]}: Division by zero ({'÷'.join(i[1:])})')
+            log_warning(f'{i[0]}: Division by zero ({"÷".join(i[1:])})')
 
     if len(i) == 3: # If 2 arguments
         return i[1] // i[2]
@@ -2809,7 +3080,7 @@ def mod(i: list):
     # Check for division by 0
     for n in i[2:]:
         if n == 0:
-            log_warning(f'{i[0]}: Modulo by zero ({' mod '.join(i[1:])})')
+            log_warning(f'{i[0]}: Modulo by zero ({" mod ".join(i[1:])})')
 
     if len(i) == 3: # If 2 arguments
         return i[1] % i[2]
@@ -4316,6 +4587,7 @@ def arg_check(cmd: list, is_subcmd: bool):
 
         'tile': 8,
         'copyscale': 8,
+        'copyfit': 10,
 
         'resize': 1,
         'crop': 4,
@@ -5567,7 +5839,7 @@ f'label: Label “{item[1]}” is not a string — ignoring')
                     # labels dictionary
                     labels[item[1]] = index
             else:
-                log_warning(f'label: empty label on line {index}')
+                log_warning(f'label: empty label')
 
     # Load rest of header data
     # Remember, you can use int, float, and string literals here but NOT
@@ -6884,6 +7156,8 @@ default: Skipped because no “template” image was specified.')
                 tile(item, images['new'])
             elif item[0] == 'copyscale':
                 copyscale(item)
+            elif item[0] == 'copyfit':
+                copyfit(item)
 
             # Transformation commands
             elif item[0] == 'resize':
@@ -7013,13 +7287,12 @@ for is “default”, not “template”')
                 # Otherwise, just skip the line since we've presumably already
                 # dealt with it
             else:
-                log_warning(f'Unknown command on line {index}: {item[0]}')
+                log_warning(f'Unknown command: {item[0]}')
 
         except Exception as e:
             # Handle any errors in the command functions so they don’t bring
             # the whole program to a halt
-            log_warning(f'{item[0]} command on line {index} \
-skipped due to error: {e}')
+            log_warning(f'{item[0]} command skipped due to error: {e}')
 
             # If error occurs at start of a block, skip to outside block.
             # Do this manually (like break,1 in 7.0) because loop_data
