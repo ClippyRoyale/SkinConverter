@@ -5,11 +5,11 @@ Source code and documentation copyright (C) 2022–2025 ClippyRoyale
 ## What is this?
 
 This is a GUI-based program for converting skins or other sprite sheets for different versions of the browser game MRoyale. You can convert:
-* Legacy v5 (16×32) skins to Legacy v7 (32×32) format
+* Legacy v5 (16×32) skins to Legacy v7 (32×32) format, or vice versa
 * Deluxe skins to Legacy format (v5 or v7)
-* Remake skins to Legacy format
+* Remake skins to Legacy v5 format
 * Legacy smb_map to smb_map_new
-* You can also remove the semi-transparent template background from your skins, if you saved your skin image with the template left in by mistake.
+* And more!
 
 While this program is not designed for maximum efficiency (it is written in Python after all), it’s still pretty fast. For example, I tested v5.2.1 and it was able to convert 69 skins per second from Legacy to Deluxe. (That functionality is now deprecated since MR Deluxe is dead.)
 
