@@ -1,6 +1,7 @@
-u_7.3.0_7.3.1_7.3.2_7.4.0_7.5.0_7.5.1_7.5.2_7.5.3_7.5.4_7.5.5_7.6.0_7.6.1_7.6.2 Version 7.7.0 of the Skin Converter is now available! It adds a script to backport MR Legacy v7 scripts to the currently playable version of MR Legacy. As for v7's release date: it'll come out when it's done.
+u_7.3.0_7.3.1_7.3.2_7.4.0_7.5.0_7.5.1_7.5.2_7.5.3_7.5.4_7.5.5_7.6.0_7.6.1_7.6.2 Version 7.7.0 of the Skin Converter is now available! It adds a script to backport MR Legacy v7 scripts to the currently playable version of MR Legacy. As for v8′s release date: it’ll come out when it’s done.
 # Versions 7.3.0 and earlier don't support ^ as newline character
 u_6.0.0_6.1.0_7.0.0_7.0.1_7.1.0_7.2.0_7.2.1 Version 7.7.0 of the Skin Converter is now available! If you want to convert Legacy skins to the new 7.0 format, you’ll need to get the update.
 # "View Update" button was added in 6.0.0, so 5.x needs extra instructions
 u_5.2.0_5.2.1_5.2.2 Version 7.7.0 of the Skin Converter is now available! If you want to convert Legacy skins to the new 7.0 format, you’ll need to get the update. Visit https://github.com/ClippyRoyale/SkinConverter/releases to download the update.
 
+7.6.3 The Replit version of the Skin Converter is now discontinued. You’re welcome to continue using it, but it will no longer receive any updates, and I will not provide any support for it whatsoever. It will remain online at its current location indefinitely (at least until Replit goes bankrupt because of its brain-dead pivot to vibe coding).
