@@ -1,6 +1,6 @@
 '''
 MR Skin Converter
-Version 7.7.0
+Version 7.7.1
 
 Copyright 2022–2025 ClippyRoyale
 
@@ -50,7 +50,7 @@ except ModuleNotFoundError:
 #### GLOBAL VARIABLES #####################################################
 ###########################################################################
 
-app_version = [7,7,0]
+app_version = [7,7,1]
 
 # For type hints
 Num = Union[int,float]
@@ -471,7 +471,7 @@ header_commands = ['mrconverter', 'version', 'flag', 'name', 'description',
 # the variable will be kept as a Var class (instead of being substituted).
 set_commands = ['set', 'change', 'const', 'for', 'foreach',
                 'list.add', 'list.addall', 'list.clear', 'list.insert',
-                'list.remove', 'list.replace', 'list.swap',
+                'list.insertall', 'list.remove', 'list.replace', 'list.swap',
                 # Augmented assignment
                 'iadd', 'isub', 'imul', 'itruediv',
                 'ifloordiv', 'imod', 'ipow',
@@ -1271,7 +1271,9 @@ def copyfit(i:list):
         all<scanVert:top|t,middle|m,bottom|b> (list 64 128 192)<newX>
         (list 32 32 32)<newY> 16<newWidth> 24<newHeight> 1[algo]
 
-    You can also use lists of positions for the x and y arguments to account for multiple sprites while calculating the bounding box. If you do this, all x/y arguments must be lists of equal length.
+    You can also use lists of positions for the x and y arguments to account
+    for multiple sprites while calculating the bounding box. If you do this,
+    all x/y arguments must be lists of equal length.
     '''
 
     oldXRaw : Union[int,List[int]] = i[1]
@@ -2292,26 +2294,105 @@ def recolor(i:list, base_image:PIL.Image.Image):
 
 def list_remove(i: list):
     '''
-    list.remove,$l<listVar>,0<index>
+    list.remove $l<listVar> 0<index>
 
     Remove the item at the given index from the list; shift the items after it
     to the left. Note that this is different from the Python method
-    `l.remove()` that removes based on value rather than index.
+    `l.remove()` which removes based on value rather than index.
+
+    — OR —
+
+    list.remove $l<listVar> 0<start> (+ start 1)[stop] 1[step]
+
+    Remove multiple items from a list, using slice-style syntax.
     '''
     if not var_check(i[1], i[0], exists=True):
         # var_check will generate its own warning if it fails, so no need
         # for another one here
         return
 
-    listVar : list = i[1]
-    index : int = i[2]
-
+    listVar : SetVar = i[1]
+    if listVar.name.startswith('$_'):
+        log_warning(f'{i[0]}: Can’t directly mutate system lists')
+        return
     l : list = subst_var(listVar, i[0], mutable=True)
-    del l[index]
+
+    start : int = i[2]
+    # Use False for argument not present, None for argument present but user
+    # passed in `$_null` to leave that part of the slice blank
+    stop : Optional[int] = False
+    if len(i) > 3:
+        stop = i[3]
+    step : Optional[int] = False
+    if len(i) > 4:
+        step = i[4]
+
+    if step is not False: # start, stop, step
+        (start, stop, step) = normalize_slice(l, start, stop, step, i[0])
+        if stop is None:
+            del l[start::step]
+        else:
+            del l[start:stop:step]
+    elif stop is not False: # start, stop
+        (start, stop, _) = normalize_slice(l, start, stop, 1, i[0])
+        if stop is None:
+            del l[start:]
+        else:
+            del l[start:stop]
+    else: # start ONLY (the most common case)
+        start = normalize_index(l, start, i[0])
+        del l[start]
+
+def list_insert(i: list):
+    '''
+    list.insert $l<listVar> 0<index> "thing"<item>
+
+    Insert a new `item` into `listVar`,
+    BEFORE the item currently at the given index.
+    '''
+    if not var_check(i[1], i[0], exists=True):
+        # var_check will generate its own warning if it fails, so no need
+        # for another one here
+        return
+
+    listVar : SetVar = i[1]
+    if listVar.name.startswith('$_'):
+        log_warning(f'{i[0]}: Can’t directly mutate system lists')
+        return
+    l : list = subst_var(listVar, i[0], mutable=True)
+
+    index : int = normalize_index(l, i[2], i[0])
+    item : Any = i[3]
+
+    l.insert(index, item)
+
+def list_insertall(i: list):
+    '''
+    list.insertall $l<listVar> 0<index> (list 1 2 3)<newList>
+
+    Insert every element of `newList` into `listVar`, BEFORE the item currently
+    at the given index. The distinction between this and `list.insert` is the
+    same as the one between `list.addall` and `list.add`.
+    '''
+    if not var_check(i[1], i[0], exists=True):
+        # var_check will generate its own warning if it fails, so no need
+        # for another one here
+        return
+
+    listVar : SetVar = i[1]
+    if listVar.name.startswith('$_'):
+        log_warning(f'{i[0]}: Can’t directly mutate system lists')
+        return
+    l : list = subst_var(listVar, i[0], mutable=True)
+
+    index : int = normalize_index(l, i[2], i[0])
+    item : Any = i[3]
+
+    l[index:index+1] = item
 
 def list_replace(i: list):
     '''
-    list.replace,$l<listVar>,0<index>,"thing"<item>
+    list.replace $l<listVar> 0<index> "thing"<item>
 
     Replace the contents of the given `index` of `listVar` with `item`.
     '''
@@ -2320,11 +2401,15 @@ def list_replace(i: list):
         # for another one here
         return
 
-    listVar : list = i[1]
-    index : int = i[2]
+    listVar : SetVar = i[1]
+    if listVar.name.startswith('$_'):
+        log_warning(f'{i[0]}: Can’t directly mutate system lists')
+        return
+    l : list = subst_var(listVar, i[0], mutable=True)
+
+    index : int = normalize_index(l, i[2], i[0])
     item : Any = i[3]
 
-    l : list = subst_var(listVar, i[0], mutable=True)
     l[index] = item
 
 def list_swap(i: list):
@@ -2339,11 +2424,15 @@ def list_swap(i: list):
         # for another one here
         return
 
-    listVar : list = i[1]
-    index1 : int = i[2]
-    index2 : int = i[3]
-
+    listVar : SetVar = i[1]
+    if listVar.name.startswith('$_'):
+        log_warning(f'{i[0]}: Can’t directly mutate system lists')
+        return
     l : list = subst_var(listVar, i[0], mutable=True)
+
+    index1 : int = normalize_index(l, i[2], i[0])
+    index2 : int = normalize_index(l, i[3], i[0])
+
     l[index1], l[index2] = l[index2], l[index1]
 
 ###########################################################################
@@ -2506,7 +2595,6 @@ def draw_linecolor(i: list):
 
 def draw_alphablend(i: list):
     '''
-
     draw.alphablend,1<toggle>
 
     Toggles alpha blending on (1) or off (0). If on, drawing partially
@@ -2514,7 +2602,6 @@ def draw_alphablend(i: list):
     underneath. If off, the pixels underneath will by fully overwritten by the
     shapes. If this command is not called, alpha blending will be turned ON by
     default.
-    TODO: add setting "2" that also alphablends the original copying commands?
     '''
 
     global draw_obj
@@ -3181,36 +3268,16 @@ def round_(i: list):
 
 def get(i: list):
     '''
-    (get,$x<seq>,0<index>)
+    (get $x<seq> 0<index>)
 
     Returns the item at index 0 of the given list/string. The first item has
-    index 0, second item has index 1, etc., unless you change the index_from
+    index 0, second item has index 1, etc., unless you change the indexFrom
     flag. In addition, index -1 is the last item, -2 is the second-to-last
     item, etc.
     '''
-
-    seq = i[1]
-    index = i[2]
-
-    if index < 0:
-        if abs(index) > len(seq):
-            log_warning(
-                f'{i[0]}: index {index} is out of range for sequence {seq}'
-            )
-            return None
-        # else
-        return seq[index]
-    # elif index >= 0
-    # Adjust index based on index_from flag
-    # so it follows Python's index-from-0 rules
-    normalized_index = index - flags['index_from']
-    if normalized_index < 0 or normalized_index >= len(seq):
-        log_warning(
-            f'{i[0]}: index {index} is out of range for list {seq}'
-        )
-        return None
-    # else
-    return seq[normalized_index]
+    seq : abc.Sequence = i[1]
+    index : int = normalize_index(seq, i[2], i[0])
+    return seq[index]
 
 def slice_(i: list):
     '''
@@ -3222,9 +3289,9 @@ def slice_(i: list):
     '''
     seq : abc.Sequence = i[0]
 
-    start : int = i[1]
+    start : Optional[int] = i[1]
     if not isinstance(start, int):
-        start = flags['index_from']
+        start = None
 
     if len(i) == 2:
         seq.append(None)
@@ -3236,19 +3303,7 @@ def slice_(i: list):
         seq.append(1)
     step : int = i[3]
 
-    # Normalize start
-    if start >= 0:
-        start -= flags['index_from']
-    # Negative start values stay as is
-
-    # Normalize stop
-    if stop is not None:
-        if flags['closed_ranges']:
-            # Have to special-case stop==-1 because if closed_ranges==1,
-            # then -1 means go to the end of the list
-            stop = (stop+sign(step) if (stop != -1) else None)
-            # if step>0 then stop+=1
-            # else if step<0 then stop-=1
+    (start, stop, step) = normalize_slice(seq, start, stop, step, i[0])
 
     if stop is None:
         return seq[start::step]
@@ -3260,7 +3315,7 @@ def find(i: list):
     (find "Hello"<seq> "l"<item> 0[start] ()[stop])
 
     Return the index of the first occurrence of item/substring `item` in the
-    list/string `seq`. Return -1 if `item` couldn't be found anywhere in `seq`.
+    list/string `seq`. Return null if `item` wasn't found anywhere in `seq`.
     Use `start` and `stop` arguments to only search a subset of the sequence.
     '''
     seq : abc.Sequence = i[1]
@@ -3268,11 +3323,13 @@ def find(i: list):
 
     try:
         if len(i) >= 5:
-            start : int = i[3]
-            stop : int = i[4]
-            return seq.index(item, start, stop)
+            (start, stop, _) = normalize_slice(seq, i[3], i[4], 1, i[0])
+            if stop is None:
+                return seq.index(item, start)
+            else:
+                return seq.index(item, start, stop)
         elif len(i) == 4:
-            start : int = i[3]
+            (start, _, _) = normalize_slice(seq, i[3], None, 1, i[0])
             return seq.index(item, start)
         else: # minimum 2 args (len==3)
             return seq.index(item)
@@ -4616,6 +4673,7 @@ def arg_check(cmd: list, is_subcmd: bool):
         'list.addall': 2,
         'list.clear': 1,
         'list.insert': 3,
+        'list.insertall': 3,
         'list.remove': 2,
         'list.replace': 3,
         'list.swap': 3,
@@ -4733,6 +4791,94 @@ def arg_check(cmd: list, is_subcmd: bool):
             cmd = ['noop'] + cmd
         return
     # If we make it down here, the command passed the check.
+
+def normalize_index(seq: Sequence, index: int, cmd_name: str):
+    '''
+    Given a raw integer index from a script (with either indexing scheme),
+    return it normalized to 0-based indexing.
+    Also check whether it is out of bounds.
+    '''
+    # If this function encounters an out-of-range error,
+    # return an obviously-invalid integer so the rest of the line fails
+    sentinel = -len(seq) - 1_000_000
+
+    if index < 0:
+        if abs(index) > len(seq):
+            log_warning(
+                f'{cmd_name}: Index {index} is out of range for sequence {seq}'
+            )
+            return sentinel
+        # else
+        return index
+    # elif index >= 0
+    # Adjust index based on index_from flag
+    # so it follows Python's index-from-0 rules
+    norm_index = index - flags['index_from']
+    if norm_index < 0 or norm_index >= len(seq):
+        log_warning(
+            f'{cmd_name}: Index {index} is out of range for sequence {seq}'
+        )
+        return sentinel
+    # else
+    return norm_index
+
+def normalize_slice(seq: Sequence, start: Optional[int], stop: Optional[int],
+                    step: Optional[int], cmd_name: str):
+    '''
+    Given a raw slice from a script (with either indexing scheme),
+    return a 3-tuple normalized to 0-based indexing.
+
+    Use None for blanks -- for example, myList[3:]
+        => normalize_slice(myList, 3, None, None, _)
+
+    * If step == None, default to 1.
+    * If start == None, default to first item of list if step is positive,
+      or last item if step is negative.
+    * If stop == None, default to "the rest of the list", in whatever direction
+      that would be.
+    '''
+    # If this function encounters an out-of-range error,
+    # return an obviously-invalid integer so the rest of the line fails
+    sentinel = -len(seq) - 1_000_000
+
+    norm_step : int
+    if step is None:
+        norm_step = 1
+    elif step == 0:
+        log_warning(f'{cmd_name}: Cannot use 0 as step in a slice')
+        return (sentinel, sentinel, sentinel)
+    else:
+        norm_step = step
+
+    norm_start : int
+    if start is None:
+        if norm_step < 0:
+            start = len(seq) - 1
+        else:
+            start = 0
+    elif start >= 0:
+        norm_start = start - flags['index_from']
+    else: # start < 0
+        norm_start = start
+
+    norm_stop : Optional[int]
+    if stop is None:
+        # There's no way in Python to slice the entirety of a list in reverse
+        # without omitting the stop argument. So this is the one that we can't
+        # always state explicitly, and functions down the line will have to
+        # handle that as a special case.
+        norm_stop = None
+    else:
+        if flags['closed_ranges']:
+            # Have to special-case stop==-1 because if closed_ranges==1,
+            # then -1 means go to the end of the list
+            norm_stop = (stop+sign(step) if (stop != -1) else None)
+            # if step>0 then stop+=1
+            # else if step<0 then stop-=1
+        else:
+            norm_stop = stop
+
+    return (norm_start, norm_stop, norm_step)
 
 def py_method(i: list, method: str):
     '''
@@ -5839,7 +5985,7 @@ f'label: Label “{item[1]}” is not a string — ignoring')
                     # labels dictionary
                     labels[item[1]] = index
             else:
-                log_warning(f'label: empty label')
+                log_warning('label: empty label')
 
     # Load rest of header data
     # Remember, you can use int, float, and string literals here but NOT
@@ -7258,6 +7404,8 @@ is deprecated. Please use “filter.fill” instead.')
                 draw_ellipse(item) # uses global draw_obj instead of img param
             elif item[0] == 'draw.line':
                 draw_line(item) # uses global draw_obj instead of img param
+            elif item[0] == 'draw.alphablend':
+                draw_alphablend(item)
             elif item[0] == 'draw.fillcolor':
                 draw_fillcolor(item)
             elif item[0] == 'draw.linecolor':

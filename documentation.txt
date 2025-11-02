@@ -1,4 +1,4 @@
-version,7,7,0 # The version of the Converter app that this script is made for.
+version,7,7,1 # The version of the Converter app that this script is made for.
 
 # Metadata: doesn't affect how the script runs but will be displayed before running the script.
 name,documentation
@@ -188,11 +188,13 @@ recolor,(list,(color,"red"),(color,"yellow"))<oldColors>,(list,(color,"green") (
 
 list.add,$l<listVar>,"thing"<item> # Add an item to the end of an existing list (in place).
 
-list.addall,$l1<list1>,(list,a,b)<list2> # Add all items in list2 to the end of list1. (Using these arguments with list.add would add list1 as a single element on the end of list1.)
+list.addall,$l1<list1>,(list,a,b)<list2> # Add all items in list2 to the end of list1. (Using these arguments with list.add would add list2 as a single element on the end of list1.)
 
 list.clear,$l<listVar> # Removes all items from the list.
 
-list.insert,$l<listVar>,0<index>,"thing"<item> # Insert new item into listVar, BEFORE the item currently at the given index.
+list.insert,$l<listVar>,0<index>,"thing"<item> # Insert a new `item` into `listVar`, BEFORE the item currently at the given index.
+
+list.insertall,$l<listVar>,0<index>,(list 1 2 3)<newList> # Insert every element of `newList` into `listVar`, BEFORE the item currently at the given index. The distinction between this and `list.insert` is the same as the one between `list.addall` and `list.add`.
 
 list.remove,$l<listVar>,0<index> # Remove the item at the given index from the list; shift the items after it to the left. Note that this is different from the Python method `l.remove()` that removes based on value rather than index.
 

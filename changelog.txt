@@ -608,7 +608,7 @@ Version 7.6.2 (Jul. 6, 2025):
   * EDIT: Only compatible with Python 3.9 and later (due to f-string syntax
     on e.g. line 2773)
 
-Version 7.7.0 (Sep. 9, 2025):
+Version 7.7.0 (Sep. 7, 2025):
   + Script to downgrade Legacy v7 skins to v5/v6
   + copyfit command, to simplify the downscaling code I was having to rewrite
     over and over
@@ -616,3 +616,8 @@ Version 7.7.0 (Sep. 9, 2025):
       * Actually, that button's been nonfunctional ever since it was added in
         v7.4. Whoops!
   * Restored compatiblity with Python 3.6 or later
+
+Version 7.7.1 (Nov. 2, 2025):
+  + draw.alphablend command, which was supposed to be added many versions ago
+  + list.insertall command: inserts multiple elements into a list at once
+  * Fixed index-from-1 flag
